@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Testing
+coverage
+coverage.json
+
+# TypeScript
+typechain
+typechain-types
+*.tsbuildinfo
+
+# Hardhat
+cache
+artifacts
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Build
+build
+dist
+
+# Misc
+.cache
+tmp
+temp
