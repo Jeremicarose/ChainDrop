@@ -1,12 +1,10 @@
 const { ethers } = require('ethers');
 require('dotenv').config()
 
-// Contract ABIs 
+// Contract ABIs
 const ACCOUNT_FACTORY_ABI = [
-    "function generateSalt(string memory identifier) public pure returns (bytes32)",
-    "function getAddress(address owner, bytes32 salt) public view returns (address)",
-    "function createAccount(address owner, bytes32 salt) public returns (address)",
-    "function getAddressForIdentifier(address owner, string memory identifier) public view returns (address)"
+    "function computeAccountAddress(address owner, bytes32 salt) public view returns (address)",
+    "function createAccount(address owner, bytes32 salt) public returns (address)"
 ];
 
 const SIMPLE_ACCOUNT_ABI = [

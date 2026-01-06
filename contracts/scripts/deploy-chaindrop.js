@@ -44,10 +44,7 @@ async function main() {
   // 4. Deploy ChainDropPaymaster
   console.log("4️⃣ Deploying ChainDropPaymaster...");
   const ChainDropPaymaster = await hre.ethers.getContractFactory("ChainDropPaymaster");
-  const paymaster = await ChainDropPaymaster.deploy(
-    entryPointAddress,
-    deployer.address // Fee collector
-  );
+  const paymaster = await ChainDropPaymaster.deploy(entryPointAddress);
   await paymaster.waitForDeployment();
   const paymasterAddress = await paymaster.getAddress();
   console.log("✅ ChainDropPaymaster deployed:", paymasterAddress, "\n");
