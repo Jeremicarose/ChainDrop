@@ -3,9 +3,12 @@
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "echo \"Test coming soon\"",
+    "db:reset": "rm -f chaindrop.db && node src/index.js"
   },
-  "keywords": [],
+  "keywords": ["chaindrop", "crypto", "payments"],
   "author": "",
   "license": "ISC",
   "description": "",
@@ -19,7 +22,8 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.16.3",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
