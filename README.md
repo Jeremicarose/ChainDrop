@@ -608,10 +608,11 @@ This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file
 ## Resources
 
 ### Documentation
-- [Litepaper](./docs/LITEPAPER.md)
-- [Technical Whitepaper](./docs/WHITEPAPER.md)
-- [API Reference](./docs/API.md)
-- [Smart Contract Docs](./docs/CONTRACTS.md)
+- [Litepaper](./LITEPAPER.md) - Non-technical overview
+- [Getting Started](./docs/GETTING_STARTED.md) - Quick start guide
+- [API Reference](./docs/API.md) - Complete API documentation
+- [Smart Contract Docs](./docs/CONTRACTS.md) - Contract architecture
+- [System Architecture](./docs/ARCHITECTURE.md) - Technical deep dive
 
 ### Links
 - **Website**: [Coming Soon]
