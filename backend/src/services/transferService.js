@@ -1,4 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
 const crypto = require('crypto');
 const db = require('../db/schema');
 const blockchainService = require('./blockchainService');
@@ -9,7 +8,7 @@ class TransferService {
    */
   async createTransfer(senderAddress, recipientIdentifier, identifierType, amount, tokenAddress = null) {
     try {
-      const transferId = uuidv4();
+      const transferId = crypto.randomUUID();
       const claimId = `claim-${transferId}`;
       const claimToken = this.generateClaimToken();
       
