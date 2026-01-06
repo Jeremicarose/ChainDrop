@@ -1,31 +1,213 @@
 const transferService = require('../services/transferService');
-const blockchainService = require('.../services/blockchainService');
+const blockchainService = require('../services/blockchainService');
 
 const transferController = {
-    /**
-     * POST /api/transfer/send
-     * Initiate a new transfer
-     */
-    async send(req, res) {
-        try {
-            const {senderAddress, recipientIdentifier, identifierType, amoun, tokenAddress } = req.body;
+  /**
+   * POST /api/transfer/send
+   * Initiate a new transfer
+   */
+  async send(req, res) {
+    try {
+      const { senderAddress, recipientIdentifier, identifierType, amount, tokenAddress } = req.body;
 
-            // Validation
-            if (!senderAddress || !recipientIdentifier || !identifierType || !amount) {
-                return res.status(400).json({
-                    error: 'Missing require fields',
-                    required: ['senderAddress', 'recipientIdentifier', 'identifierType', 'amount']
-                });
-            }
+      // Validation
+      if (!senderAddress || !recipientIdentifier || !identifierType || !amount) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          required: ['senderAddress', 'recipientIdentifier', 'identifierType', 'amount']
+        });
+      }
 
-            // Validate identifier type
-            const validTypes = ['email', 'phone', 'social'];
-            if (!validTypes.includes(identifierType)) {
-                return res.status(400).json({
-                    error: 'Invalid identifier type',
-                    validTypes
-                });
-            }
-        }
+      // Validate identifier type
+      const validTypes = ['email', 'phone', 'social'];
+      if (!validTypes.includes(identifierType)) {
+        return res.status(400).json({
+          error: 'Invalid identifier type',
+          validTypes
+        });
+      }
+
+      console.log(`📤 New transfer request from ${senderAddress}`);
+
+      const result = await transferService.createTransfer(
+        senderAddress,
+        recipientIdentifier,
+        identifierType,
+        amount,
+        tokenAddress
+      );
+
+      res.status(201).json({
+        success: true,
+        message: 'Transfer initiated successfully',
+        data: result
+      });
+    } catch (error) {
+      console.error('Transfer error:', error);
+      res.status(500).json({
+        error: 'Failed to initiate transfer',
+        message: error.message
+      });
     }
-}
+  },
+
+  /**
+   * GET /api/transfer/:claimToken
+   * Get transfer details by claim token
+   */
+  async getByClaimToken(req, res) {
+    try {
+      const { claimToken } = req.params;
+
+      const transfer = await transferService.getTransferByClaimToken(claimToken);
+
+      if (!transfer) {
+        return res.status(404).json({
+          error: 'Transfer not found'
+        });
+      }
+
+      // Check if claimable
+      const { claimable, reason } = await transferService.isClaimable(claimToken);
+
+      res.json({
+        success: true,
+        data: {
+          transferId: transfer.id,
+          recipientAddress: transfer.recipient_address,
+          tokenAddress: transfer.token_address,
+          amount: transfer.amount,
+          status: transfer.status,
+          claimable,
+          reason: claimable ? null : reason,
+          expiresAt: transfer.expires_at,
+          createdAt: transfer.created_at
+        }
+      });
+    } catch (error) {
+      console.error('Get transfer error:', error);
+      res.status(500).json({
+        error: 'Failed to get transfer',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/transfer/claim
+   * Process a claim
+   */
+  async claim(req, res) {
+    try {
+      const { claimToken, recipientWalletAddress } = req.body;
+
+      if (!claimToken || !recipientWalletAddress) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          required: ['claimToken', 'recipientWalletAddress']
+        });
+      }
+
+      console.log(`🎯 Claim request for token: ${claimToken.substring(0, 10)}...`);
+
+      const result = await transferService.processClaim(claimToken, recipientWalletAddress);
+
+      res.json({
+        success: true,
+        message: 'Funds claimed successfully',
+        data: result
+      });
+    } catch (error) {
+      console.error('Claim error:', error);
+      res.status(500).json({
+        error: 'Failed to process claim',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/transfer/sender/:address
+   * Get all transfers by sender
+   */
+  async getBySender(req, res) {
+    try {
+      const { address } = req.params;
+
+      const transfers = await transferService.getTransfersBySender(address);
+
+      res.json({
+        success: true,
+        data: transfers
+      });
+    } catch (error) {
+      console.error('Get sender transfers error:', error);
+      res.status(500).json({
+        error: 'Failed to get transfers',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/transfer/stats
+   * Get transfer statistics
+   */
+  async getStats(req, res) {
+    try {
+      const stats = await transferService.getStats();
+
+      res.json({
+        success: true,
+        data: stats
+      });
+    } catch (error) {
+      console.error('Get stats error:', error);
+      res.status(500).json({
+        error: 'Failed to get stats',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/transfer/estimate
+   * Estimate counterfactual address and gas costs
+   */
+  async estimate(req, res) {
+    try {
+      const { recipientIdentifier, senderAddress } = req.body;
+
+      if (!recipientIdentifier) {
+        return res.status(400).json({
+          error: 'Missing recipient identifier'
+        });
+      }
+
+      const address = await blockchainService.getCounterfactualAddress(
+        recipientIdentifier,
+        senderAddress
+      );
+
+      const isDeployed = await blockchainService.isAccountDeployed(address);
+      const gasPrice = await blockchainService.getGasPrice();
+
+      res.json({
+        success: true,
+        data: {
+          counterfactualAddress: address,
+          isDeployed,
+          estimatedGasPrice: gasPrice.toString()
+        }
+      });
+    } catch (error) {
+      console.error('Estimate error:', error);
+      res.status(500).json({
+        error: 'Failed to estimate',
+        message: error.message
+      });
+    }
+  }
+};
+
+module.exports = transferController;

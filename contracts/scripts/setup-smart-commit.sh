@@ -8,8 +8,8 @@ echo "===================================="
 echo ""
 
 # Get the absolute path to the project
-PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-SCRIPT_PATH="$PROJECT_DIR/scripts/smart-commit.sh"
+PROJECT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+SCRIPT_PATH="$PROJECT_DIR/contracts/scripts/smart-commit.sh"
 PLIST_PATH="$HOME/Library/LaunchAgents/com.chaindrop.smartcommit.plist"
 
 echo "Project directory: $PROJECT_DIR"

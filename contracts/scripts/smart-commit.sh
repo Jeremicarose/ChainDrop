@@ -3,7 +3,7 @@
 # Smart auto-commit script
 # Commits and pushes based on the significance of changes
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 # Check if there are any changes
 if [[ -z $(git status -s) ]]; then
