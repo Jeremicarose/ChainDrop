@@ -42,9 +42,11 @@ class BlockchainService {
     async getCounterfactualAddress(identifier, ownerAddress = null) {
         try {
             const owner = ownerAddress || this.wallet.address;
-            const address = await this.accountFactory.getAddressForIdentifier(
+            // Hash the identifier to create a salt
+            const salt = ethers.id(identifier); // keccak256 hash of identifier
+            const address = await this.accountFactory.computeAccountAddress(
                 owner,
-                identifier
+                salt
             );
             return address;
         } catch (error) {
