@@ -25,7 +25,7 @@ const ERC20_ABI = [
 class BlockchainService {
     constructor() {
         this.provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-        this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+        this.wallet = new ethers.Wallet(process.env.ADMIN_PRIVATE_KEY, this.provider);
 
         this.accountFactory = new ethers.Contract(
             process.env.ACCOUNT_FACTORY_ADDRESS,
