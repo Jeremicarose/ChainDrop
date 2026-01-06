@@ -50,5 +50,23 @@ app.use((err, req, res, next) => {
 
 // 404 handler
 app.use((req, res) => {
-    res.status(404).json({})
-})
+    res.status(404).json({
+        error: 'Endpoint not found',
+        path: req.path
+    });
+});
+
+// Initialize database and start server
+async function startServer() {
+    try {
+        console.log('Starting ChainDrop API server...\n');
+
+        // Initialize database
+        initializeDatabase()
+
+        // Start server
+        app.listen(PORT, () => {
+            console.log('\n Server running successfully!')
+        })
+    }
+}
