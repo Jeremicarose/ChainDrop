@@ -58,8 +58,9 @@ class BlockchainService {
     /**
      * Generate salt from identifier
      */
-    async generateSalt(identifier) {
-        return await this.accountFactory.generateSalt(identifier);
+    generateSalt(identifier) {
+        // Generate keccak256 hash of identifier as salt
+        return ethers.id(identifier);
     } 
 
     /**
@@ -115,7 +116,7 @@ class BlockchainService {
      */
     async deployAndClaim(recipientAddress, identifier, tokenAddress, amount, claimId) {
         try {
-            const salt = await this.generateSalt(identifier);
+            const salt = this.generateSalt(identifier);
 
             // Deploy account
             const deployTx = await this.accountFactory.createAccount(recipeientAddress, salt);
