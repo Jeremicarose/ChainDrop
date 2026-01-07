@@ -119,7 +119,7 @@ class BlockchainService {
             const salt = this.generateSalt(identifier);
 
             // Deploy account
-            const deployTx = await this.accountFactory.createAccount(recipeientAddress, salt);
+            const deployTx = await this.accountFactory.createAccount(recipientAddress, salt);
             const deployReceipt = await deployTx.wait();
 
             const accountAddress = await this.accountFactory.getAddress(recipientAddress, salt);
