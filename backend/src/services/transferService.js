@@ -60,9 +60,9 @@ class TransferService {
         'pending'
       ]);
 
-      // Create wallet record
+      // Create wallet record (only if it doesn't exist)
       await db.run(`
-        INSERT INTO wallets (
+        INSERT OR IGNORE INTO wallets (
           address, owner_address, identifier, identifier_type, deployed, created_at
         ) VALUES (?, ?, ?, ?, ?, ?)
       `, [
@@ -147,18 +147,35 @@ class TransferService {
 
       console.log(`🎯 Processing claim for transfer ${transfer.id}`);
 
-      // Deploy account and claim funds
+      // Get wallet info to find the owner address
+      const wallet = await db.get(
+        'SELECT * FROM wallets WHERE address = ?',
+        [transfer.recipient_address]
+      );
+
+      if (!wallet) {
+        throw new Error('Wallet record not found');
+      }
+
+      // Deploy account and claim funds (using correct owner and original identifier)
       const result = await blockchainService.deployAndClaim(
-        recipientWalletAddress,
-        transfer.recipient_identifier,
+        wallet.owner_address,
+        transfer.recipient_identifier_original,
         transfer.token_address === 'ETH' ? null : transfer.token_address,
         transfer.amount,
         transfer.claim_id
       );
 
+      // Now transfer from owner (admin wallet) to recipient
+      const transferTxHash = await blockchainService.sendFunds(
+        recipientWalletAddress,
+        transfer.amount,
+        transfer.token_address === 'ETH' ? null : transfer.token_address
+      );
+
       // Update transfer status
       await db.run(`
-        UPDATE transfers 
+        UPDATE transfers
         SET status = 'claimed', claimed_at = ?
         WHERE id = ?
       `, [Date.now(), transfer.id]);
@@ -176,7 +193,8 @@ class TransferService {
         success: true,
         accountAddress: result.accountAddress,
         deployTxHash: result.deployTxHash,
-        claimTxHash: result.claimTxHash
+        claimTxHash: result.claimTxHash,
+        transferTxHash
       };
     } catch (error) {
       console.error('Error processing claim:', error);

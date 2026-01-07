@@ -122,7 +122,7 @@ class BlockchainService {
             const deployTx = await this.accountFactory.createAccount(recipientAddress, salt);
             const deployReceipt = await deployTx.wait();
 
-            const accountAddress = await this.accountFactory.getAddress(recipientAddress, salt);
+            const accountAddress = await this.accountFactory.computeAccountAddress(recipientAddress, salt);
 
             // Now claim funds
             const account = new ethers.Contract(
