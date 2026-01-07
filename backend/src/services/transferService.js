@@ -39,14 +39,15 @@ class TransferService {
       await db.run(`
         INSERT INTO transfers (
           id, sender_address, recipient_identifier, recipient_identifier_type,
-          recipient_address, token_address, amount, claim_id, claim_token,
+          recipient_identifier_original, recipient_address, token_address, amount, claim_id, claim_token,
           claim_link, tx_hash, created_at, expires_at, status
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `, [
         transferId,
         senderAddress,
         this.hashIdentifier(recipientIdentifier),
         identifierType,
+        recipientIdentifier,
         recipientAddress,
         tokenAddress || 'ETH',
         formattedAmount.toString(),

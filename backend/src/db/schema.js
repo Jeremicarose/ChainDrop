@@ -14,6 +14,7 @@ function initializeDatabase() {
         sender_address TEXT NOT NULL,
         recipient_identifier TEXT NOT NULL,
         recipient_identifier_type TEXT NOT NULL,
+        recipient_identifier_original TEXT,
         recipient_address TEXT NOT NULL,
         token_address TEXT NOT NULL,
         amount TEXT NOT NULL,
