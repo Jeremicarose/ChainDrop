@@ -1,4 +1,5 @@
 const crypto = require('crypto');
+const { ethers } = require('ethers');
 const db = require('../db/schema');
 const blockchainService = require('./blockchainService');
 
@@ -158,6 +159,7 @@ class TransferService {
       }
 
       // Deploy account and claim funds (using correct owner and original identifier)
+      console.log(`📦 Deploying account with owner: ${wallet.owner_address}, identifier: ${transfer.recipient_identifier_original}`);
       const result = await blockchainService.deployAndClaim(
         wallet.owner_address,
         transfer.recipient_identifier_original,
@@ -166,12 +168,17 @@ class TransferService {
         transfer.claim_id
       );
 
+      console.log(`✅ Deploy result:`, result);
+
       // Now transfer from owner (admin wallet) to recipient
+      console.log(`💸 Transferring ${transfer.amount} to ${recipientWalletAddress}`);
       const transferTxHash = await blockchainService.sendFunds(
         recipientWalletAddress,
         transfer.amount,
         transfer.token_address === 'ETH' ? null : transfer.token_address
       );
+
+      console.log(`✅ Transfer TX: ${transferTxHash}`);
 
       // Update transfer status
       await db.run(`
@@ -189,12 +196,17 @@ class TransferService {
 
       console.log(`✅ Claim processed successfully`);
 
+      // Format amount for display
+      const amountInEth = ethers.formatEther(transfer.amount);
+
       return {
         success: true,
-        accountAddress: result.accountAddress,
+        deployedAccountAddress: result.accountAddress,
+        transactionHash: transferTxHash,
+        claimedAmount: amountInEth,
+        token: transfer.token_address === 'ETH' ? 'ETH' : transfer.token_address,
         deployTxHash: result.deployTxHash,
-        claimTxHash: result.claimTxHash,
-        transferTxHash
+        claimTxHash: result.claimTxHash
       };
     } catch (error) {
       console.error('Error processing claim:', error);
