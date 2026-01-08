@@ -45,13 +45,26 @@ function ClaimPage() {
   // Removed auto-claim to give users better control over the claim flow
 
   const handleClaim = async () => {
-    if (!authenticated || !wallets || wallets.length === 0) {
+    console.log('🎯 Claim button clicked!');
+    console.log('authenticated:', authenticated);
+    console.log('wallets:', wallets);
+    console.log('user:', user);
+
+    if (!authenticated) {
       setError('Please log in first');
+      console.error('Not authenticated');
+      return;
+    }
+
+    if (!wallets || wallets.length === 0) {
+      setError('Waiting for wallet to be created... Please try again in a moment.');
+      console.error('No wallets available');
       return;
     }
 
     if (!user) {
-      setError('User information not available');
+      setError('User information not available. Please try logging in again.');
+      console.error('No user object');
       return;
     }
 
@@ -75,11 +88,12 @@ function ClaimPage() {
       if (!verifiedIdentity) {
         setError('Unable to verify your identity. Please ensure you logged in with email, phone, or Twitter.');
         setClaiming(false);
+        console.error('No verified identity found');
         return;
       }
 
-      console.log('Claiming with wallet:', walletAddress);
-      console.log('Verified identity:', verifiedIdentity);
+      console.log('✅ Claiming with wallet:', walletAddress);
+      console.log('✅ Verified identity:', verifiedIdentity);
 
       const response = await fetch(`${API_URL}/transfer/claim`, {
         method: 'POST',
