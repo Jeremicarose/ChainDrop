@@ -44,7 +44,19 @@ function ClaimPage() {
   // Auto-claim when user is authenticated and has wallet
   useEffect(() => {
     const autoClaim = async () => {
-      if (!auth)
+      if (!authenticated || !wallets || wallets.length === 0 || claiming || claimSuccess) {
+        return;
+      }
+
+      if (!transfer || !transfer.claimable) {
+        return;
+      }
+
+      await handleClaim();
+    };
+
+    if (ready && authenticated) {
+      
     }
   })
 }
