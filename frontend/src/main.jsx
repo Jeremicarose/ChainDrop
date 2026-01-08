@@ -21,7 +21,8 @@ createRoot(document.getElementById('root')).render(
           accentColor: '#667eea',
         },
         embeddedWallets: {
-          createOnLogin: 'users-without-wallets',
+          createOnLogin: 'all-users',
+          requireUserPasswordOnCreate: false,
         },
         defaultChain: defaultChain,
         supportedChains: supportedChains,
