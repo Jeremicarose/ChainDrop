@@ -61,5 +61,28 @@ function ClaimPage() {
   }, [authenticated, ready, wallets, transfer]);
 
   const handleClaim = async () => {
-    if (!authenticated || !wallets || wallets.length ==)
+    if (!authenticated || !wallets || wallets.length === 0) {
+      setError('Please log in first');
+      return;
+    }
+
+    setClaiming(true);
+    setError(null);
+
+    try {
+      const wallet = wallets[0];
+      const walletAddress = wallet.address;
+
+      console.log('Claiming with wallet:', walletAddress);
+
+      const response = await fetch(`${API_URL}/transfer/claim`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          
+        })
+      })
+    }
   }}
