@@ -10,25 +10,23 @@ const defaultChain = getDefaultChain();
 const supportedChains = getSupportedChains();
 
 createRoot(document.getElementById('root')).render(
-  <StrictMode>
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      config={{
-        // Support email, phone, Twitter, and external wallets
-        loginMethods: ['email', 'sms', 'twitter', 'wallet'],
-        appearance: {
-          theme: 'light',
-          accentColor: '#667eea',
-        },
-        embeddedWallets: {
-          createOnLogin: 'all-users',
-          requireUserPasswordOnCreate: false,
-        },
-        defaultChain: defaultChain,
-        supportedChains: supportedChains,
-      }}
-    >
-      <App />
-    </PrivyProvider>
-  </StrictMode>
+  <PrivyProvider
+    appId={PRIVY_APP_ID}
+    config={{
+      // Support email, phone, Twitter, and external wallets
+      loginMethods: ['email', 'sms', 'twitter', 'wallet'],
+      appearance: {
+        theme: 'light',
+        accentColor: '#667eea',
+      },
+      embeddedWallets: {
+        createOnLogin: 'all-users',
+        requireUserPasswordOnCreate: false,
+      },
+      defaultChain: defaultChain,
+      supportedChains: supportedChains,
+    }}
+  >
+    <App />
+  </PrivyProvider>
 )
