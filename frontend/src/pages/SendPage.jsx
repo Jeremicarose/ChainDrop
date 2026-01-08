@@ -82,18 +82,32 @@ function SendPage() {
         <p className="subtitle">Send to email, phone, or Twitter - no wallet address needed</p>
 
         {!result ? (
-          <form onSubmit={handleSubmit} className="send-form">
-            <div className="form-group">
-              <label>Your Wallet Address</label>
-              <input
-                type="text"
-                name="senderAddress"
-                value={formData.senderAddress}
-                onChange={handleChange}
-                placeholder="0x..."
-                required
-              />
-            </div>
+          <>
+            {!authenticated ? (
+              <div className="login-prompt">
+                <p>Please sign in to send transfers</p>
+                <button onClick={login} className="submit-btn">
+                  Sign In
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="send-form">
+                <div className="form-group">
+                  <label>Your Wallet Address {authenticated && '✅'}</label>
+                  <input
+                    type="text"
+                    name="senderAddress"
+                    value={formData.senderAddress}
+                    onChange={handleChange}
+                    placeholder={authenticated ? "Auto-detected from your wallet" : "0x..."}
+                    required
+                    readOnly={authenticated && formData.senderAddress}
+                    className={authenticated ? "readonly" : ""}
+                  />
+                  {authenticated && formData.senderAddress && (
+                    <small className="help-text">Auto-filled from your connected wallet</small>
+                  )}
+                </div>
 
             <div className="form-group">
               <label>Recipient Type</label>
@@ -141,12 +155,14 @@ function SendPage() {
               />
             </div>
 
-            {error && <div className="error-message">{error}</div>}
+                {error && <div className="error-message">{error}</div>}
 
-            <button type="submit" disabled={loading} className="submit-btn">
-              {loading ? 'Sending...' : 'Send Transfer'}
-            </button>
-          </form>
+                <button type="submit" disabled={loading} className="submit-btn">
+                  {loading ? 'Sending...' : 'Send Transfer'}
+                </button>
+              </form>
+            )}
+          </>
         ) : (
           <div className="result-card">
             <h2>✅ Transfer Created!</h2>

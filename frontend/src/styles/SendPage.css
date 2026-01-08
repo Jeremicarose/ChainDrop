@@ -249,6 +249,34 @@
   color: white;
 }
 
+.login-prompt {
+  background: white;
+  padding: 60px 40px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  text-align: center;
+}
+
+.login-prompt p {
+  font-size: 1.2em;
+  color: #555;
+  margin-bottom: 25px;
+}
+
+.help-text {
+  display: block;
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: #28a745;
+  font-weight: 500;
+}
+
+input.readonly {
+  background: #f8f9fa;
+  cursor: not-allowed;
+  border-color: #28a745;
+}
+
 @media (max-width: 600px) {
   .send-form,
   .result-card {
