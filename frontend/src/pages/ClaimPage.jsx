@@ -20,8 +20,22 @@ function ClaimPage() {
   useEffect(() => {
     const fetchTransfer = async () => {
       try {
-        const response = await fetch()
+        const response = await fetch(`${API_URL}/transfer/${claimToken}`);
+        const data = await response.json();
+
+        if (data.success) {
+          setTransfer(data.data);
+        } else {
+          setError(data.error || 'Transfer not found');
+        }
+      } catch (err) {
+        setError('Failed to load transer details');
+        console.error('Error fetching transfer:', err);
+      } finally {
+        setLoading(false);
       }
-    }
+    };
+
+    
   })
 }
