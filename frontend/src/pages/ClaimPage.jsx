@@ -192,8 +192,12 @@ function ClaimPage() {
         <div className="claim-card">
           <h1>💧 ChainDrop</h1>
           <div className="transfer-preview">
-            <p className="amount">{amountDisplay} {transfer.tokenAddress}</p>
-            <p className="subtitle">Someone sent you crypto!</p>
+            <p className="amount">{amountDisplay} ETH</p>
+            <p className="subtitle">
+              {transfer.senderAddress
+                ? `From ${transfer.senderAddress.substring(0, 6)}...${transfer.senderAddress.substring(38)}`
+                : 'Someone sent you crypto!'}
+            </p>
           </div>
 
           {transfer.claimable ? (

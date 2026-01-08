@@ -74,6 +74,7 @@ const transferController = {
         success: true,
         data: {
           transferId: transfer.id,
+          senderAddress: transfer.sender_address,
           recipientAddress: transfer.recipient_address,
           tokenAddress: transfer.token_address,
           amount: transfer.amount,
