@@ -81,8 +81,11 @@ function ClaimPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          
-        })
+          claimToken,
+          re
+        });
+
+
       })
     }
   }}
