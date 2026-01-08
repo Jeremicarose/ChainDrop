@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import '../styles/SendPage.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 function SendPage() {
   const navigate = useNavigate();
+  const { login, authenticated, ready } = usePrivy();
+  const { wallets } = useWallets();
+
   const [formData, setFormData] = useState({
     senderAddress: '',
     recipientIdentifier: '',
@@ -16,6 +20,16 @@ function SendPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  // Auto-fill sender address from Privy wallet
+  useEffect(() => {
+    if (authenticated && wallets && wallets.length > 0) {
+      setFormData((prev) => ({
+        ...prev,
+        senderAddress: wallets[0].address,
+      }));
+    }
+  }, [authenticated, wallets]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
