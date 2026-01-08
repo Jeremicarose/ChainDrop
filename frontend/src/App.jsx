@@ -1,14 +1,14 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/Homepage';
+import HomePage from './pages/HomePage';
 import ClaimPage from './pages/ClaimPage';
-import SendPage from './pages?sendPage';
+import SendPage from './pages/SendPage';
 import './App.css';
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/"element={<HomePage />} />
+        <Route path="/" element={<HomePage />} />
         <Route path="/claim/:claimToken" element={<ClaimPage />} />
         <Route path="/send" element={<SendPage />} />
       </Routes>
