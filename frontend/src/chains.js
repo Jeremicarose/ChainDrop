@@ -95,13 +95,8 @@ export const getDefaultChain = () => {
   }
 };
 
-// Supported chains (Sepolia only included in dev mode)
+// Supported chains - only Base Sepolia for now
+// TODO: Add Cronos using defineChain from viem once ready for hackathon
 export const getSupportedChains = () => {
-  const isDev = import.meta.env.MODE === 'development';
-
-  if (isDev) {
-    return [cronosEvm, cronosTestnet, baseSepolia];
-  }
-
-  return [cronosEvm, cronosTestnet];
+  return [baseSepolia];
 };
