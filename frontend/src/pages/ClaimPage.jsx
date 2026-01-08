@@ -35,7 +35,16 @@ function ClaimPage() {
         setLoading(false);
       }
     };
-
     
+    if (ckaimToken) {
+      fetchTransfer();
+    }
+  }, [claimToken]);
+
+  // Auto-claim when user is authenticated and has wallet
+  useEffect(() => {
+    const autoClaim = async () => {
+      if (!auth)
+    }
   })
 }
