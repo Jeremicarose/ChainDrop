@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 function ClaimPage() {
   const { claimToken } = useParams();
   const navigate = useNavigate();
-  const { login, authenticated, ready, user } = usePrivy();
+  const { login, authenticated, user } = usePrivy();
   const { wallets } = useWallets();
 
   const [transfer, setTransfer] = useState(null);

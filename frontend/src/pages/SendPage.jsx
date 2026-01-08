@@ -190,7 +190,7 @@ function SendPage() {
               <div className="detail-row">
                 <span className="label">TX Hash:</span>
                 <a
-                  href={`https://explorer.cronos.org/tx/${result.txHash}`}
+                  href={`https://sepolia.basescan.org/tx/${result.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="value link"
