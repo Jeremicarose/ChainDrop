@@ -14,4 +14,14 @@ function ClaimPage() {
   const [transfer, setTransfer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [claimSuccess, setClaimSuccess] = useState(null);
+
+  // Fetch transfer details
+  useEffect(() => {
+    const fetchTransfer = async () => {
+      try {
+        const response = await fetch()
+      }
+    }
+  })
 }
