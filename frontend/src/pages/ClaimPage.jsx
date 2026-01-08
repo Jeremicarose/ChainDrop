@@ -1,19 +1,20 @@
-import {useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import {usePrivy, useWallets } from '@privy-io/react-auth';
+import { usePrivy, useWallets } from '@privy-io/react-auth';
 import '../styles/ClaimPage.css';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 function ClaimPage() {
   const { claimToken } = useParams();
-  const navigate = useParams();
+  const navigate = useNavigate();
   const { login, authenticated, ready, user } = usePrivy();
   const { wallets } = useWallets();
 
   const [transfer, setTransfer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [claiming, setClaiming] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(null);
 
   // Fetch transfer details
@@ -29,14 +30,14 @@ function ClaimPage() {
           setError(data.error || 'Transfer not found');
         }
       } catch (err) {
-        setError('Failed to load transer details');
+        setError('Failed to load transfer details');
         console.error('Error fetching transfer:', err);
       } finally {
         setLoading(false);
       }
     };
-    
-    if (ckaimToken) {
+
+    if (claimToken) {
       fetchTransfer();
     }
   }, [claimToken]);
@@ -82,10 +83,143 @@ function ClaimPage() {
         },
         body: JSON.stringify({
           claimToken,
-          re
-        });
+          recipientWalletAddress: walletAddress,
+        }),
+      });
 
+      const data = await response.json();
 
-      })
+      if (data.success) {
+        setClaimSuccess(data.data);
+        console.log('Claim successful:', data.data);
+      } else {
+        setError(data.error || 'Failed to claim funds');
+      }
+    } catch (err) {
+      setError('Failed to process claim');
+      console.error('Claim error:', err);
+    } finally {
+      setClaiming(false);
     }
-  }}
+  };
+
+  const handleLogin = () => {
+    login();
+  };
+
+  if (loading) {
+    return (
+      <div className="claim-page">
+        <div className="claim-card">
+          <div className="spinner"></div>
+          <p>Loading transfer details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error && !transfer) {
+    return (
+      <div className="claim-page">
+        <div className="claim-card error">
+          <h1>❌ Error</h1>
+          <p>{error}</p>
+          <button onClick={() => navigate('/')}>Go Home</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (claimSuccess) {
+    const explorerUrl = `https://explorer.cronos.org/tx/${claimSuccess.transactionHash}`;
+
+    return (
+      <div className="claim-page">
+        <div className="claim-card success">
+          <h1>✅ Funds Claimed!</h1>
+          <div className="claim-details">
+            <div className="detail-row">
+              <span className="label">Amount:</span>
+              <span className="value">{claimSuccess.claimedAmount} {claimSuccess.token}</span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Your Wallet:</span>
+              <span className="value code">{wallets[0]?.address.substring(0, 10)}...</span>
+            </div>
+            <div className="detail-row">
+              <span className="label">Transaction:</span>
+              <a href={explorerUrl} target="_blank" rel="noopener noreferrer" className="value link">
+                View on Explorer →
+              </a>
+            </div>
+          </div>
+          <p className="success-message">
+            💰 The funds have been transferred to your wallet!
+          </p>
+          <button onClick={() => navigate('/')}>Go Home</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authenticated) {
+    const amountDisplay = transfer.amount
+      ? (parseInt(transfer.amount) / 1e18).toFixed(4)
+      : '0.00';
+
+    return (
+      <div className="claim-page">
+        <div className="claim-card">
+          <h1>💧 ChainDrop</h1>
+          <div className="transfer-preview">
+            <p className="amount">{amountDisplay} {transfer.tokenAddress}</p>
+            <p className="subtitle">Someone sent you crypto!</p>
+          </div>
+
+          {transfer.claimable ? (
+            <>
+              <p className="info">Sign in to claim your funds. A wallet will be created for you automatically.</p>
+              <button onClick={handleLogin} className="login-btn">
+                Claim with Email / Phone / Twitter
+              </button>
+              <p className="small-text">
+                No wallet? No problem! We'll create one for you.
+              </p>
+            </>
+          ) : (
+            <div className="error-message">
+              <p>❌ {transfer.reason}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (claiming) {
+    return (
+      <div className="claim-page">
+        <div className="claim-card">
+          <div className="spinner"></div>
+          <h2>Processing Claim...</h2>
+          <p>Deploying your wallet and transferring funds...</p>
+          <p className="small-text">This may take a few moments</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="claim-page">
+      <div className="claim-card">
+        <h1>Ready to Claim</h1>
+        <p>Your wallet is ready. Click below to claim your funds.</p>
+        <button onClick={handleClaim} className="claim-btn">
+          Claim Now
+        </button>
+      </div>
+    </div>
+  );
+}
+
+export default ClaimPage;
