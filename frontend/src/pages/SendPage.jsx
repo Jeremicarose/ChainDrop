@@ -20,16 +20,25 @@ function SendPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [walletLoading, setWalletLoading] = useState(true);
 
   // Auto-fill sender address from Privy wallet
   useEffect(() => {
-    if (authenticated && wallets && wallets.length > 0) {
-      setFormData((prev) => ({
-        ...prev,
-        senderAddress: wallets[0].address,
-      }));
+    if (authenticated && ready) {
+      if (wallets && wallets.length > 0) {
+        console.log('Wallet detected:', wallets[0].address);
+        setFormData((prev) => ({
+          ...prev,
+          senderAddress: wallets[0].address,
+        }));
+        setWalletLoading(false);
+      } else {
+        // Wait a bit for wallet to be created
+        console.log('Waiting for wallet creation...');
+        setWalletLoading(true);
+      }
     }
-  }, [authenticated, wallets]);
+  }, [authenticated, ready, wallets]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -93,19 +102,22 @@ function SendPage() {
             ) : (
               <form onSubmit={handleSubmit} className="send-form">
                 <div className="form-group">
-                  <label>Your Wallet Address {authenticated && '✅'}</label>
+                  <label>Your Wallet Address {formData.senderAddress && '✅'}</label>
                   <input
                     type="text"
                     name="senderAddress"
                     value={formData.senderAddress}
                     onChange={handleChange}
-                    placeholder={authenticated ? "Auto-detected from your wallet" : "0x..."}
+                    placeholder={walletLoading ? "Creating your wallet..." : "0x..."}
                     required
-                    readOnly={authenticated && formData.senderAddress}
-                    className={authenticated ? "readonly" : ""}
+                    readOnly={!!formData.senderAddress}
+                    className={formData.senderAddress ? "readonly" : ""}
                   />
-                  {authenticated && formData.senderAddress && (
-                    <small className="help-text">Auto-filled from your connected wallet</small>
+                  {walletLoading && !formData.senderAddress && (
+                    <small className="help-text">⏳ Creating your embedded wallet...</small>
+                  )}
+                  {formData.senderAddress && (
+                    <small className="help-text">✅ Auto-filled from your connected wallet</small>
                   )}
                 </div>
 
