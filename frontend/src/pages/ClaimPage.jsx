@@ -56,7 +56,10 @@ function ClaimPage() {
     };
 
     if (ready && authenticated) {
-      
+      autoClaim();
     }
-  })
-}
+  }, [authenticated, ready, wallets, transfer]);
+
+  const handleClaim = async () => {
+    if (!authenticated || !wallets || wallets.length ==)
+  }}
