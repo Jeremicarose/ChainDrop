@@ -154,7 +154,7 @@ function ClaimPage() {
   }
 
   if (claimSuccess) {
-    const explorerUrl = `https://explorer.cronos.org/tx/${claimSuccess.transactionHash}`;
+    const explorerUrl = `https://sepolia.basescan.org/tx/${claimSuccess.transactionHash}`;
 
     return (
       <div className="claim-page">
