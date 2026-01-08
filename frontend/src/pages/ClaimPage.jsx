@@ -67,6 +67,11 @@ function ClaimPage() {
       return;
     }
 
+    if (!user) {
+      setError('User information not available');
+      return;
+    }
+
     setClaiming(true);
     setError(null);
 
@@ -74,7 +79,24 @@ function ClaimPage() {
       const wallet = wallets[0];
       const walletAddress = wallet.address;
 
+      // Extract verified identity from Privy user object
+      let verifiedIdentity = null;
+      if (user.email?.address) {
+        verifiedIdentity = user.email.address;
+      } else if (user.phone?.number) {
+        verifiedIdentity = user.phone.number;
+      } else if (user.twitter?.username) {
+        verifiedIdentity = user.twitter.username;
+      }
+
+      if (!verifiedIdentity) {
+        setError('Unable to verify your identity. Please ensure you logged in with email, phone, or Twitter.');
+        setClaiming(false);
+        return;
+      }
+
       console.log('Claiming with wallet:', walletAddress);
+      console.log('Verified identity:', verifiedIdentity);
 
       const response = await fetch(`${API_URL}/transfer/claim`, {
         method: 'POST',
@@ -84,6 +106,7 @@ function ClaimPage() {
         body: JSON.stringify({
           claimToken,
           recipientWalletAddress: walletAddress,
+          verifiedIdentity,
         }),
       });
 
@@ -93,7 +116,7 @@ function ClaimPage() {
         setClaimSuccess(data.data);
         console.log('Claim successful:', data.data);
       } else {
-        setError(data.error || 'Failed to claim funds');
+        setError(data.message || data.error || 'Failed to claim funds');
       }
     } catch (err) {
       setError('Failed to process claim');
@@ -179,6 +202,9 @@ function ClaimPage() {
           {transfer.claimable ? (
             <>
               <p className="info">Sign in to claim your funds. A wallet will be created for you automatically.</p>
+              <div className="security-notice">
+                <p>🔒 <strong>Security:</strong> You must log in with the same email/phone/Twitter that received this transfer.</p>
+              </div>
               <button onClick={handleLogin} className="login-btn">
                 Claim with Email / Phone / Twitter
               </button>

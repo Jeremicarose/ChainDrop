@@ -138,7 +138,7 @@ class TransferService {
   /**
    * Process claim
    */
-  async processClaim(claimToken, recipientWalletAddress) {
+  async processClaim(claimToken, recipientWalletAddress, verifiedIdentity) {
     try {
       const { claimable, transfer, reason } = await this.isClaimable(claimToken);
 
@@ -147,6 +147,30 @@ class TransferService {
       }
 
       console.log(`🎯 Processing claim for transfer ${transfer.id}`);
+
+      // ⚠️ SECURITY: Verify the claimer's identity matches the recipient
+      if (!verifiedIdentity) {
+        throw new Error('Identity verification required. Please log in to claim.');
+      }
+
+      // Normalize identities for comparison (lowercase email, remove @ from twitter, etc.)
+      const normalizeIdentity = (id) => {
+        if (!id) return '';
+        return id.toLowerCase().trim().replace(/^@/, ''); // Remove leading @ for twitter
+      };
+
+      const claimerIdentity = normalizeIdentity(verifiedIdentity);
+      const recipientIdentity = normalizeIdentity(transfer.recipient_identifier_original);
+
+      if (claimerIdentity !== recipientIdentity) {
+        console.log(`🚫 Identity mismatch: claimer="${claimerIdentity}" vs recipient="${recipientIdentity}"`);
+        throw new Error(
+          `Identity verification failed. This transfer was sent to "${transfer.recipient_identifier_original}". ` +
+          `You are logged in as "${verifiedIdentity}". Please log in with the correct account.`
+        );
+      }
+
+      console.log(`✅ Identity verified: ${verifiedIdentity}`);
 
       // Get wallet info to find the owner address
       const wallet = await db.get(

@@ -95,22 +95,30 @@ const transferController = {
 
   /**
    * POST /api/transfer/claim
-   * Process a claim
+   * Process a claim with identity verification
    */
   async claim(req, res) {
     try {
-      const { claimToken, recipientWalletAddress } = req.body;
+      const { claimToken, recipientWalletAddress, verifiedIdentity } = req.body;
 
       if (!claimToken || !recipientWalletAddress) {
         return res.status(400).json({
           error: 'Missing required fields',
-          required: ['claimToken', 'recipientWalletAddress']
+          required: ['claimToken', 'recipientWalletAddress', 'verifiedIdentity']
+        });
+      }
+
+      if (!verifiedIdentity) {
+        return res.status(403).json({
+          error: 'Identity verification required',
+          message: 'You must be logged in to claim funds. Please authenticate with email, phone, or Twitter.'
         });
       }
 
       console.log(`🎯 Claim request for token: ${claimToken.substring(0, 10)}...`);
+      console.log(`📧 Verified identity: ${verifiedIdentity}`);
 
-      const result = await transferService.processClaim(claimToken, recipientWalletAddress);
+      const result = await transferService.processClaim(claimToken, recipientWalletAddress, verifiedIdentity);
 
       res.json({
         success: true,
@@ -119,7 +127,11 @@ const transferController = {
       });
     } catch (error) {
       console.error('Claim error:', error);
-      res.status(500).json({
+
+      // Return appropriate status code based on error type
+      const statusCode = error.message.includes('Identity verification failed') ? 403 : 500;
+
+      res.status(statusCode).json({
         error: 'Failed to process claim',
         message: error.message
       });
