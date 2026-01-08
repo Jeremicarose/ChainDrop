@@ -232,13 +232,44 @@ function ClaimPage() {
     );
   }
 
+  // User is authenticated but wallet not created yet
+  if (authenticated && (!wallets || wallets.length === 0)) {
+    return (
+      <div className="claim-page">
+        <div className="claim-card">
+          <div className="spinner"></div>
+          <h2>Creating Your Wallet...</h2>
+          <p>Please wait while we set up your embedded wallet.</p>
+          <p className="small-text">This takes about 5-10 seconds</p>
+          <button onClick={logout} style={{ marginTop: '20px', background: '#666' }}>
+            Wrong Account? Logout
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // User is authenticated AND has wallet - ready to claim
+  const amountDisplay = transfer.amount
+    ? (parseInt(transfer.amount) / 1e18).toFixed(4)
+    : '0.00';
+
   return (
     <div className="claim-page">
       <div className="claim-card">
-        <h1>Ready to Claim</h1>
-        <p>Your wallet is ready. Click below to claim your funds.</p>
+        <h1>💰 Ready to Claim</h1>
+        <div className="transfer-preview">
+          <p className="amount">{amountDisplay} ETH</p>
+          <p className="subtitle">Waiting for you!</p>
+        </div>
+
+        {error && <div className="error-message">{error}</div>}
+
         <button onClick={handleClaim} className="claim-btn">
           Claim Now
+        </button>
+        <button onClick={logout} style={{ marginTop: '10px', background: '#666', color: 'white', padding: '12px', border: 'none', borderRadius: '8px', cursor: 'pointer', width: '100%' }}>
+          Wrong Account? Logout
         </button>
       </div>
     </div>

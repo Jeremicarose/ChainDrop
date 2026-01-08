@@ -7,7 +7,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 function SendPage() {
   const navigate = useNavigate();
-  const { login, authenticated, ready } = usePrivy();
+  const { login, logout, authenticated, ready, user } = usePrivy();
   const { wallets } = useWallets();
 
   const [formData, setFormData] = useState({
