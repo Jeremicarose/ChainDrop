@@ -107,11 +107,12 @@ class AgentService {
 
       // Check 1: Daily spending limit
       const todayStart = new Date().setHours(0, 0, 0, 0);
-      const spentToday = await this.getTodaySpending(agentId, todayStart);
+      const spentTodayStr = await this.getTodaySpending(agentId, todayStart);
+      const spentToday = BigInt(spentTodayStr);
       const dailyLimit = ethers.parseEther(policyMap.dailyLimit || '10');
       const requestAmount = ethers.parseEther(amount);
 
-      if (BigInt(spentToday) + BigInt(requestAmount) > BigInt(dailyLimit)) {
+      if (spentToday + requestAmount > dailyLimit) {
         return {
           allowed: false,
           reason: `Daily limit exceeded. Spent: ${ethers.formatEther(spentToday)} CRO, Limit: ${policyMap.dailyLimit} CRO`
@@ -141,7 +142,7 @@ class AgentService {
 
       // Check 3: Approval required for large amounts
       const approvalThreshold = ethers.parseEther(policyMap.requireApproval || '1000');
-      if (BigInt(requestAmount) > BigInt(approvalThreshold)) {
+      if (requestAmount > approvalThreshold) {
         return {
           allowed: false,
           reason: `Amount exceeds approval threshold of ${policyMap.requireApproval} CRO. Manual approval required.`,
