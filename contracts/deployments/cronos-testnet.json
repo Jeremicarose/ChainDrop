@@ -1,0 +1,12 @@
+{
+  "network": "cronos-testnet",
+  "chainId": 338,
+  "deployer": "0x1da9c1016a03f9154720E0691162B43219F2c436",
+  "timestamp": "2026-01-09T12:41:25.761Z",
+  "contracts": {
+    "entryPoint": "0xF58ac23bCD7ec5aB79fE3c4a2b7dc48B22268842",
+    "accountFactory": "0x3aeEe71fE66734c33C17208556ce066E5e16E527",
+    "paymaster": "0x794a6C087e8592e68FF058343BA62180f7b860c9",
+    "claimVerifier": "0xe7ee50c76ad156B7175BF124b69f1C80d014a2BD"
+  }
+}

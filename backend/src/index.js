@@ -39,6 +39,7 @@ app.get('/', (req, res) => {
       getTransfer: 'GET /api/transfer/:claimToken',
       estimate: 'POST /api/transfer/estimate',
       stats: 'GET /api/transfer/stats'
+      
     }
   });
 });
