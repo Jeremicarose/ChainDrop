@@ -8,7 +8,11 @@
     "test": "echo \"Test coming soon\"",
     "db:reset": "rm -f chaindrop.db && node src/index.js"
   },
-  "keywords": ["chaindrop", "crypto", "payments"],
+  "keywords": [
+    "chaindrop",
+    "crypto",
+    "payments"
+  ],
   "author": "",
   "license": "ISC",
   "description": "",
@@ -22,8 +26,9 @@
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.16.3",
-    "uuid": "^13.0.0",
-    "sqlite3": "^5.1.6"
+    "resend": "^6.7.0",
+    "sqlite3": "^5.1.6",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

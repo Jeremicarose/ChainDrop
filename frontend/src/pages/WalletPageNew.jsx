@@ -13,7 +13,6 @@ export default function WalletPage() {
 
   const [balance, setBalance] = useState('0');
   const [pendingClaims, setPendingClaims] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   // Fetch balance
@@ -43,7 +42,6 @@ export default function WalletPage() {
   useEffect(() => {
     const fetchPendingClaims = async () => {
       if (!user?.email?.address && !user?.phone?.number && !user?.twitter?.username) {
-        setLoading(false);
         return;
       }
 
@@ -59,8 +57,6 @@ export default function WalletPage() {
         }
       } catch (error) {
         console.error('Error fetching pending claims:', error);
-      } finally {
-        setLoading(false);
       }
     };
 

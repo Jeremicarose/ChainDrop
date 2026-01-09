@@ -9,7 +9,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Solidity](https://img.shields.io/badge/Solidity-0.8.28-e6e6e6?logo=solidity&logoColor=black)](https://soliditylang.org/)
 [![ERC-4337](https://img.shields.io/badge/ERC--4337-Account%20Abstraction-blueviolet)](https://eips.ethereum.org/EIPS/eip-4337)
-[![Built on Base](https://img.shields.io/badge/Built%20on-Base-0052FF?logo=coinbase&logoColor=white)](https://base.org)
+[![Built on Cronos](https://img.shields.io/badge/Built%20on-Cronos-002D74?logo=crypto.com&logoColor=white)](https://cronos.org)
 
 [Overview](#overview) • [How It Works](#how-it-works) • [Architecture](#architecture) • [Quick Start](#quick-start) • [Documentation](#documentation)
 
@@ -50,17 +50,19 @@ Recipients receive funds **before** creating a wallet. Wallet creation happens a
 
 ### For Recipients
 - **Zero Setup Required** — Receive crypto without creating a wallet first
-- **100% Gasless** — No need to acquire ETH or understand gas fees
-- **Social Identifiers** — Claim using email, phone, or social handles instead of 0x addresses
-- **Instant Onboarding** — Wallet created automatically upon claim
+- **100% Gasless** — No need to acquire CRO or understand gas fees
+- **Social Identifiers** — Claim using email, phone, or Twitter instead of 0x addresses
+- **Instant Onboarding** — Embedded wallet created automatically with Privy
 - **Non-Custodial** — Full ownership from the moment of claim
+- **Email Notifications** — Get notified instantly when someone sends you crypto
 
 ### For Senders
 - **Familiar UX** — Send to `user@email.com` instead of `0x742d35Cc...`
-- **Multi-Asset Support** — Send ETH or any ERC-20 token (USDC, USDT, etc.)
+- **Multi-Asset Support** — Send CRO or any ERC-20 token (USDC, USDT, etc.)
 - **Self-Funded Transactions** — No ongoing platform subsidies required
-- **One-Click Sharing** — Generate claim links to share via email, SMS, or social media
+- **One-Click Sharing** — Generate claim links automatically shared via email
 - **Auto-Expiry Protection** — Unclaimed transfers expire after 24 hours
+- **AI Payment Agents** — Create autonomous agents that send payments based on triggers
 
 ### Technical Innovation
 - **Ghost Vaults** — Counterfactual addresses that receive funds before deployment
@@ -68,6 +70,42 @@ Recipients receive funds **before** creating a wallet. Wallet creation happens a
 - **Atomic Reimbursement** — Self-funding deployment without external subsidies
 - **ERC-4337 Compliant** — Full Account Abstraction compatibility
 - **Modular Identity** — Pluggable verifiers for privacy and flexibility
+- **AI Payment Automation** — Claude-powered agents for scheduled and conditional payments
+
+---
+
+## ✨ Featured Capabilities
+
+### 1. **Social Identity Payments**
+Send crypto using email addresses, phone numbers, or Twitter handles. Recipients don't need a wallet — it's created automatically when they claim.
+
+### 2. **Email Notifications** 📧
+Recipients receive beautiful HTML email notifications when someone sends them crypto, with:
+- Instant notification when transfer is sent
+- One-click claim link
+- Confirmation email after successful claim
+- Transaction details and explorer links
+
+### 3. **AI Payment Agents** 🤖
+Create autonomous payment agents powered by Claude that can:
+- Schedule recurring payments (daily, weekly, monthly)
+- Trigger payments based on conditions (e.g., "Pay $100 to alice@example.com every Monday")
+- Automate payroll, subscriptions, and rewards
+- Execute complex payment logic without manual intervention
+
+### 4. **Embedded Wallets via Privy**
+- Social login (Email, Twitter, Phone)
+- Automatic wallet creation
+- No seed phrases to manage
+- Export to MetaMask/other wallets
+- Fully non-custodial
+
+### 5. **Beautiful Modern UI**
+- Gradient design with Cronos brand colors
+- Responsive mobile-first layout
+- Smooth animations and transitions
+- Real-time balance updates
+- Transaction history and pending claims
 
 ---
 
@@ -150,14 +188,31 @@ sequenceDiagram
 
 ```
 ├── controllers/
-│   └── transferController.js    # HTTP request handlers
+│   ├── transferController.js    # HTTP request handlers for transfers
+│   └── agentController.js       # HTTP request handlers for AI agents
 ├── services/
 │   ├── transferService.js       # Business logic (create, claim, verify)
-│   └── blockchainService.js     # Smart contract interactions
+│   ├── blockchainService.js     # Smart contract interactions
+│   ├── emailService.js          # Email notifications via Resend
+│   └── agentService.js          # AI agent management and execution
 ├── db/
-│   └── schema.js                # SQLite schema (transfers, claims, wallets)
+│   └── schema.js                # PostgreSQL schema (transfers, claims, agents)
 └── routes/
     └── index.js                 # API route definitions
+```
+
+#### Frontend App (`/frontend/src/`)
+
+```
+├── pages/
+│   ├── HomePageNew.jsx          # Landing page with feature showcase
+│   ├── SendPageNew.jsx          # Send crypto interface
+│   ├── ClaimPageNew.jsx         # Claim funds page
+│   ├── WalletPageNew.jsx        # Wallet dashboard
+│   └── AgentsPage.jsx           # AI agent management
+├── components/
+│   └── Navigation.jsx           # Reusable navigation bar
+└── index.css                    # Tailwind configuration & custom styles
 ```
 
 ### Technical Stack
@@ -167,19 +222,21 @@ sequenceDiagram
 - Hardhat development framework
 - OpenZeppelin Contracts v5.4.0
 - Account Abstraction (ERC-4337) v0.8.0
-- Base Sepolia testnet (Chain ID: 84532)
+- Cronos Testnet (Chain ID: 338)
 
 **Backend**
 - Node.js + Express.js v5.2.1
-- SQLite3 + Drizzle ORM v0.45.1
+- PostgreSQL + Drizzle ORM v0.45.1
 - ethers.js v6.16.0 for blockchain interaction
-- JWT authentication (jsonwebtoken v9.0.3)
-- bcrypt v6.0.0 for secure hashing
+- Resend for email notifications
+- Claude API for AI agent automation
 
-**Frontend** *(Coming Soon)*
-- React/Next.js
-- Web3Modal for wallet connections
-- TailwindCSS for styling
+**Frontend**
+- React 18 + Vite
+- Privy for embedded wallet authentication
+- TailwindCSS v4 with custom Cronos theme
+- React Router v6 for navigation
+- Beautiful gradient UI with responsive design
 
 ---
 
@@ -336,7 +393,8 @@ GET /api/transfer/stats
 
 - Node.js v18+
 - npm or yarn
-- Base Sepolia testnet ETH ([Faucet](https://www.coinbase.com/faucets/base-ethereum-goerli-faucet))
+- Cronos Testnet CRO ([Faucet](https://cronos.org/faucet))
+- Resend API key for email notifications ([Get one here](https://resend.com/api-keys))
 
 ### Installation
 
@@ -361,7 +419,7 @@ cd contracts
 
 # Configure environment
 cp .env.example .env
-# Edit .env with your Base Sepolia RPC URL and deployer private key
+# Edit .env with your Cronos Testnet RPC URL and deployer private key
 
 # Compile contracts
 npx hardhat compile
@@ -369,11 +427,11 @@ npx hardhat compile
 # Run tests
 npx hardhat test
 
-# Deploy to Base Sepolia
-npx hardhat run scripts/deploy.js --network baseSepolia
+# Deploy to Cronos Testnet
+npx hardhat run scripts/deploy.js --network cronosTestnet
 
 # Verify contracts (optional)
-npx hardhat verify --network baseSepolia <CONTRACT_ADDRESS>
+npx hardhat verify --network cronosTestnet <CONTRACT_ADDRESS>
 ```
 
 ### Backend Setup
@@ -383,7 +441,11 @@ cd backend
 
 # Configure environment
 cp .env.example .env
-# Add deployed contract addresses and admin private key
+# Add:
+# - Deployed contract addresses
+# - Admin private key
+# - Resend API key (get from https://resend.com/api-keys)
+# - Database connection string
 
 # Initialize database
 npm run db:push
@@ -396,6 +458,24 @@ npm start
 ```
 
 Server runs at `http://localhost:3000`
+
+### Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Configure environment
+cp .env.example .env
+# Add your Privy App ID
+
+# Start development server
+npm run dev
+```
+
+Frontend runs at `http://localhost:5174`
 
 ### Testing the Flow
 
@@ -504,20 +584,24 @@ ChainDrop does **not** rely on ongoing gas subsidies. Each transfer is economica
 
 ## Roadmap
 
-### Phase 1: MVP ✅ (Current)
-- [x] Core smart contracts (AccountFactory, SimpleAccount, Paymaster)
-- [x] Backend API with SQLite database
+### Phase 1: MVP ✅ (Completed)
+- [x] Core smart contracts (AccountFactory, SimpleAccount, Paymaster, ClaimVerifier)
+- [x] Backend API with PostgreSQL database
 - [x] Ghost Vault implementation
 - [x] ERC-4337 integration
-- [x] Base Sepolia deployment
+- [x] Cronos Testnet deployment
+- [x] Frontend web application with React + Vite
+- [x] Email notification system via Resend
+- [x] Privy embedded wallet integration
+- [x] Beautiful Tailwind CSS UI with gradient design
+- [x] AI Payment Agents powered by Claude API
 
 ### Phase 2: Production Launch (Q1 2026)
-- [ ] Frontend web application
-- [ ] Email/SMS notification system
-- [ ] Identity verifier integrations (Privy, Worldcoin)
-- [ ] Security audit by OpenZeppelin
-- [ ] Base Mainnet deployment
-- [ ] Initial partnerships (remittance providers)
+- [ ] SMS notification system
+- [ ] Additional identity verifiers (Worldcoin, OAuth providers)
+- [ ] Security audit by reputable firm
+- [ ] Cronos Mainnet deployment
+- [ ] Initial partnerships (remittance providers, DAOs)
 
 ### Phase 3: Scale (Q2 2026)
 - [ ] Mobile apps (iOS/Android)
@@ -592,16 +676,17 @@ This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file
 
 ## Deployed Contracts
 
-### Base Sepolia Testnet
+### Cronos Testnet (Chain ID: 338)
 
-| Contract | Address | Verified |
+| Contract | Address | Explorer |
 |----------|---------|----------|
-| AccountFactory | `TBD` | ❌ |
-| EntryPoint | `TBD` | ❌ |
-| ChainDropPaymaster | `TBD` | ❌ |
-| ClaimVerifier | `TBD` | ❌ |
+| AccountFactory | `0x3aeEe71fE66734c33C17208556ce066E5e16E527` | [View](https://explorer.cronos.org/testnet/address/0x3aeEe71fE66734c33C17208556ce066E5e16E527) |
+| EntryPoint | `0xF58ac23bCD7ec5aB79fE3c4a2b7dc48B22268842` | [View](https://explorer.cronos.org/testnet/address/0xF58ac23bCD7ec5aB79fE3c4a2b7dc48B22268842) |
+| ChainDropPaymaster | `0x794a6C087e8592e68FF058343BA62180f7b860c9` | [View](https://explorer.cronos.org/testnet/address/0x794a6C087e8592e68FF058343BA62180f7b860c9) |
+| ClaimVerifier | `0xe7ee50c76ad156B7175BF124b69f1C80d014a2BD` | [View](https://explorer.cronos.org/testnet/address/0xe7ee50c76ad156B7175BF124b69f1C80d014a2BD) |
 
-*Update after deployment*
+**RPC URL:** `https://evm-t3.cronos.org`
+**Explorer:** `https://explorer.cronos.org/testnet`
 
 ---
 
@@ -624,9 +709,11 @@ This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file
 ### References
 - [EIP-1014: CREATE2](https://eips.ethereum.org/EIPS/eip-1014)
 - [ERC-4337: Account Abstraction](https://eips.ethereum.org/EIPS/eip-4337)
-- [Base Developer Docs](https://docs.base.org)
+- [Cronos Developer Docs](https://docs.cronos.org)
 - [OpenZeppelin Contracts](https://docs.openzeppelin.com/contracts/)
 - [Safe Protocol](https://docs.safe.global/)
+- [Privy Documentation](https://docs.privy.io)
+- [Resend API](https://resend.com/docs)
 
 ---
 
@@ -636,10 +723,12 @@ ChainDrop builds on foundational work by:
 
 - **Ethereum Foundation** — ERC-4337 Account Abstraction standard
 - **OpenZeppelin** — Secure smart contract libraries
-- **Base** — Scalable L2 infrastructure
+- **Cronos** — EVM-compatible blockchain infrastructure
+- **Crypto.com** — Cronos ecosystem support
 - **Safe** — Smart account reference implementation
-- **Pimlico** — Bundler infrastructure
-- **Privy** — Identity verification toolkit
+- **Privy** — Embedded wallet and authentication
+- **Resend** — Modern email API
+- **Anthropic** — Claude AI for payment automation
 
 ---
 

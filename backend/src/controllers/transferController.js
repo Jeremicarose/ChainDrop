@@ -1,5 +1,6 @@
 const transferService = require('../services/transferService');
 const blockchainService = require('../services/blockchainService');
+const emailService = require('../services/emailService');
 
 const transferController = {
   /**
@@ -36,6 +37,19 @@ const transferController = {
         amount,
         tokenAddress
       );
+
+      // Send email notification (non-blocking - don't wait for it)
+      if (identifierType === 'email') {
+        emailService.sendTransferNotification(
+          recipientIdentifier,
+          amount,
+          result.claimToken,
+          senderAddress
+        ).catch(err => {
+          console.error('Failed to send email notification:', err);
+          // Don't fail the transfer if email fails
+        });
+      }
 
       res.status(201).json({
         success: true,
@@ -120,6 +134,17 @@ const transferController = {
       console.log(`📧 Verified identity: ${verifiedIdentity}`);
 
       const result = await transferService.processClaim(claimToken, recipientWalletAddress, verifiedIdentity);
+
+      // Send claim confirmation email (non-blocking)
+      if (verifiedIdentity && verifiedIdentity.includes('@')) {
+        emailService.sendClaimConfirmation(
+          verifiedIdentity,
+          result.claimedAmount || result.amount,
+          result.transactionHash
+        ).catch(err => {
+          console.error('Failed to send claim confirmation email:', err);
+        });
+      }
 
       res.json({
         success: true,
