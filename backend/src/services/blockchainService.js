@@ -34,6 +34,7 @@ class BlockchainService {
         console.log(' Blockchain service initialized');
         console.log(' Network:', process.env.RPC_URL);
         console.log(' Deployer:', this.wallet.address);
+        console.log(' AccountFactory:', process.env.ACCOUNT_FACTORY_ADDRESS);
     }
 
     /**
@@ -44,10 +45,21 @@ class BlockchainService {
             const owner = ownerAddress || this.wallet.address;
             // Hash the identifier to create a salt
             const salt = ethers.id(identifier); // keccak256 hash of identifier
+
+            console.log('🔍 Calling computeAccountAddress with:');
+            console.log('  Owner:', owner);
+            console.log('  Salt:', salt);
+            console.log('  Factory Address:', await this.accountFactory.getAddress());
+
+            // Check if contract exists
+            const code = await this.provider.getCode(await this.accountFactory.getAddress());
+            console.log('  Contract code exists:', code !== '0x', '(length:', code.length, ')');
+
             const address = await this.accountFactory.computeAccountAddress(
                 owner,
                 salt
             );
+            console.log('  ✅ Result:', address);
             return address;
         } catch (error) {
             console.error('Error getting counterfactual address:', error);
