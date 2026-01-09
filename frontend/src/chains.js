@@ -28,8 +28,6 @@ export const cronosEvm = {
 };
 
 // Cronos Testnet - For testing before mainnet
-import { defineChain } from 'viem';
-
 export const cronosTestnet = defineChain({
   id: 338,
   name: 'Cronos Testnet',
@@ -95,8 +93,13 @@ export const getDefaultChain = () => {
   }
 };
 
-// Supported chains - only Base Sepolia for now
-// TODO: Add Cronos using defineChain from viem once ready for hackathon
+// Supported chains - Cronos Testnet for hackathon
 export const getSupportedChains = () => {
-  return [baseSepolia];
+  const env = import.meta.env.VITE_CHAIN || 'cronos-testnet';
+
+  if (env === 'sepolia') {
+    return [baseSepolia];
+  }
+
+  return [cronosTestnet];
 };

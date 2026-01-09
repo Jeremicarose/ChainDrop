@@ -25,7 +25,8 @@ function WalletPage() {
       if (!wallets || wallets.length === 0) return;
 
       try {
-        const provider = new ethers.JsonRpcProvider('https://sepolia.base.org');
+        const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://evm-t3.cronos.org';
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
         const balanceWei = await provider.getBalance(wallets[0].address);
         const balanceEth = ethers.formatEther(balanceWei);
         setBalance(balanceEth);
@@ -248,7 +249,7 @@ function WalletPage() {
                   <>
                     ✅ Sent successfully!{' '}
                     <a
-                      href={`https://sepolia.basescan.org/tx/${sendResult.txHash}`}
+                      href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${sendResult.txHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
@@ -273,7 +274,10 @@ function WalletPage() {
             📤 Export Wallet
           </button>
           <button
-            onClick={() => window.open(`https://sepolia.basescan.org/address/${wallet.address}`, '_blank')}
+            onClick={() => {
+              const explorerUrl = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet';
+              window.open(`${explorerUrl}/address/${wallet.address}`, '_blank');
+            }}
             className="explorer-btn"
           >
             🔍 View on Explorer
