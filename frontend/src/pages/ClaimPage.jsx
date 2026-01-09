@@ -151,7 +151,8 @@ function ClaimPage() {
   }
 
   if (claimSuccess) {
-    const explorerUrl = `https://sepolia.basescan.org/tx/${claimSuccess.transactionHash}`;
+    const explorerBaseUrl = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet';
+    const explorerUrl = `${explorerBaseUrl}/tx/${claimSuccess.transactionHash}`;
 
     return (
       <div className="claim-page">

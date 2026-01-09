@@ -84,7 +84,8 @@ function WalletPage() {
 
     try {
       const wallet = wallets[0];
-      await wallet.switchChain(84532); // Base Sepolia
+      const chainId = parseInt(import.meta.env.VITE_CHAIN_ID) || 338;
+      await wallet.switchChain(chainId); // Cronos Testnet
 
       const provider = await wallet.getEthersProvider();
       const signer = await provider.getSigner();
