@@ -190,7 +190,7 @@ function SendPage() {
               <div className="detail-row">
                 <span className="label">TX Hash:</span>
                 <a
-                  href={`https://sepolia.basescan.org/tx/${result.txHash}`}
+                  href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${result.txHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="value link"

@@ -46,20 +46,10 @@ class BlockchainService {
             // Hash the identifier to create a salt
             const salt = ethers.id(identifier); // keccak256 hash of identifier
 
-            console.log('🔍 Calling computeAccountAddress with:');
-            console.log('  Owner:', owner);
-            console.log('  Salt:', salt);
-            console.log('  Factory Address:', await this.accountFactory.getAddress());
-
-            // Check if contract exists
-            const code = await this.provider.getCode(await this.accountFactory.getAddress());
-            console.log('  Contract code exists:', code !== '0x', '(length:', code.length, ')');
-
             const address = await this.accountFactory.computeAccountAddress(
                 owner,
                 salt
             );
-            console.log('  ✅ Result:', address);
             return address;
         } catch (error) {
             console.error('Error getting counterfactual address:', error);
