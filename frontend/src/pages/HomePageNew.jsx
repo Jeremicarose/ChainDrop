@@ -1,0 +1,245 @@
+import { useNavigate } from 'react-router-dom';
+import { usePrivy } from '@privy-io/react-auth';
+import Navigation from '../components/Navigation';
+
+export default function HomePage() {
+  const navigate = useNavigate();
+  const { authenticated, login } = usePrivy();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+      <Navigation />
+
+      {/* Hero Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
+        <div className="text-center space-y-8">
+          {/* Badge */}
+          <div className="inline-flex items-center space-x-2 bg-cronos-100/50 text-cronos-700 px-4 py-2 rounded-full text-sm font-semibold">
+            <span className="text-lg">🤖</span>
+            <span>Built for AI Agents</span>
+          </div>
+
+          {/* Main Headline */}
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
+            <span className="bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 bg-clip-text text-transparent">
+              Send Crypto to
+            </span>
+            <br />
+            <span className="bg-gradient-to-r from-cronos-600 to-cronos-500 bg-clip-text text-transparent">
+              Email, Twitter or Phone
+            </span>
+          </h1>
+
+          {/* Subtitle */}
+          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            No wallet addresses. No complex setup. Just send crypto to anyone using their email, Twitter handle, or phone number.
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            {!authenticated ? (
+              <>
+                <button onClick={login} className="btn-primary text-lg px-8 py-4">
+                  Get Started →
+                </button>
+                <button
+                  onClick={() => navigate('/agents')}
+                  className="btn-secondary text-lg px-8 py-4"
+                >
+                  🤖 Explore AI Agents
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => navigate('/send')}
+                  className="btn-primary text-lg px-8 py-4"
+                >
+                  Send Payment →
+                </button>
+                <button
+                  onClick={() => navigate('/wallet')}
+                  className="btn-secondary text-lg px-8 py-4"
+                >
+                  My Wallet
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Trust Indicators */}
+          <div className="flex items-center justify-center gap-8 pt-8 text-sm text-gray-500">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>Built on Cronos</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>AI-Native Payments</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+              <span>No Wallet Required</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Features Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="grid md:grid-cols-3 gap-8">
+          {/* Feature 1: Ghost Vaults */}
+          <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <span className="text-3xl">👻</span>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-gray-900">Ghost Vaults</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Send to emails, Twitter handles, or phone numbers. We create a secure vault that only the recipient can claim.
+            </p>
+            <div className="mt-6 flex items-center text-cronos-600 font-semibold group-hover:translate-x-2 transition-transform">
+              <span>Learn more</span>
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Feature 2: AI Agents */}
+          <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-2 border-cronos-200">
+            <div className="w-14 h-14 bg-gradient-to-br from-cronos-500 to-cronos-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <span className="text-3xl">🤖</span>
+            </div>
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">AI Agents</h3>
+              <span className="badge badge-info">NEW</span>
+            </div>
+            <p className="text-gray-600 leading-relaxed mb-4">
+              Let AI automate your payments with policy-based spending limits, whitelists, and approval thresholds.
+            </p>
+            <div className="bg-cronos-50 rounded-lg p-4 space-y-2 text-sm">
+              <div className="flex items-center gap-2 text-gray-700">
+                <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>Automated payroll</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>Spending policies</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-700">
+                <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
+                <span>Secure API keys</span>
+              </div>
+            </div>
+            <div className="mt-6 flex items-center text-cronos-600 font-semibold group-hover:translate-x-2 transition-transform cursor-pointer" onClick={() => navigate('/agents')}>
+              <span>Create AI Agent</span>
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* Feature 3: One-Click Claim */}
+          <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <span className="text-3xl">⚡</span>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-gray-900">One-Click Claim</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Recipients claim their funds instantly with email, Twitter, or phone login. We create their wallet automatically.
+            </p>
+            <div className="mt-6 flex items-center text-cronos-600 font-semibold group-hover:translate-x-2 transition-transform">
+              <span>See how it works</span>
+              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Use Cases Section */}
+      <div className="bg-gradient-to-br from-cronos-600 to-cronos-700 text-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4">Perfect For</h2>
+            <p className="text-xl text-cronos-100">
+              From individuals to enterprises, ChainDrop makes crypto payments simple
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
+              <div className="text-4xl mb-4">💼</div>
+              <h3 className="text-xl font-bold mb-2">DAO Treasuries</h3>
+              <p className="text-cronos-100">Automate contributor payments with AI agents</p>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
+              <div className="text-4xl mb-4">🎮</div>
+              <h3 className="text-xl font-bold mb-2">Gaming Platforms</h3>
+              <p className="text-cronos-100">Distribute prizes to Discord/Twitter handles</p>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
+              <div className="text-4xl mb-4">👥</div>
+              <h3 className="text-xl font-bold mb-2">Payroll Systems</h3>
+              <p className="text-cronos-100">Pay global contractors without wallet hassles</p>
+            </div>
+
+            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
+              <div className="text-4xl mb-4">🛒</div>
+              <h3 className="text-xl font-bold mb-2">E-Commerce</h3>
+              <p className="text-cronos-100">Process refunds automatically with AI</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* CTA Section */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="card text-center">
+          <h2 className="text-4xl font-bold mb-6 text-gray-900">
+            Ready to Send Crypto the Easy Way?
+          </h2>
+          <p className="text-xl text-gray-600 mb-8">
+            Join the future of AI-native payments on Cronos
+          </p>
+          <button onClick={!authenticated ? login : () => navigate('/send')} className="btn-primary text-lg px-10 py-4">
+            {!authenticated ? 'Get Started Free' : 'Send Your First Payment'} →
+          </button>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-600 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-gray-900">ChainDrop</span>
+              <span>·</span>
+              <span>Built for Cronos Hackathon</span>
+            </div>
+            <div className="flex items-center gap-6">
+              <a href="#" className="hover:text-cronos-600 transition-colors">Documentation</a>
+              <a href="#" className="hover:text-cronos-600 transition-colors">GitHub</a>
+              <a href="#" className="hover:text-cronos-600 transition-colors">Support</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}

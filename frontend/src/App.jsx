@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage';
+import HomePage from './pages/HomePageNew';
 import ClaimPage from './pages/ClaimPage';
 import SendPage from './pages/SendPage';
 import WalletPage from './pages/WalletPage';
-import './App.css';
+import AgentsPage from './pages/AgentsPage';
 
 function App() {
   return (
@@ -13,6 +13,7 @@ function App() {
         <Route path="/claim/:claimToken" element={<ClaimPage />} />
         <Route path="/send" element={<SendPage />} />
         <Route path="/wallet" element={<WalletPage />} />
+        <Route path="/agents" element={<AgentsPage />} />
       </Routes>
     </Router>
   );
