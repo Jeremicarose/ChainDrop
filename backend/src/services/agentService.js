@@ -188,6 +188,9 @@ class AgentService {
    * Log agent transaction (for audit trail)
    */
   async logTransaction(agentId, recipientIdentifier, amount, tokenAddress, status, transferId = null, errorMessage = null) {
+    // Convert amount to wei for consistent storage
+    const amountWei = ethers.parseEther(amount).toString();
+
     await db.run(`
       INSERT INTO agent_transactions (
         id, agent_key_id, transfer_id, recipient_identifier, amount, token_address, status, error_message, created_at
@@ -197,7 +200,7 @@ class AgentService {
       agentId,
       transferId,
       recipientIdentifier,
-      amount,
+      amountWei,
       tokenAddress || 'CRO',
       status,
       errorMessage,
