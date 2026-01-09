@@ -40,9 +40,14 @@ function HomePage() {
               Sign In to Receive
             </button>
           ) : (
-            <button onClick={logout} className="btn-secondary">
-              Sign Out
-            </button>
+            <>
+              <button onClick={() => navigate('/wallet')} className="btn-secondary">
+                💼 My Wallet
+              </button>
+              <button onClick={logout} className="btn-tertiary">
+                Sign Out
+              </button>
+            </>
           )}
         </div>
 

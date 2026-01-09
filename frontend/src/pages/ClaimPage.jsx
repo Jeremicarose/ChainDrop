@@ -176,7 +176,12 @@ function ClaimPage() {
           <p className="success-message">
             💰 The funds have been transferred to your wallet!
           </p>
-          <button onClick={() => navigate('/')}>Go Home</button>
+          <button onClick={() => navigate('/wallet')} className="claim-btn">
+            💼 View My Wallet
+          </button>
+          <button onClick={() => navigate('/')} style={{ marginTop: '10px', background: '#888' }}>
+            Go Home
+          </button>
         </div>
       </div>
     );

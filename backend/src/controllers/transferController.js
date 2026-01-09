@@ -163,6 +163,29 @@ const transferController = {
   },
 
   /**
+   * GET /api/transfer/recipient/:identifier
+   * Get all transfers by recipient identifier (email/phone/twitter)
+   */
+  async getByRecipient(req, res) {
+    try {
+      const { identifier } = req.params;
+
+      const transfers = await transferService.getTransfersByRecipient(identifier);
+
+      res.json({
+        success: true,
+        data: transfers
+      });
+    } catch (error) {
+      console.error('Get recipient transfers error:', error);
+      res.status(500).json({
+        error: 'Failed to get transfers',
+        message: error.message
+      });
+    }
+  },
+
+  /**
    * GET /api/transfer/stats
    * Get transfer statistics
    */

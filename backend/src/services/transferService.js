@@ -250,6 +250,17 @@ class TransferService {
   }
 
   /**
+   * Get transfers by recipient identifier
+   */
+  async getTransfersByRecipient(identifier) {
+    const transfers = await db.all(
+      'SELECT * FROM transfers WHERE recipient_identifier_original = ? ORDER BY created_at DESC',
+      [identifier]
+    );
+    return transfers;
+  }
+
+  /**
    * Get transfer statistics
    */
   async getStats() {
