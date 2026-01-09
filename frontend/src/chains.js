@@ -1,3 +1,5 @@
+import { defineChain } from 'viem';
+
 // Cronos EVM - PRIMARY CHAIN FOR HACKATHON
 export const cronosEvm = {
   id: 338,
@@ -26,10 +28,11 @@ export const cronosEvm = {
 };
 
 // Cronos Testnet - For testing before mainnet
-export const cronosTestnet = {
+import { defineChain } from 'viem';
+
+export const cronosTestnet = defineChain({
   id: 338,
   name: 'Cronos Testnet',
-  network: 'cronos-testnet',
   nativeCurrency: {
     decimals: 18,
     name: 'TCRO',
@@ -37,9 +40,6 @@ export const cronosTestnet = {
   },
   rpcUrls: {
     default: {
-      http: ['https://evm-t3.cronos.org'],
-    },
-    public: {
       http: ['https://evm-t3.cronos.org'],
     },
   },
@@ -50,7 +50,7 @@ export const cronosTestnet = {
     },
   },
   testnet: true,
-};
+});
 
 // Base Sepolia - DEV ONLY (hidden from UI)
 export const baseSepolia = {
