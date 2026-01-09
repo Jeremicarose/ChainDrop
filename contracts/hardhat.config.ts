@@ -45,6 +45,12 @@ const config: HardhatUserConfig = {
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       chainId: 84532,
     },
+    cronosTestnet: {
+      url: process.env.CRONOS_TESTNET_RPC || "https://evm-t3.cronos.org",
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      chainId: 338,
+      gasPrice: 5000000000000, // 5000 gwei
+    },
     hardhat: {
       forking: {
         url: process.env.BASE_SEPOLIA_RPC || "https://sepolia.base.org",
