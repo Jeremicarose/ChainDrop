@@ -194,11 +194,22 @@ class TransferService {
 
       console.log(`✅ Deploy result:`, result);
 
-      // Now transfer from owner (admin wallet) to recipient
-      console.log(`💸 Transferring ${transfer.amount} to ${recipientWalletAddress}`);
+      // Calculate gas costs to deduct from user's received amount
+      // Estimated gas for deploy + claim + transfer ≈ 300,000 gas
+      // At 1 gwei = 0.0003 ETH
+      const estimatedGasCost = ethers.parseEther("0.0003"); // ~$1 at current prices
+
+      // Calculate amount user receives (original amount - gas cost)
+      const userReceivesAmount = BigInt(transfer.amount) - BigInt(estimatedGasCost);
+
+      console.log(`💰 Original amount: ${ethers.formatEther(transfer.amount)} ETH`);
+      console.log(`⛽ Gas deduction: ${ethers.formatEther(estimatedGasCost)} ETH`);
+      console.log(`💸 User receives: ${ethers.formatEther(userReceivesAmount)} ETH`);
+
+      // Now transfer reduced amount to recipient (after deducting gas)
       const transferTxHash = await blockchainService.sendFunds(
         recipientWalletAddress,
-        transfer.amount,
+        userReceivesAmount.toString(),
         transfer.token_address === 'ETH' ? null : transfer.token_address
       );
 
@@ -220,14 +231,16 @@ class TransferService {
 
       console.log(`✅ Claim processed successfully`);
 
-      // Format amount for display
-      const amountInEth = ethers.formatEther(transfer.amount);
+      // Format amount for display (show what user actually received)
+      const amountInEth = ethers.formatEther(userReceivesAmount);
 
       return {
         success: true,
         deployedAccountAddress: result.accountAddress,
         transactionHash: transferTxHash,
         claimedAmount: amountInEth,
+        originalAmount: ethers.formatEther(transfer.amount),
+        gasCost: ethers.formatEther(estimatedGasCost),
         token: transfer.token_address === 'ETH' ? 'ETH' : transfer.token_address,
         deployTxHash: result.deployTxHash,
         claimTxHash: result.claimTxHash

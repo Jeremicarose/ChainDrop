@@ -159,9 +159,21 @@ function ClaimPage() {
           <h1>✅ Funds Claimed!</h1>
           <div className="claim-details">
             <div className="detail-row">
-              <span className="label">Amount:</span>
+              <span className="label">Amount Received:</span>
               <span className="value">{claimSuccess.claimedAmount} {claimSuccess.token}</span>
             </div>
+            {claimSuccess.gasCost && (
+              <>
+                <div className="detail-row" style={{ fontSize: '0.9em', opacity: 0.7 }}>
+                  <span className="label">Original Amount:</span>
+                  <span className="value">{claimSuccess.originalAmount} {claimSuccess.token}</span>
+                </div>
+                <div className="detail-row" style={{ fontSize: '0.9em', opacity: 0.7 }}>
+                  <span className="label">Gas Fee:</span>
+                  <span className="value">-{claimSuccess.gasCost} {claimSuccess.token}</span>
+                </div>
+              </>
+            )}
             <div className="detail-row">
               <span className="label">Your Wallet:</span>
               <span className="value code">{wallets[0]?.address.substring(0, 10)}...</span>

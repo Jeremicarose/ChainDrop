@@ -202,11 +202,11 @@ function WalletPage() {
                     {(parseInt(claim.amount) / 1e18).toFixed(4)} ETH
                   </span>
                   <span className="claim-from">
-                    From {claim.senderAddress?.substring(0, 6)}...
+                    From {claim.sender_address?.substring(0, 6)}...
                   </span>
                 </div>
                 <button
-                  onClick={() => navigate(`/claim/${claim.claimToken}`)}
+                  onClick={() => navigate(`/claim/${claim.claim_token}`)}
                   className="claim-btn-small"
                 >
                   Claim
