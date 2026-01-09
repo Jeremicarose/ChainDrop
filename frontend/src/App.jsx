@@ -1,7 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePageNew';
 import ClaimPage from './pages/ClaimPage';
-import SendPage from './pages/SendPage';
+import SendPage from './pages/SendPageNew';
 import WalletPage from './pages/WalletPage';
 import AgentsPage from './pages/AgentsPage';
 
