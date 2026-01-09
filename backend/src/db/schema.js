@@ -67,6 +67,49 @@ function initializeDatabase() {
       )
     `);
 
+    // Agent API Keys table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS agent_keys (
+        id TEXT PRIMARY KEY,
+        api_key TEXT UNIQUE NOT NULL,
+        name TEXT NOT NULL,
+        owner_address TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'active',
+        created_at INTEGER NOT NULL,
+        last_used_at INTEGER,
+        revoked_at INTEGER
+      )
+    `);
+
+    // Agent Policies table
+    db.run(`
+      CREATE TABLE IF NOT EXISTS agent_policies (
+        id TEXT PRIMARY KEY,
+        agent_key_id TEXT NOT NULL,
+        policy_type TEXT NOT NULL,
+        policy_value TEXT NOT NULL,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (agent_key_id) REFERENCES agent_keys(id)
+      )
+    `);
+
+    // Agent Transactions table (audit log)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS agent_transactions (
+        id TEXT PRIMARY KEY,
+        agent_key_id TEXT NOT NULL,
+        transfer_id TEXT,
+        recipient_identifier TEXT NOT NULL,
+        amount TEXT NOT NULL,
+        token_address TEXT,
+        status TEXT NOT NULL,
+        error_message TEXT,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (agent_key_id) REFERENCES agent_keys(id),
+        FOREIGN KEY (transfer_id) REFERENCES transfers(id)
+      )
+    `);
+
     console.log('✅ Database initialized');
   });
 }
