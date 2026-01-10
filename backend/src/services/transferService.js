@@ -197,10 +197,10 @@ class TransferService {
         };
         console.log(`✅ Simulated deploy: ${result.deployTxHash}`);
       } else {
-        // Real blockchain deployment
-        console.log(`📦 Deploying account with owner: ${wallet.owner_address}, identifier: ${transfer.recipient_identifier_original}`);
+        // Real blockchain deployment (admin is owner for all accounts)
+        console.log(`📦 Deploying account with admin as owner, identifier: ${transfer.recipient_identifier_original}`);
         result = await blockchainService.deployAndClaim(
-          wallet.owner_address,
+          wallet.owner_address, // This is admin address
           transfer.recipient_identifier_original,
           transfer.token_address === 'ETH' ? null : transfer.token_address,
           transfer.amount,

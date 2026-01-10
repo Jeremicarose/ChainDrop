@@ -14,6 +14,7 @@ export default function WalletPage() {
   const [balance, setBalance] = useState('0');
   const [pendingClaims, setPendingClaims] = useState([]);
   const [copied, setCopied] = useState(false);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
 
   // Fetch balance
   useEffect(() => {
