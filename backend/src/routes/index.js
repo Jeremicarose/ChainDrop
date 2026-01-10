@@ -17,6 +17,7 @@ router.get('/transfer/stats', transferController.getStats);
 router.post('/agent/create', agentController.create);
 router.post('/agent/pay', agentController.pay);
 router.post('/agent/revoke', agentController.revoke);
+router.post('/agent/update-status', agentController.updateStatus);
 router.get('/agent/stats', agentController.getStats);
 router.get('/agent/list', agentController.list);
 

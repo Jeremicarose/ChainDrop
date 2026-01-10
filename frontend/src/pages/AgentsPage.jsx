@@ -338,16 +338,24 @@ export default function AgentsPage() {
                       // Toggle agent status
                       const newStatus = agent.status === 'active' ? 'paused' : 'active';
                       try {
-                        const response = await fetch(`${API_URL}/agent/${agent.id}`, {
-                          method: 'PATCH',
+                        const response = await fetch(`${API_URL}/agent/update-status`, {
+                          method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: newStatus }),
+                          body: JSON.stringify({
+                            agentId: agent.id,
+                            ownerAddress: wallets[0].address,
+                            status: newStatus
+                          }),
                         });
                         if (response.ok) {
                           fetchAgents(); // Refresh list
+                        } else {
+                          const error = await response.json();
+                          alert(`Failed to update agent: ${error.message || 'Unknown error'}`);
                         }
                       } catch (err) {
                         console.error('Failed to update agent:', err);
+                        alert('Failed to update agent status');
                       }
                     }}
                     className={`px-4 py-2 rounded-lg font-semibold transition-all ${

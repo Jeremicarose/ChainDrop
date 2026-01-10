@@ -209,15 +209,16 @@ export default function WalletPage() {
               </button>
 
               <button
-                onClick={copyAddress}
-                className="card hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 p-6 text-center"
+                onClick={() => setShowReceiveModal(true)}
+                className="card hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 p-6 text-center cursor-pointer"
+                style={{ cursor: 'pointer' }}
               >
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-3">
+                <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>
                 </div>
-                <p className="font-semibold text-gray-900">Receive</p>
+                <p className="font-semibold" style={{ color: '#111827' }}>Receive</p>
               </button>
 
               <button
@@ -366,6 +367,71 @@ export default function WalletPage() {
             </div>
           </div>
         </div>
+
+        {/* Receive Modal */}
+        {showReceiveModal && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="card max-w-md w-full">
+              <div className="flex justify-between items-start mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Receive CRO</h2>
+                <button
+                  onClick={() => setShowReceiveModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-gray-600">Share your wallet address to receive CRO:</p>
+
+                <div className="bg-gradient-to-br from-cronos-50 to-blue-50 rounded-xl p-4 border-2 border-cronos-200">
+                  <p className="text-xs text-gray-600 mb-2">Your Wallet Address</p>
+                  <p className="font-mono text-sm break-all text-gray-900">{wallet.address}</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    copyAddress();
+                    setTimeout(() => setShowReceiveModal(false), 1000);
+                  }}
+                  className="w-full btn-primary"
+                >
+                  {copied ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                      </svg>
+                      Copied!
+                    </span>
+                  ) : (
+                    <span className="flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Copy Address
+                    </span>
+                  )}
+                </button>
+
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <div className="flex gap-3">
+                    <span className="text-xl">⚠️</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-yellow-900 mb-1">Important</p>
+                      <p className="text-xs text-yellow-800">
+                        Only send CRO or Cronos-compatible tokens to this address.
+                        Sending other tokens may result in permanent loss.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

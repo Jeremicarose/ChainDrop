@@ -254,6 +254,43 @@ const agentController = {
         message: error.message
       });
     }
+  },
+
+  /**
+   * POST /api/agent/update-status
+   * Update agent status (active/paused)
+   */
+  async updateStatus(req, res) {
+    try {
+      const { agentId, ownerAddress, status } = req.body;
+
+      if (!agentId || !ownerAddress || !status) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          required: ['agentId', 'ownerAddress', 'status']
+        });
+      }
+
+      if (!['active', 'paused'].includes(status)) {
+        return res.status(400).json({
+          error: 'Invalid status',
+          message: 'Status must be either "active" or "paused"'
+        });
+      }
+
+      await agentService.updateStatus(agentId, ownerAddress, status);
+
+      res.json({
+        success: true,
+        message: `Agent ${status === 'active' ? 'activated' : 'paused'} successfully`
+      });
+    } catch (error) {
+      console.error('Update status error:', error);
+      res.status(500).json({
+        error: 'Failed to update agent status',
+        message: error.message
+      });
+    }
   }
 };
 

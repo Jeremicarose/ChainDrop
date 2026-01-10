@@ -255,15 +255,52 @@ class AgentService {
   }
 
   /**
+   * Update agent status (active/paused)
+   */
+  async updateStatus(agentId, ownerAddress, status) {
+    // Verify ownership
+    const agent = await db.get(
+      'SELECT * FROM agent_keys WHERE id = ? AND owner_address = ?',
+      [agentId, ownerAddress]
+    );
+
+    if (!agent) {
+      throw new Error('Agent not found or unauthorized');
+    }
+
+    await db.run(
+      'UPDATE agent_keys SET status = ? WHERE id = ?',
+      [status, agentId]
+    );
+
+    console.log(`🔄 Agent ${status === 'active' ? 'activated' : 'paused'}: ${agent.name}`);
+  }
+
+  /**
    * List all agents for an owner
    */
   async listAgents(ownerAddress) {
     const agents = await db.all(
-      'SELECT id, name, status, created_at, last_used_at FROM agent_keys WHERE owner_address = ?',
+      'SELECT id, api_key, name, wallet_address, status, created_at, last_used_at FROM agent_keys WHERE owner_address = ?',
       [ownerAddress]
     );
 
-    return agents;
+    // Fetch policies for each agent
+    const agentsWithPolicies = await Promise.all(
+      agents.map(async (agent) => {
+        const policies = await db.all(
+          'SELECT * FROM agent_policies WHERE agent_key_id = ?',
+          [agent.id]
+        );
+
+        return {
+          ...agent,
+          policy_config: this.formatPolicies(policies)
+        };
+      })
+    );
+
+    return agentsWithPolicies;
   }
 
   /**
