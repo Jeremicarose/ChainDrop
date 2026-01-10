@@ -267,12 +267,22 @@ export default function AgentsPage() {
         {/* Header */}
         <div className="mb-12">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex-1">
               <h1 className="text-4xl font-bold text-gray-900 mb-2">AI Agents</h1>
               <p className="text-lg text-gray-600">
                 Automate payments with policy-based AI agents
               </p>
             </div>
+            {import.meta.env.MODE === 'development' && (
+              <button
+                onClick={() => {
+                  throw new Error('Sentry Test Error - This is intentional!');
+                }}
+                className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
+              >
+                🧪 Test Sentry
+              </button>
+            )}
             <button
               onClick={() => setShowCreateForm(true)}
               className="btn-primary"
