@@ -13,10 +13,10 @@ class TransferService {
       const claimId = `claim-${transferId}`;
       const claimToken = this.generateClaimToken();
       
-      // Generate counterfactual address
+      // Generate counterfactual address (using admin as owner for claiming)
       const recipientAddress = await blockchainService.getCounterfactualAddress(
-        recipientIdentifier,
-        senderAddress
+        recipientIdentifier
+        // No owner specified - defaults to admin wallet
       );
 
       // Calculate expiry (24 hours from now)
@@ -62,13 +62,15 @@ class TransferService {
       ]);
 
       // Create wallet record (only if it doesn't exist)
+      // Note: owner_address is the admin wallet (required for claiming)
+      const adminAddress = blockchainService.wallet.address;
       await db.run(`
         INSERT OR IGNORE INTO wallets (
           address, owner_address, identifier, identifier_type, deployed, created_at
         ) VALUES (?, ?, ?, ?, ?, ?)
       `, [
         recipientAddress,
-        senderAddress,
+        adminAddress, // Use admin as owner for all accounts
         this.hashIdentifier(recipientIdentifier),
         identifierType,
         false,

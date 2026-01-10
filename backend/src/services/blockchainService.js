@@ -115,18 +115,21 @@ class BlockchainService {
 
     /**
      * Deploy account and claim funds
+     * Deploys with admin as owner to allow claiming, then funds are transferred to recipient
      */
     async deployAndClaim(recipientAddress, identifier, tokenAddress, amount, claimId) {
         try {
             const salt = this.generateSalt(identifier);
 
-            // Deploy account
-            const deployTx = await this.accountFactory.createAccount(recipientAddress, salt);
+            // Deploy account with ADMIN as owner (so admin can call claimFundsSimple)
+            console.log(`📦 Deploying with admin (${this.wallet.address}) as owner`);
+            const deployTx = await this.accountFactory.createAccount(this.wallet.address, salt);
             const deployReceipt = await deployTx.wait();
 
-            const accountAddress = await this.accountFactory.computeAccountAddress(recipientAddress, salt);
+            const accountAddress = await this.accountFactory.computeAccountAddress(this.wallet.address, salt);
+            console.log(`✅ Account deployed at: ${accountAddress}`);
 
-            // Now claim funds
+            // Now claim funds (admin is owner, so this will work)
             const account = new ethers.Contract(
                 accountAddress,
                 SIMPLE_ACCOUNT_ABI,
@@ -136,7 +139,8 @@ class BlockchainService {
             // Generate claim ID
             const claimIdBytes32 = ethers.id(claimId);
 
-            // Execute claim )this would normally be done through bundler)
+            // Execute claim (admin is owner, so this succeeds)
+            console.log(`💰 Admin claiming funds...`);
             const claimTx = await account.claimFundsSimple(
                 tokenAddress || ethers.ZeroAddress,
                 amount,
@@ -144,6 +148,7 @@ class BlockchainService {
             );
 
             const claimReceipt = await claimTx.wait();
+            console.log(`✅ Claim successful`);
 
             return {
                 deployTxHash: deployReceipt.hash,
