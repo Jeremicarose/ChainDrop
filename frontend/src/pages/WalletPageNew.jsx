@@ -141,33 +141,36 @@ export default function WalletPage() {
           {/* Main Content - Left Side (2 columns) */}
           <div className="lg:col-span-2 space-y-6">
             {/* Balance Card */}
-            <div className="card bg-gradient-to-br from-cronos-500 to-cronos-600 text-white">
+            <div className="card" style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)', color: 'white' }}>
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <p className="text-white/80 text-sm font-medium mb-2">Total Balance</p>
-                  <h2 className="text-5xl font-bold mb-2 text-white">
+                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Total Balance</p>
+                  <h2 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'white' }}>
                     {balanceFloat.toFixed(4)} CRO
                   </h2>
-                  <p className="text-white/80 text-lg">
+                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1.125rem' }}>
                     ≈ ${estimatedUSD.toFixed(2)} USD
                   </p>
                 </div>
-                <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mx-auto mb-1"></div>
-                  <p className="text-xs text-white/90">Live</p>
+                <div style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '0.75rem', padding: '0.5rem 1rem' }}>
+                  <div style={{ width: '0.5rem', height: '0.5rem', background: '#4ade80', borderRadius: '9999px', margin: '0 auto 0.25rem', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></div>
+                  <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.9)' }}>Live</p>
                 </div>
               </div>
 
               {/* Wallet Address */}
-              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+              <div style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', borderRadius: '0.75rem', padding: '1rem' }}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-white/80 text-xs mb-1">Wallet Address</p>
-                    <p className="font-mono text-sm truncate text-white">{wallet.address}</p>
+                    <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Wallet Address</p>
+                    <p className="font-mono truncate" style={{ fontSize: '0.875rem', color: 'white' }}>{wallet.address}</p>
                   </div>
                   <button
                     onClick={copyAddress}
-                    className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-shrink-0"
+                    className="px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-shrink-0"
+                    style={{ background: 'rgba(255, 255, 255, 0.2)', color: 'white', cursor: 'pointer' }}
+                    onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
+                    onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
                   >
                     {copied ? (
                       <>

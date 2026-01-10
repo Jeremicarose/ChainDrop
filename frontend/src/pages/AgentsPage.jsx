@@ -407,31 +407,33 @@ export default function AgentsPage() {
                 <h3 className="font-bold text-lg">Configuration</h3>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">Wallet Address</p>
-                    <p className="font-mono text-sm">{selectedAgent.wallet_address.substring(0, 10)}...{selectedAgent.wallet_address.slice(-8)}</p>
-                  </div>
+                  {selectedAgent.wallet_address && (
+                    <div>
+                      <p className="text-sm text-gray-600">Wallet Address</p>
+                      <p className="font-mono text-sm">{selectedAgent.wallet_address.substring(0, 10)}...{selectedAgent.wallet_address.slice(-8)}</p>
+                    </div>
+                  )}
 
                   <div>
                     <p className="text-sm text-gray-600">Daily Spending Limit</p>
-                    <p className="font-semibold">{selectedAgent.policy_config.dailyLimit} CRO</p>
+                    <p className="font-semibold">{selectedAgent.policy_config?.dailyLimit || 'N/A'} CRO</p>
                   </div>
 
                   <div>
                     <p className="text-sm text-gray-600">Approval Threshold</p>
-                    <p className="font-semibold">{selectedAgent.policy_config.requireApproval} CRO</p>
+                    <p className="font-semibold">{selectedAgent.policy_config?.requireApproval || 'N/A'} CRO</p>
                   </div>
 
                   <div>
                     <p className="text-sm text-gray-600">Allowed Tokens</p>
-                    <p className="font-semibold">{selectedAgent.policy_config.allowedTokens}</p>
+                    <p className="font-semibold">{selectedAgent.policy_config?.allowedTokens || 'All'}</p>
                   </div>
                 </div>
 
                 <div>
                   <p className="text-sm text-gray-600 mb-2">Allowed Recipients</p>
                   <div className="bg-gray-50 rounded-lg p-3">
-                    <code className="text-sm">{selectedAgent.policy_config.allowedRecipients}</code>
+                    <code className="text-sm">{selectedAgent.policy_config?.allowedRecipients || '*'}</code>
                   </div>
                 </div>
 
