@@ -415,10 +415,10 @@ export default function AgentsPage() {
                 <h3 className="font-bold text-lg">Configuration</h3>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {selectedAgent.wallet_address && (
+                  {selectedAgent.owner_address && (
                     <div>
-                      <p className="text-sm text-gray-600">Wallet Address</p>
-                      <p className="font-mono text-sm">{selectedAgent.wallet_address.substring(0, 10)}...{selectedAgent.wallet_address.slice(-8)}</p>
+                      <p className="text-sm text-gray-600">Owner Address</p>
+                      <p className="font-mono text-sm">{selectedAgent.owner_address.substring(0, 10)}...{selectedAgent.owner_address.slice(-8)}</p>
                     </div>
                   )}
 
