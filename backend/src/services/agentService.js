@@ -280,9 +280,10 @@ class AgentService {
    * List all agents for an owner
    */
   async listAgents(ownerAddress) {
+    // Only return active or paused agents, not revoked ones
     const agents = await db.all(
-      'SELECT id, api_key, name, owner_address, status, created_at, last_used_at FROM agent_keys WHERE owner_address = ?',
-      [ownerAddress]
+      'SELECT id, api_key, name, owner_address, status, created_at, last_used_at FROM agent_keys WHERE owner_address = ? AND status != ?',
+      [ownerAddress, 'revoked']
     );
 
     // Fetch policies for each agent

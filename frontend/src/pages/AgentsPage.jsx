@@ -812,6 +812,80 @@ export default function AgentsPage() {
                   </button>
                 </div>
               </form>
+              ) : (
+                <form onSubmit={handleBulkPayment} className="space-y-4">
+                  <div>
+                    <label className="label">📄 Recipient List (CSV Format)</label>
+                    <textarea
+                      value={bulkList}
+                      onChange={(e) => setBulkList(e.target.value)}
+                      placeholder={`testchaindrop1@gmail.com,1\njeremic@company.com,2\nuser3@example.com,0.5`}
+                      className="input-field min-h-[150px] font-mono text-sm"
+                      required
+                    />
+                    <p className="text-xs text-gray-600 mt-1">
+                      Format: One payment per line as <code className="bg-gray-100 px-1 rounded">email,amount</code>
+                    </p>
+                  </div>
+
+                  {bulkProgress.total > 0 && (
+                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="text-sm font-medium">Processing...</span>
+                        <span className="text-sm text-gray-600">{bulkProgress.current} / {bulkProgress.total}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className="bg-cronos-500 h-2 rounded-full transition-all"
+                          style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
+                        ></div>
+                      </div>
+                      {bulkProgress.results.length > 0 && (
+                        <div className="mt-3 max-h-40 overflow-y-auto space-y-1">
+                          {bulkProgress.results.map((result, idx) => (
+                            <div key={idx} className="text-xs flex items-center gap-2">
+                              {result.status === 'success' ? (
+                                <>
+                                  <span className="text-green-600">✓</span>
+                                  <span className="text-gray-600">{result.email}</span>
+                                  <span className="text-gray-500">- {result.amount} CRO</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="text-red-600">✗</span>
+                                  <span className="text-gray-600">{result.email}</span>
+                                  <span className="text-red-500">- {result.error}</span>
+                                </>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      disabled={paymentLoading}
+                      className="btn-primary flex-1"
+                    >
+                      {paymentLoading ? `Processing ${bulkProgress.current}/${bulkProgress.total}...` : '🚀 Start Bulk Payment'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowPaymentForm(false);
+                        setBulkList('');
+                        setBulkProgress({ current: 0, total: 0, results: [] });
+                      }}
+                      className="btn-ghost"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         )}
