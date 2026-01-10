@@ -32,6 +32,10 @@ export default function AgentsPage() {
     amount: ''
   });
 
+  const [bulkPaymentMode, setBulkPaymentMode] = useState(false);
+  const [bulkList, setBulkList] = useState('');
+  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, results: [] });
+
   // Fetch agents
   useEffect(() => {
     if (authenticated && wallets.length > 0) {
@@ -165,6 +169,74 @@ export default function AgentsPage() {
       console.error('Delete error:', error);
       alert(`❌ Failed to delete agent: ${error.message}`);
     }
+  };
+
+  const handleBulkPayment = async (e) => {
+    e.preventDefault();
+
+    // Parse the bulk list (CSV format: email,amount per line)
+    const lines = bulkList.trim().split('\n').filter(line => line.trim());
+    const payments = [];
+
+    for (const line of lines) {
+      const [email, amount] = line.split(',').map(s => s.trim());
+      if (email && amount && email.includes('@')) {
+        payments.push({ email, amount });
+      }
+    }
+
+    if (payments.length === 0) {
+      alert('❌ No valid payments found. Format: email@example.com,amount per line');
+      return;
+    }
+
+    if (!confirm(`🤖 Agent will process ${payments.length} payments automatically.\n\nThis will:\n- Check all policy rules\n- Send payments one by one\n- Email each recipient\n\nContinue?`)) {
+      return;
+    }
+
+    setPaymentLoading(true);
+    setBulkProgress({ current: 0, total: payments.length, results: [] });
+
+    const results = [];
+
+    for (let i = 0; i < payments.length; i++) {
+      const { email, amount } = payments[i];
+      setBulkProgress({ current: i + 1, total: payments.length, results });
+
+      try {
+        const response = await fetch(`${API_URL}/agent/pay`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': paymentAgent.api_key
+          },
+          body: JSON.stringify({
+            recipientIdentifier: email,
+            identifierType: 'email',
+            amount: amount
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          results.push({ email, amount, status: 'success', claimLink: data.data?.claimLink });
+        } else {
+          results.push({ email, amount, status: 'failed', error: data.message || data.error });
+        }
+      } catch (error) {
+        results.push({ email, amount, status: 'failed', error: error.message });
+      }
+
+      // Small delay between payments
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    setBulkProgress({ current: payments.length, total: payments.length, results });
+    setPaymentLoading(false);
+
+    const successful = results.filter(r => r.status === 'success').length;
+    alert(`✅ Bulk payment complete!\n\n✓ Successful: ${successful}\n✗ Failed: ${results.length - successful}\n\nCheck the results below.`);
   };
 
   if (!authenticated) {
@@ -402,14 +474,31 @@ export default function AgentsPage() {
                   )}
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-200 flex gap-3">
-                  <button
-                    onClick={() => setSelectedAgent(agent)}
-                    className="text-cronos-600 font-semibold hover:text-cronos-700 flex-1 text-left"
-                  >
-                    View Details →
-                  </button>
-                  <button
+                <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setPaymentAgent(agent);
+                        setShowPaymentForm(true);
+                      }}
+                      disabled={agent.status !== 'active'}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                        agent.status === 'active'
+                          ? 'bg-cronos-500 text-white hover:bg-cronos-600'
+                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      💸 Use Agent
+                    </button>
+                    <button
+                      onClick={() => setSelectedAgent(agent)}
+                      className="px-4 py-2 rounded-lg font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all"
+                    >
+                      📋 Details
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
                     onClick={async () => {
                       // Toggle agent status
                       const newStatus = agent.status === 'active' ? 'paused' : 'active';
@@ -440,8 +529,15 @@ export default function AgentsPage() {
                         : 'bg-cronos-500 text-white hover:bg-cronos-600'
                     }`}
                   >
-                    {agent.status === 'active' ? 'Pause' : 'Activate'}
+                    {agent.status === 'active' ? '⏸️ Pause' : '▶️ Activate'}
                   </button>
+                  <button
+                    onClick={() => handleDeleteAgent(agent.id)}
+                    className="px-4 py-2 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all"
+                  >
+                    🗑️ Delete
+                  </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -612,6 +708,113 @@ export default function AgentsPage() {
             </a>
           </div>
         </div>
+
+        {/* Payment Form Modal */}
+        {showPaymentForm && paymentAgent && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="card max-w-md w-full">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900">Use Agent: {paymentAgent.name}</h2>
+                  <p className="text-sm text-gray-600 mt-1">Send payment with your agent's rules</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowPaymentForm(false);
+                    setPaymentData({ recipient: '', amount: '' });
+                  }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-900 font-medium mb-2">Agent Rules:</p>
+                <ul className="text-xs text-blue-800 space-y-1">
+                  <li>• Daily limit: {paymentAgent.policy_config?.dailyLimit || '10'} CRO</li>
+                  <li>• Auto-approve under: {paymentAgent.policy_config?.requireApproval || '5'} CRO</li>
+                  <li>• Allowed tokens: {paymentAgent.policy_config?.allowedTokens || 'CRO'}</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2 mb-4">
+                <button
+                  type="button"
+                  onClick={() => setBulkPaymentMode(false)}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                    !bulkPaymentMode
+                      ? 'bg-cronos-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  Single Payment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBulkPaymentMode(true)}
+                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
+                    bulkPaymentMode
+                      ? 'bg-cronos-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  🚀 Bulk Payments
+                </button>
+              </div>
+
+              {!bulkPaymentMode ? (
+                <form onSubmit={handleSendPayment} className="space-y-4">
+                <div>
+                  <label className="label">Recipient Email</label>
+                  <input
+                    type="email"
+                    value={paymentData.recipient}
+                    onChange={(e) => setPaymentData({ ...paymentData, recipient: e.target.value })}
+                    placeholder="user@example.com"
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="label">Amount (CRO)</label>
+                  <input
+                    type="number"
+                    step="0.001"
+                    value={paymentData.amount}
+                    onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
+                    placeholder="1.5"
+                    className="input-field"
+                    required
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="submit"
+                    disabled={paymentLoading}
+                    className="btn-primary flex-1"
+                  >
+                    {paymentLoading ? 'Sending...' : '💸 Send Payment'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowPaymentForm(false);
+                      setPaymentData({ recipient: '', amount: '' });
+                    }}
+                    className="btn-ghost"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
