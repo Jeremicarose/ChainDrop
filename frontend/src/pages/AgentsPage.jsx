@@ -12,6 +12,7 @@ export default function AgentsPage() {
   const [agents, setAgents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [selectedAgent, setSelectedAgent] = useState(null);
   const [createdAgent, setCreatedAgent] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -325,13 +326,140 @@ export default function AgentsPage() {
                   )}
                 </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <button className="text-cronos-600 font-semibold hover:text-cronos-700">
+                <div className="mt-6 pt-6 border-t border-gray-200 flex gap-3">
+                  <button
+                    onClick={() => setSelectedAgent(agent)}
+                    className="text-cronos-600 font-semibold hover:text-cronos-700 flex-1 text-left"
+                  >
                     View Details →
+                  </button>
+                  <button
+                    onClick={async () => {
+                      // Toggle agent status
+                      const newStatus = agent.status === 'active' ? 'paused' : 'active';
+                      try {
+                        const response = await fetch(`${API_URL}/agent/${agent.id}`, {
+                          method: 'PATCH',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: newStatus }),
+                        });
+                        if (response.ok) {
+                          fetchAgents(); // Refresh list
+                        }
+                      } catch (err) {
+                        console.error('Failed to update agent:', err);
+                      }
+                    }}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                      agent.status === 'active'
+                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        : 'bg-cronos-500 text-white hover:bg-cronos-600'
+                    }`}
+                  >
+                    {agent.status === 'active' ? 'Pause' : 'Activate'}
                   </button>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Agent Details Modal */}
+        {selectedAgent && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-3xl font-bold mb-2">{selectedAgent.name}</h2>
+                  <span className={`badge ${selectedAgent.status === 'active' ? 'badge-success' : 'badge-error'}`}>
+                    {selectedAgent.status}
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedAgent(null)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* API Key Section */}
+              <div className="bg-gradient-to-r from-cronos-50 to-blue-50 rounded-xl p-6 mb-6">
+                <h3 className="font-bold text-gray-900 mb-3">API Key</h3>
+                <div className="bg-white rounded-lg p-4 mb-3">
+                  <code className="text-sm font-mono break-all">{selectedAgent.api_key}</code>
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedAgent.api_key);
+                    alert('API Key copied to clipboard!');
+                  }}
+                  className="btn-secondary text-sm"
+                >
+                  Copy API Key
+                </button>
+              </div>
+
+              {/* Configuration Details */}
+              <div className="space-y-4">
+                <h3 className="font-bold text-lg">Configuration</h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-gray-600">Wallet Address</p>
+                    <p className="font-mono text-sm">{selectedAgent.wallet_address.substring(0, 10)}...{selectedAgent.wallet_address.slice(-8)}</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600">Daily Spending Limit</p>
+                    <p className="font-semibold">{selectedAgent.policy_config.dailyLimit} CRO</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600">Approval Threshold</p>
+                    <p className="font-semibold">{selectedAgent.policy_config.requireApproval} CRO</p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-gray-600">Allowed Tokens</p>
+                    <p className="font-semibold">{selectedAgent.policy_config.allowedTokens}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm text-gray-600 mb-2">Allowed Recipients</p>
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <code className="text-sm">{selectedAgent.policy_config.allowedRecipients}</code>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                  <div>
+                    <p className="text-sm text-gray-600">Created</p>
+                    <p className="font-medium">{new Date(selectedAgent.created_at).toLocaleString()}</p>
+                  </div>
+
+                  {selectedAgent.last_used_at && (
+                    <div>
+                      <p className="text-sm text-gray-600">Last Used</p>
+                      <p className="font-medium">{new Date(selectedAgent.last_used_at).toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
+                <button
+                  onClick={() => setSelectedAgent(null)}
+                  className="btn-primary flex-1"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

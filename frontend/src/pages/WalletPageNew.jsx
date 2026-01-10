@@ -144,17 +144,17 @@ export default function WalletPage() {
             <div className="card bg-gradient-to-br from-cronos-500 to-cronos-600 text-white">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <p className="text-cronos-100 text-sm font-medium mb-2">Total Balance</p>
-                  <h2 className="text-5xl font-bold mb-2">
+                  <p className="text-white/80 text-sm font-medium mb-2">Total Balance</p>
+                  <h2 className="text-5xl font-bold mb-2 text-white">
                     {balanceFloat.toFixed(4)} CRO
                   </h2>
-                  <p className="text-cronos-100 text-lg">
+                  <p className="text-white/80 text-lg">
                     ≈ ${estimatedUSD.toFixed(2)} USD
                   </p>
                 </div>
                 <div className="bg-white/20 backdrop-blur-sm rounded-xl px-4 py-2">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mx-auto mb-1"></div>
-                  <p className="text-xs text-cronos-50">Live</p>
+                  <p className="text-xs text-white/90">Live</p>
                 </div>
               </div>
 
@@ -162,8 +162,8 @@ export default function WalletPage() {
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <p className="text-cronos-100 text-xs mb-1">Wallet Address</p>
-                    <p className="font-mono text-sm truncate">{wallet.address}</p>
+                    <p className="text-white/80 text-xs mb-1">Wallet Address</p>
+                    <p className="font-mono text-sm truncate text-white">{wallet.address}</p>
                   </div>
                   <button
                     onClick={copyAddress}
