@@ -3,6 +3,10 @@ import { PrivyProvider } from '@privy-io/react-auth';
 import { getDefaultChain, getSupportedChains } from './chains';
 import './index.css';
 import App from './App.jsx';
+import { initSentry } from './sentry';
+
+// Initialize Sentry error tracking
+initSentry();
 
 const PRIVY_APP_ID = import.meta.env.VITE_PRIVY_APP_ID;
 const defaultChain = getDefaultChain();
