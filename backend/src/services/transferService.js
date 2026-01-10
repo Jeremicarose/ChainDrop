@@ -182,17 +182,30 @@ class TransferService {
         throw new Error('Wallet record not found');
       }
 
-      // Deploy account and claim funds (using correct owner and original identifier)
-      console.log(`📦 Deploying account with owner: ${wallet.owner_address}, identifier: ${transfer.recipient_identifier_original}`);
-      const result = await blockchainService.deployAndClaim(
-        wallet.owner_address,
-        transfer.recipient_identifier_original,
-        transfer.token_address === 'ETH' ? null : transfer.token_address,
-        transfer.amount,
-        transfer.claim_id
-      );
+      let result;
+      const skipBlockchain = process.env.SKIP_BLOCKCHAIN === 'true';
 
-      console.log(`✅ Deploy result:`, result);
+      if (skipBlockchain) {
+        console.log(`⚠️  SKIP_BLOCKCHAIN=true: Simulating blockchain operations for testing`);
+        // Simulate blockchain deployment
+        result = {
+          deployTxHash: '0x' + Math.random().toString(16).substring(2, 66),
+          claimTxHash: '0x' + Math.random().toString(16).substring(2, 66),
+          accountAddress: transfer.recipient_address
+        };
+        console.log(`✅ Simulated deploy: ${result.deployTxHash}`);
+      } else {
+        // Real blockchain deployment
+        console.log(`📦 Deploying account with owner: ${wallet.owner_address}, identifier: ${transfer.recipient_identifier_original}`);
+        result = await blockchainService.deployAndClaim(
+          wallet.owner_address,
+          transfer.recipient_identifier_original,
+          transfer.token_address === 'ETH' ? null : transfer.token_address,
+          transfer.amount,
+          transfer.claim_id
+        );
+        console.log(`✅ Deploy result:`, result);
+      }
 
       // Calculate gas costs to deduct from user's received amount
       // Estimated gas for deploy + claim + transfer ≈ 300,000 gas
@@ -202,18 +215,25 @@ class TransferService {
       // Calculate amount user receives (original amount - gas cost)
       const userReceivesAmount = BigInt(transfer.amount) - BigInt(estimatedGasCost);
 
-      console.log(`💰 Original amount: ${ethers.formatEther(transfer.amount)} ETH`);
-      console.log(`⛽ Gas deduction: ${ethers.formatEther(estimatedGasCost)} ETH`);
-      console.log(`💸 User receives: ${ethers.formatEther(userReceivesAmount)} ETH`);
+      console.log(`💰 Original amount: ${ethers.formatEther(transfer.amount)} CRO`);
+      console.log(`⛽ Gas deduction: ${ethers.formatEther(estimatedGasCost)} CRO`);
+      console.log(`💸 User receives: ${ethers.formatEther(userReceivesAmount)} CRO`);
 
-      // Now transfer reduced amount to recipient (after deducting gas)
-      const transferTxHash = await blockchainService.sendFunds(
-        recipientWalletAddress,
-        userReceivesAmount.toString(),
-        transfer.token_address === 'ETH' ? null : transfer.token_address
-      );
+      let transferTxHash;
 
-      console.log(`✅ Transfer TX: ${transferTxHash}`);
+      if (skipBlockchain) {
+        // Simulate transfer
+        transferTxHash = '0x' + Math.random().toString(16).substring(2, 66);
+        console.log(`✅ Simulated transfer: ${transferTxHash}`);
+      } else {
+        // Real blockchain transfer
+        transferTxHash = await blockchainService.sendFunds(
+          recipientWalletAddress,
+          userReceivesAmount.toString(),
+          transfer.token_address === 'ETH' ? null : transfer.token_address
+        );
+        console.log(`✅ Transfer TX: ${transferTxHash}`);
+      }
 
       // Update transfer status
       await db.run(`
