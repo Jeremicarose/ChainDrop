@@ -14,6 +14,10 @@ export default function AgentsPage() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [selectedAgent, setSelectedAgent] = useState(null);
   const [createdAgent, setCreatedAgent] = useState(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [paymentAgent, setPaymentAgent] = useState(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [paymentResult, setPaymentResult] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +25,11 @@ export default function AgentsPage() {
     allowedRecipients: '*',
     requireApproval: '5',
     allowedTokens: 'CRO'
+  });
+
+  const [paymentData, setPaymentData] = useState({
+    recipient: '',
+    amount: ''
   });
 
   // Fetch agents
@@ -89,6 +98,73 @@ export default function AgentsPage() {
   const copyApiKey = (apiKey) => {
     navigator.clipboard.writeText(apiKey);
     alert('API Key copied to clipboard!');
+  };
+
+  const handleSendPayment = async (e) => {
+    e.preventDefault();
+    setPaymentLoading(true);
+    setPaymentResult(null);
+
+    try {
+      const response = await fetch(`${API_URL}/agent/pay`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-API-Key': paymentAgent.api_key
+        },
+        body: JSON.stringify({
+          recipientIdentifier: paymentData.recipient,
+          identifierType: 'email',
+          amount: paymentData.amount
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setPaymentResult({ success: true, data });
+        setPaymentData({ recipient: '', amount: '' });
+        alert(`✅ Payment sent successfully!\nAmount: ${paymentData.amount} CRO\nRecipient: ${paymentData.recipient}\nClaim link sent to their email!`);
+        setShowPaymentForm(false);
+      } else {
+        setPaymentResult({ success: false, error: data.message || data.error });
+        alert(`❌ Payment failed: ${data.message || data.error}`);
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      setPaymentResult({ success: false, error: error.message });
+      alert(`❌ Payment failed: ${error.message}`);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleDeleteAgent = async (agentId) => {
+    if (!confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/agent/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentId,
+          ownerAddress: wallets[0].address
+        })
+      });
+
+      if (response.ok) {
+        alert('✅ Agent deleted successfully!');
+        fetchAgents(); // Refresh list
+      } else {
+        const error = await response.json();
+        alert(`❌ Failed to delete: ${error.message || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(`❌ Failed to delete agent: ${error.message}`);
+    }
   };
 
   if (!authenticated) {
