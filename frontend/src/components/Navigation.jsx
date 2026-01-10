@@ -13,34 +13,53 @@ export default function Navigation() {
           <div
             className="flex items-center space-x-3 cursor-pointer"
             onClick={() => navigate('/')}
+            style={{ cursor: 'pointer' }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-cronos-500 to-cronos-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg" style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)' }}>
               <span className="text-white font-bold text-xl">C</span>
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-cronos-600 to-cronos-500 bg-clip-text text-transparent">
+            <span className="text-xl font-bold" style={{ color: '#0d9488' }}>
               ChainDrop
             </span>
           </div>
 
           {/* Navigation Links */}
           <div className="hidden md:flex items-center space-x-1">
+            <button
+              onClick={() => navigate('/')}
+              className="px-4 py-2 rounded-lg font-medium transition-colors"
+              style={{ color: '#374151', cursor: 'pointer' }}
+              onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
+              onMouseLeave={(e) => e.target.style.background = 'transparent'}
+            >
+              Home
+            </button>
             {authenticated && (
               <>
                 <button
                   onClick={() => navigate('/send')}
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg font-medium transition-colors"
+                  style={{ color: '#374151', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
+                  onMouseLeave={(e) => e.target.style.background = 'transparent'}
                 >
                   Send
                 </button>
                 <button
                   onClick={() => navigate('/wallet')}
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors"
+                  className="px-4 py-2 rounded-lg font-medium transition-colors"
+                  style={{ color: '#374151', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
+                  onMouseLeave={(e) => e.target.style.background = 'transparent'}
                 >
                   Wallet
                 </button>
                 <button
                   onClick={() => navigate('/agents')}
-                  className="px-4 py-2 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors flex items-center space-x-2"
+                  className="px-4 py-2 rounded-lg font-medium transition-colors flex items-center space-x-2"
+                  style={{ color: '#374151', cursor: 'pointer' }}
+                  onMouseEnter={(e) => e.target.style.background = '#f3f4f6'}
+                  onMouseLeave={(e) => e.target.style.background = 'transparent'}
                 >
                   <span>🤖</span>
                   <span>AI Agents</span>
