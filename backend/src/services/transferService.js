@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const { ethers } = require('ethers');
 const db = require('../db/schema');
 const blockchainService = require('./blockchainService');
+const emailService = require('./emailService');
 
 class TransferService {
   /**
@@ -78,6 +79,25 @@ class TransferService {
       ]);
 
       console.log(`✅ Transfer created: ${transferId}`);
+
+      // Send email notification to recipient
+      if (identifierType === 'email') {
+        console.log(`📧 Sending email notification to ${recipientIdentifier}`);
+        const emailResult = await emailService.sendTransferNotification(
+          recipientIdentifier,
+          formattedAmount.toString(),
+          claimToken,
+          senderAddress
+        );
+
+        if (emailResult.success) {
+          console.log(`✅ Email sent successfully`);
+        } else {
+          console.log(`⚠️  Email not sent: ${emailResult.reason || emailResult.error}`);
+        }
+      } else {
+        console.log(`📧 Skipping email - recipient type is ${identifierType}`);
+      }
 
       return {
         transferId,
@@ -252,6 +272,22 @@ class TransferService {
       `, [Date.now(), result.deployTxHash, result.accountAddress]);
 
       console.log(`✅ Claim processed successfully`);
+
+      // Send claim confirmation email
+      if (transfer.recipient_identifier_type === 'email') {
+        console.log(`📧 Sending claim confirmation to ${transfer.recipient_identifier_original}`);
+        const emailResult = await emailService.sendClaimConfirmation(
+          transfer.recipient_identifier_original,
+          userReceivesAmount.toString(),
+          transferTxHash
+        );
+
+        if (emailResult.success) {
+          console.log(`✅ Claim confirmation email sent`);
+        } else {
+          console.log(`⚠️  Claim confirmation not sent: ${emailResult.reason || emailResult.error}`);
+        }
+      }
 
       // Format amount for display (show what user actually received)
       const amountInEth = ethers.formatEther(userReceivesAmount);
