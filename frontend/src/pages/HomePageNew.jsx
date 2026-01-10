@@ -7,16 +7,23 @@ export default function HomePage() {
   const { authenticated, login } = usePrivy();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+    <div className="min-h-screen gradient-mesh relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
+      </div>
+
       <Navigation />
 
       {/* Hero Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16">
-        <div className="text-center space-y-8">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+        <div className="text-center space-y-10 animate-slide-up">
           {/* Badge */}
-          <div className="inline-flex items-center space-x-2 bg-cronos-100/50 text-cronos-700 px-4 py-2 rounded-full text-sm font-semibold">
-            <span className="text-lg">🤖</span>
-            <span>Built for AI Agents</span>
+          <div className="inline-flex items-center space-x-2 px-6 py-3 rounded-full text-sm font-semibold backdrop-blur-lg bg-white/80 border border-cronos-200/50 shadow-lg hover:shadow-xl transition-all hover:scale-105">
+            <span className="text-2xl animate-float">🤖</span>
+            <span className="bg-gradient-to-r from-cronos-700 to-blue-600 bg-clip-text text-transparent font-bold">Powered by AI Agents</span>
           </div>
 
           {/* Main Headline */}
