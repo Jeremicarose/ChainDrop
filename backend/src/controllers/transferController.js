@@ -152,14 +152,16 @@ const transferController = {
         data: result
       });
     } catch (error) {
-      console.error('Claim error:', error);
+      console.error('❌ Claim error:', error);
+      console.error('Error stack:', error.stack);
 
       // Return appropriate status code based on error type
       const statusCode = error.message.includes('Identity verification failed') ? 403 : 500;
 
       res.status(statusCode).json({
         error: 'Failed to process claim',
-        message: error.message
+        message: error.message,
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   },
