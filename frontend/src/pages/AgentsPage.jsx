@@ -498,6 +498,7 @@ export default function AgentsPage() {
                 </div>
 
                 <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
+                  {/* MICROCOPY: Descriptive with consequences */}
                   <div className="grid grid-cols-2 gap-3">
                     <button
                       onClick={() => {
@@ -505,19 +506,21 @@ export default function AgentsPage() {
                         setShowPaymentForm(true);
                       }}
                       disabled={agent.status !== 'active'}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                      title={agent.status === 'active' ? 'Send payment with policy checks' : 'Agent is paused'}
+                      className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
                         agent.status === 'active'
                           ? 'bg-cronos-500 text-white hover:bg-cronos-600'
                           : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
                     >
-                      💸 Use Agent
+                      💸 Send Payment
                     </button>
                     <button
                       onClick={() => setSelectedAgent(agent)}
-                      className="px-4 py-2 rounded-lg font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all"
+                      title="View API key and configuration"
+                      className="px-4 py-2 rounded-lg font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all text-sm"
                     >
-                      📋 Details
+                      View Config
                     </button>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -525,6 +528,12 @@ export default function AgentsPage() {
                     onClick={async () => {
                       // Toggle agent status
                       const newStatus = agent.status === 'active' ? 'paused' : 'active';
+                      const confirmMsg = agent.status === 'active'
+                        ? 'Pause agent? Stops all automated payments but keeps history.'
+                        : 'Activate agent? Resumes automated payments with current policies.';
+
+                      if (!confirm(confirmMsg)) return;
+
                       try {
                         const response = await fetch(`${API_URL}/agent/update-status`, {
                           method: 'POST',
@@ -539,26 +548,28 @@ export default function AgentsPage() {
                           fetchAgents(); // Refresh list
                         } else {
                           const error = await response.json();
-                          alert(`Failed to update agent: ${error.message || 'Unknown error'}`);
+                          alert(`Failed to update: ${error.message || 'Unknown error'}`);
                         }
                       } catch (err) {
                         console.error('Failed to update agent:', err);
-                        alert('Failed to update agent status');
+                        alert('Network error. Check connection and retry.');
                       }
                     }}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all ${
+                    title={agent.status === 'active' ? 'Stop payments but keep history' : 'Resume payments with policies'}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
                       agent.status === 'active'
                         ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                         : 'bg-cronos-500 text-white hover:bg-cronos-600'
                     }`}
                   >
-                    {agent.status === 'active' ? '⏸️ Pause' : '▶️ Activate'}
+                    {agent.status === 'active' ? '⏸️ Pause Agent' : '▶️ Activate'}
                   </button>
                   <button
                     onClick={() => handleDeleteAgent(agent.id)}
-                    className="px-4 py-2 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all"
+                    title="Permanently delete agent and revoke API key"
+                    className="px-4 py-2 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all text-sm"
                   >
-                    🗑️ Delete
+                    🗑️ Delete Forever
                   </button>
                   </div>
                 </div>
