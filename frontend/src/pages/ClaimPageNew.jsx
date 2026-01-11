@@ -104,11 +104,17 @@ export default function ClaimPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+      <div className="min-h-screen gradient-mesh relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        </div>
+
         <Navigation />
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="card text-center">
-            <div className="animate-spin w-16 h-16 border-4 border-cronos-500 border-t-transparent rounded-full mx-auto mb-6"></div>
+        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="card text-center animate-slide-up">
+            <div className="spinner mx-auto mb-6"></div>
             <p className="text-xl text-gray-600">Loading transfer details...</p>
           </div>
         </div>
@@ -118,10 +124,16 @@ export default function ClaimPage() {
 
   if (error && !transfer) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+      <div className="min-h-screen gradient-mesh relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        </div>
+
         <Navigation />
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="card text-center">
+        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="card text-center animate-slide-up">
             <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <svg className="w-10 h-10 text-red-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -144,9 +156,16 @@ export default function ClaimPage() {
     const explorerUrl = `${explorerBaseUrl}/tx/${claimSuccess.transactionHash}`;
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+      <div className="min-h-screen gradient-mesh relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+          <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
+        </div>
+
         <Navigation />
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="card bg-gradient-to-r from-green-50 to-cronos-50 border-2 border-green-200">
             <div className="flex items-start gap-4 mb-6">
               <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
