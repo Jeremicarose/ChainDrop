@@ -42,34 +42,46 @@ export default function HomePage() {
             No wallet addresses. No complex setup. Just send crypto to anyone using their email, Twitter handle, or phone number.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          {/* CTA Buttons - ONE DOMINANT ACTION */}
+          <div className="flex flex-col items-center justify-center gap-4 pt-4">
             {!authenticated ? (
               <>
-                <button onClick={login} className="btn-primary text-lg px-8 py-4">
-                  Get Started →
+                {/* PRIMARY: Massive, can't miss */}
+                <button onClick={login} className="btn-primary text-2xl px-16 py-6 shadow-2xl">
+                  Get Started Free →
                 </button>
+                {/* SECONDARY: Subtle, demoted */}
                 <button
                   onClick={() => navigate('/agents')}
-                  className="btn-secondary text-lg px-8 py-4"
+                  className="text-gray-600 hover:text-cronos-600 font-medium text-sm transition-colors"
                 >
-                  🤖 Explore AI Agents
+                  Learn about AI Agents
                 </button>
               </>
             ) : (
               <>
+                {/* PRIMARY: Massive send action */}
                 <button
                   onClick={() => navigate('/send')}
-                  className="btn-primary text-lg px-8 py-4"
+                  className="btn-primary text-2xl px-16 py-6 shadow-2xl"
                 >
-                  Send Payment →
+                  Send Payment Now →
                 </button>
-                <button
-                  onClick={() => navigate('/wallet')}
-                  className="btn-secondary text-lg px-8 py-4"
-                >
-                  My Wallet
-                </button>
+                {/* SECONDARY: Small text links */}
+                <div className="flex gap-6 text-sm">
+                  <button
+                    onClick={() => navigate('/wallet')}
+                    className="text-gray-600 hover:text-cronos-600 font-medium transition-colors"
+                  >
+                    View Wallet
+                  </button>
+                  <button
+                    onClick={() => navigate('/agents')}
+                    className="text-gray-600 hover:text-cronos-600 font-medium transition-colors"
+                  >
+                    AI Agents
+                  </button>
+                </div>
               </>
             )}
           </div>

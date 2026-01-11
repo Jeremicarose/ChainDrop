@@ -15,6 +15,7 @@ export default function WalletPage() {
   const [pendingClaims, setPendingClaims] = useState([]);
   const [copied, setCopied] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [recentTransactions, setRecentTransactions] = useState([]);
 
   // Fetch balance
   useEffect(() => {
@@ -65,6 +66,84 @@ export default function WalletPage() {
       fetchPendingClaims();
     }
   }, [authenticated, user]);
+
+  // Fetch recent transaction history
+  useEffect(() => {
+    const fetchTransactionHistory = async () => {
+      if (!wallets || wallets.length === 0) return;
+
+      try {
+        const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://evm-t3.cronos.org';
+        const provider = new ethers.JsonRpcProvider(rpcUrl);
+        const address = wallets[0].address;
+
+        // Get current block
+        const currentBlock = await provider.getBlockNumber();
+        const fromBlock = Math.max(0, currentBlock - 1000); // Last ~1000 blocks
+
+        // Fetch sent transactions
+        const sentLogs = await provider.getLogs({
+          fromBlock,
+          toBlock: 'latest',
+          topics: [
+            ethers.id('Transfer(address,address,uint256)'),
+            ethers.zeroPadValue(address, 32)
+          ]
+        });
+
+        // Fetch received transactions
+        const receivedLogs = await provider.getLogs({
+          fromBlock,
+          toBlock: 'latest',
+          topics: [
+            ethers.id('Transfer(address,address,uint256)'),
+            null,
+            ethers.zeroPadValue(address, 32)
+          ]
+        });
+
+        // Also check native CRO transfers by scanning recent blocks
+        const nativeTransfers = [];
+        for (let i = currentBlock; i > Math.max(0, currentBlock - 50); i--) {
+          try {
+            const block = await provider.getBlock(i, true);
+            if (block && block.transactions) {
+              for (const tx of block.transactions) {
+                if (tx.to?.toLowerCase() === address.toLowerCase() ||
+                    tx.from?.toLowerCase() === address.toLowerCase()) {
+                  nativeTransfers.push({
+                    hash: tx.hash,
+                    from: tx.from,
+                    to: tx.to,
+                    value: typeof tx.value === 'object' ? tx.value.toString() : String(tx.value),
+                    blockNumber: tx.blockNumber,
+                    timestamp: block.timestamp,
+                    type: 'native'
+                  });
+                }
+              }
+            }
+          } catch (e) {
+            // Skip if block fetch fails
+            continue;
+          }
+        }
+
+        // Sort by block number descending and take most recent 10
+        const allTxs = nativeTransfers
+          .sort((a, b) => b.blockNumber - a.blockNumber)
+          .slice(0, 10);
+
+        setRecentTransactions(allTxs);
+      } catch (error) {
+        console.error('Error fetching transaction history:', error);
+      }
+    };
+
+    if (authenticated && wallets.length > 0) {
+      fetchTransactionHistory();
+    }
+  }, [authenticated, wallets]);
 
   const copyAddress = () => {
     if (wallets && wallets.length > 0) {
