@@ -86,11 +86,17 @@ export default function WalletPage() {
   // Not authenticated state
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+      <div className="min-h-screen gradient-mesh relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        </div>
+
         <Navigation />
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="card text-center">
-            <div className="text-6xl mb-6">💼</div>
+        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="card text-center animate-slide-up">
+            <div className="text-6xl mb-6 animate-float">💼</div>
             <h2 className="text-3xl font-bold mb-4">My Wallet</h2>
             <p className="text-xl text-gray-600 mb-8">
               Sign in to view your wallet and manage your crypto
@@ -107,11 +113,17 @@ export default function WalletPage() {
   // Wallet loading state
   if (!wallets || wallets.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+      <div className="min-h-screen gradient-mesh relative overflow-hidden">
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        </div>
+
         <Navigation />
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="card text-center">
-            <div className="animate-spin w-16 h-16 border-4 border-cronos-500 border-t-transparent rounded-full mx-auto mb-6"></div>
+        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="card text-center animate-slide-up">
+            <div className="spinner mx-auto mb-6"></div>
             <h2 className="text-3xl font-bold text-gray-900 mb-3">Setting Up Your Wallet...</h2>
             <p className="text-lg text-gray-600">
               Please wait while we initialize your embedded wallet
@@ -128,12 +140,19 @@ export default function WalletPage() {
   const estimatedUSD = balanceFloat * 0.07; // CRO price estimate
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-cronos-50/30">
+    <div className="min-h-screen gradient-mesh relative overflow-hidden">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
+      </div>
+
       <Navigation />
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 animate-slide-up">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">My Wallet</h1>
           <p className="text-lg text-gray-600">Manage your crypto assets and transactions</p>
         </div>
