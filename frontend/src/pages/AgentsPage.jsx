@@ -452,15 +452,37 @@ export default function AgentsPage() {
 
         {/* Agents List */}
         {agents.length === 0 ? (
+          /* EMPTY STATE: Teaching, proactive with diagram */
           <div className="card text-center">
-            <div className="text-6xl mb-4">🤖</div>
-            <h3 className="text-2xl font-bold mb-2">No Agents Yet</h3>
-            <p className="text-gray-600 mb-6">
-              Create your first AI agent to start automating payments
+            <div className="text-6xl mb-6 animate-float">🤖</div>
+            <h3 className="text-3xl font-bold mb-3 text-gray-900">Create Your First AI Agent</h3>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              AI Agents automate crypto payments with smart policies—perfect for payroll, rewards, or refunds.
             </p>
-            <button onClick={() => setShowCreateForm(true)} className="btn-primary">
-              Create Your First Agent
+
+            {/* Teaching diagram */}
+            <div className="grid md:grid-cols-3 gap-4 mb-8 text-left">
+              <div className="bg-cronos-50 rounded-xl p-4">
+                <div className="text-2xl mb-2">⚙️</div>
+                <h4 className="font-bold text-sm mb-1 text-gray-900">Set Policies</h4>
+                <p className="text-xs text-gray-600">Daily limits, whitelists, approval thresholds</p>
+              </div>
+              <div className="bg-blue-50 rounded-xl p-4">
+                <div className="text-2xl mb-2">🔑</div>
+                <h4 className="font-bold text-sm mb-1 text-gray-900">Get API Key</h4>
+                <p className="text-xs text-gray-600">Secure key for scripts or applications</p>
+              </div>
+              <div className="bg-green-50 rounded-xl p-4">
+                <div className="text-2xl mb-2">⚡</div>
+                <h4 className="font-bold text-sm mb-1 text-gray-900">Automate Everything</h4>
+                <p className="text-xs text-gray-600">Payments run within your rules 24/7</p>
+              </div>
+            </div>
+
+            <button onClick={() => setShowCreateForm(true)} className="btn-primary text-lg px-10 py-4">
+              Create Your First Agent →
             </button>
+            <p className="text-sm text-gray-500 mt-4">Takes ~30 seconds to set up</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">

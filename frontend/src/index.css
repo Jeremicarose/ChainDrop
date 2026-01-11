@@ -20,20 +20,10 @@ h1, h2, h3, h4, h5, h6 {
   font-feature-settings: "tnum";
 }
 
-/* ===== PREMIUM ANIMATIONS ===== */
+/* ===== RESERVED ANIMATIONS (Utility over wow-factor) ===== */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-10px); }
-}
-
-@keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 20px rgba(20, 184, 166, 0.3); }
-  50% { box-shadow: 0 0 40px rgba(20, 184, 166, 0.6); }
-}
-
-@keyframes shimmer {
-  0% { background-position: -1000px 0; }
-  100% { background-position: 1000px 0; }
 }
 
 @keyframes slide-up {
@@ -47,16 +37,13 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* TONED DOWN: Only key moments get animation */
 .animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  animation: float 4s ease-in-out infinite; /* Slower, less distracting */
 }
 
 .animate-slide-up {
-  animation: slide-up 0.5s ease-out;
+  animation: slide-up 0.4s ease-out; /* Faster, more subtle */
 }
 
 /* ===== PREMIUM BUTTONS ===== */
