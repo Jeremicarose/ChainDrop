@@ -291,62 +291,59 @@ export default function WalletPage() {
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {/* HIERARCHY FIX: ONE dominant action */}
+            <div className="space-y-4">
+              {/* PRIMARY: Massive Send button */}
               <button
                 onClick={() => navigate('/send')}
-                className="card hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 p-6 text-center cursor-pointer"
-                style={{ cursor: 'pointer' }}
+                className="w-full btn-primary text-xl py-6 shadow-2xl"
               >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)' }}>
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex items-center justify-center gap-3">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                   </svg>
+                  <span>Send Payment Now</span>
                 </div>
-                <p className="font-semibold" style={{ color: '#111827' }}>Send</p>
               </button>
 
-              <button
-                onClick={() => setShowReceiveModal(true)}
-                className="card hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 p-6 text-center cursor-pointer"
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #3b82f6, #2563eb)' }}>
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* SECONDARY: Demoted to small grid */}
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => setShowReceiveModal(true)}
+                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-center transition-colors"
+                  title="Get your address to receive CRO"
+                >
+                  <svg className="w-5 h-5 mx-auto mb-1 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                   </svg>
-                </div>
-                <p className="font-semibold" style={{ color: '#111827' }}>Receive</p>
-              </button>
+                  <p className="text-xs font-medium text-gray-700">Receive</p>
+                </button>
 
-              <button
-                onClick={handleExportWallet}
-                className="card hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 p-6 text-center cursor-pointer"
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #a855f7, #9333ea)' }}>
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  onClick={handleExportWallet}
+                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-center transition-colors"
+                  title="Export private key for MetaMask"
+                >
+                  <svg className="w-5 h-5 mx-auto mb-1 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
-                </div>
-                <p className="font-semibold" style={{ color: '#111827' }}>Export</p>
-              </button>
+                  <p className="text-xs font-medium text-gray-700">Export</p>
+                </button>
 
-              <button
-                onClick={() => {
-                  const explorerUrl = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet';
-                  window.open(`${explorerUrl}/address/${wallet.address}`, '_blank');
-                }}
-                className="card hover:shadow-2xl transition-all duration-200 transform hover:-translate-y-1 p-6 text-center cursor-pointer"
-                style={{ cursor: 'pointer' }}
-              >
-                <div className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3" style={{ background: 'linear-gradient(135deg, #f97316, #ea580c)' }}>
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button
+                  onClick={() => {
+                    const explorerUrl = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet';
+                    window.open(`${explorerUrl}/address/${wallet.address}`, '_blank');
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-center transition-colors"
+                  title="View full history on blockchain explorer"
+                >
+                  <svg className="w-5 h-5 mx-auto mb-1 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                </div>
-                <p className="font-semibold" style={{ color: '#111827' }}>Explorer</p>
-              </button>
+                  <p className="text-xs font-medium text-gray-700">Explorer</p>
+                </button>
+              </div>
             </div>
 
             {/* Pending Claims */}
