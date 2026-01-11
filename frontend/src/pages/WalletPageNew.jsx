@@ -396,6 +396,97 @@ export default function WalletPage() {
                 </div>
               </div>
             )}
+
+            {/* Transaction History - STATE VISIBILITY */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Recent Activity</h3>
+                  <p className="text-sm text-gray-500">Last 50 blocks • Auto-updates every 10s</p>
+                </div>
+              </div>
+
+              {recentTransactions.length === 0 ? (
+                /* EMPTY STATE: Teaching, proactive */
+                <div className="text-center py-12 bg-gray-50 rounded-xl">
+                  <div className="text-4xl mb-3">📭</div>
+                  <p className="text-gray-900 font-semibold mb-1">No Transactions Yet</p>
+                  <p className="text-sm text-gray-600 mb-4">Send your first payment to see activity here</p>
+                  <button
+                    onClick={() => navigate('/send')}
+                    className="btn-primary"
+                  >
+                    Send Your First Payment →
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {recentTransactions.map((tx, idx) => {
+                    const isSent = tx.from?.toLowerCase() === wallets[0]?.address.toLowerCase();
+                    const amount = ethers.formatEther(tx.value);
+                    const explorerUrl = `${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${tx.hash}`;
+                    const timeAgo = tx.timestamp
+                      ? `${Math.floor((Date.now() / 1000 - tx.timestamp) / 60)}m ago`
+                      : 'Recent';
+
+                    return (
+                      <div
+                        key={idx}
+                        className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 transition-all cursor-pointer"
+                        onClick={() => window.open(explorerUrl, '_blank')}
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                              isSent ? 'bg-red-100' : 'bg-green-100'
+                            }`}>
+                              {isSent ? (
+                                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                                </svg>
+                              ) : (
+                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                                </svg>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-0.5">
+                                <p className="font-semibold text-sm text-gray-900">
+                                  {isSent ? 'Sent' : 'Received'}
+                                </p>
+                                {/* STATE BADGE: Confirmed */}
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                                  Confirmed
+                                </span>
+                              </div>
+                              <p className="text-xs text-gray-500 font-mono truncate">
+                                {isSent ? `To ${tx.to?.substring(0, 8)}...${tx.to?.slice(-4)}` : `From ${tx.from?.substring(0, 8)}...${tx.from?.slice(-4)}`}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className={`font-bold tabular-nums ${isSent ? 'text-red-600' : 'text-green-600'}`}>
+                              {isSent ? '-' : '+'}{Number(amount).toFixed(4)} CRO
+                            </p>
+                            <p className="text-xs text-gray-500 tabular-nums">{timeAgo}</p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <a
+                    href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/address/${wallets[0]?.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center py-2 text-cronos-600 hover:text-cronos-700 font-semibold text-sm"
+                  >
+                    View Full History on Explorer →
+                  </a>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Right Sidebar */}
