@@ -250,6 +250,7 @@ export default function HomePage() {
               <span className="font-semibold text-gray-900">ChainDrop</span>
               <span>·</span>
               <span>Built for Cronos Hackathon</span>
+              
             </div>
             <div className="flex items-center gap-6">
               <a href="#" className="hover:text-cronos-600 transition-colors">Documentation</a>
