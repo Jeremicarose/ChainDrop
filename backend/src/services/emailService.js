@@ -26,15 +26,17 @@ const emailService = {
       // Format amount (convert from wei to CRO)
       const amountInCRO = (parseFloat(amount) / 1e18).toFixed(4);
 
+      // Format sender address for display
+      const senderShort = `${senderAddress.substring(0, 6)}...${senderAddress.slice(-4)}`;
+
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'ChainDrop <notifications@chaindrop.app>',
         to: recipientEmail,
         replyTo: 'support@chaindrops.app',
-        subject: `🎁 You've received ${amountInCRO} CRO! - 🎁`,
+        subject: `${amountInCRO} CRO sent to you via ChainDrop`,
         headers: {
           'X-Entity-Ref-ID': claimToken.substring(0, 16),
-          'List-Unsubscribe': '<mailto:unsubscribe@chaindrops.app>',
-          'Precedence': 'bulk'
+          'List-Unsubscribe': '<mailto:unsubscribe@chaindrops.app>'
         },
         html: `
 <!DOCTYPE html>
@@ -42,188 +44,127 @@ const emailService = {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f9fafb;
-    }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      background: white;
-      border-radius: 16px;
-      overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    .header {
-      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-      padding: 40px 32px;
-      text-align: center;
-    }
-    .header h1 {
-      color: white;
-      margin: 0;
-      font-size: 28px;
-      font-weight: bold;
-    }
-    .gift-icon {
-      font-size: 64px;
-      margin-bottom: 16px;
-    }
-    .content {
-      padding: 40px 32px;
-    }
-    .amount-box {
-      background: linear-gradient(135deg, #f0fdfa 0%, #e0f2fe 100%);
-      border: 2px solid #99f6e4;
-      border-radius: 12px;
-      padding: 24px;
-      text-align: center;
-      margin: 24px 0;
-    }
-    .amount {
-      font-size: 36px;
-      font-weight: bold;
-      color: #0d9488;
-      margin: 0;
-    }
-    .info-box {
-      background: #f0fdfa;
-      border-radius: 12px;
-      padding: 20px;
-      margin: 24px 0;
-    }
-    .info-box h3 {
-      margin: 0 0 12px 0;
-      font-size: 16px;
-      color: #115e59;
-    }
-    .info-box ul {
-      margin: 0;
-      padding-left: 20px;
-      color: #0f766e;
-    }
-    .info-box li {
-      margin: 8px 0;
-      font-size: 14px;
-    }
-    .claim-button {
-      display: inline-block;
-      background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
-      color: white;
-      text-decoration: none;
-      padding: 16px 32px;
-      border-radius: 12px;
-      font-weight: bold;
-      font-size: 18px;
-      text-align: center;
-      margin: 24px 0;
-      box-shadow: 0 4px 6px rgba(20, 184, 166, 0.3);
-    }
-    .claim-button:hover {
-      background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
-    }
-    .details {
-      font-size: 14px;
-      color: #6b7280;
-      margin: 24px 0;
-    }
-    .details strong {
-      color: #111827;
-    }
-    .footer {
-      background: #f9fafb;
-      padding: 24px 32px;
-      text-align: center;
-      color: #6b7280;
-      font-size: 14px;
-    }
-    .footer a {
-      color: #14b8a6;
-      text-decoration: none;
-    }
-  </style>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="gift-icon">🎁</div>
-      <h1>You've Got Crypto!</h1>
-    </div>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f8fafc;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 480px; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.08);">
 
-    <div class="content">
-      <p style="font-size: 18px; color: #374151; margin: 0 0 16px 0;">
-        Someone just sent you crypto on the Cronos blockchain!
-      </p>
+          <!-- Header -->
+          <tr>
+            <td style="background: linear-gradient(135deg, #0d9488 0%, #14b8a6 50%, #2dd4bf 100%); padding: 32px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 8px;">💸</div>
+              <h1 style="color: white; margin: 0; font-size: 22px; font-weight: 600;">Payment Received</h1>
+            </td>
+          </tr>
 
-      <div class="amount-box">
-        <p class="amount">${amountInCRO} CRO</p>
-        <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">
-          ≈ $${(parseFloat(amountInCRO) * 0.07).toFixed(2)} USD
-        </p>
-      </div>
+          <!-- Amount Card -->
+          <tr>
+            <td style="padding: 32px 24px 16px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border-radius: 12px; border: 1px solid #99f6e4;">
+                <tr>
+                  <td style="padding: 24px; text-align: center;">
+                    <div style="font-size: 42px; font-weight: 700; color: #0d9488; letter-spacing: -1px;">${amountInCRO} CRO</div>
+                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">≈ $${(parseFloat(amountInCRO) * 0.07).toFixed(2)} USD</div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-      <div style="text-align: center;">
-        <a href="${claimLink}" class="claim-button">
-          Claim Your Funds →
-        </a>
-      </div>
+          <!-- Sender Info -->
+          <tr>
+            <td style="padding: 0 24px 24px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb;">
+                <tr>
+                  <td style="padding: 16px;">
+                    <div style="font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">From</div>
+                    <div style="display: flex; align-items: center;">
+                      <span style="display: inline-block; width: 32px; height: 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); border-radius: 50%; margin-right: 12px; vertical-align: middle;"></span>
+                      <span style="font-family: 'SF Mono', Monaco, monospace; font-size: 14px; color: #1f2937; background: #e5e7eb; padding: 4px 8px; border-radius: 4px;">${senderShort}</span>
+                    </div>
+                    <div style="margin-top: 8px;">
+                      <a href="${explorerUrl}" style="font-size: 12px; color: #0d9488; text-decoration: none;">View on Explorer →</a>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-      <div class="info-box">
-        <h3>💡 How it works:</h3>
-        <ul>
-          <li>Click the button above to visit your secure claim page</li>
-          <li>Sign in with your email, phone, or Twitter</li>
-          <li>We'll create a wallet for you automatically (if needed)</li>
-          <li>Claim your funds instantly - no crypto knowledge required!</li>
-        </ul>
-      </div>
+          <!-- CTA Button -->
+          <tr>
+            <td style="padding: 0 24px 24px;">
+              <a href="${claimLink}" style="display: block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 24px; border-radius: 10px; font-weight: 600; font-size: 16px; text-align: center; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);">
+                Claim Your ${amountInCRO} CRO →
+              </a>
+              <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
+                Expires in 48 hours
+              </div>
+            </td>
+          </tr>
 
-      <div class="details">
-        <p><strong>From:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 12px;">${senderAddress.substring(0, 10)}...${senderAddress.slice(-8)}</code></p>
-        <p><strong>Network:</strong> Cronos Testnet</p>
-        <p style="margin-top: 16px; font-size: 12px; color: #9ca3af;">
-          If the button doesn't work, copy and paste this link into your browser:<br>
-          <a href="${claimLink}" style="color: #14b8a6; word-break: break-all;">${claimLink}</a>
-        </p>
-      </div>
-    </div>
+          <!-- How it works -->
+          <tr>
+            <td style="padding: 0 24px 24px;">
+              <div style="font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 12px;">How to claim:</div>
+              <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="padding: 8px 0; font-size: 13px; color: #6b7280;">
+                    <span style="display: inline-block; width: 20px; height: 20px; background: #f0fdfa; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; color: #0d9488; margin-right: 8px;">1</span>
+                    Click the button above
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-size: 13px; color: #6b7280;">
+                    <span style="display: inline-block; width: 20px; height: 20px; background: #f0fdfa; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; color: #0d9488; margin-right: 8px;">2</span>
+                    Sign in with this email address
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 8px 0; font-size: 13px; color: #6b7280;">
+                    <span style="display: inline-block; width: 20px; height: 20px; background: #f0fdfa; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; color: #0d9488; margin-right: 8px;">3</span>
+                    Funds transfer instantly to your wallet
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
 
-    <div class="footer">
-      <p style="margin: 0 0 8px 0;">
-        Powered by <strong>ChainDrop</strong> - The easiest way to send crypto
-      </p>
-      <p style="margin: 0 0 12px 0; font-size: 12px;">
-        Questions? Visit <a href="https://chaindrop.app">chaindrop.app</a>
-      </p>
-      <p style="margin: 0; font-size: 11px; color: #9ca3af;">
-        You received this email because someone sent you cryptocurrency via ChainDrop.<br>
-        This is a transactional email. <a href="mailto:unsubscribe@chaindrops.app" style="color: #9ca3af;">Unsubscribe</a>
-      </p>
-    </div>
-  </div>
+          <!-- Footer -->
+          <tr>
+            <td style="background: #f8fafc; padding: 20px 24px; border-top: 1px solid #e5e7eb;">
+              <div style="text-align: center; font-size: 12px; color: #9ca3af;">
+                Sent via <strong style="color: #6b7280;">ChainDrop</strong> on Cronos Network
+              </div>
+              <div style="text-align: center; margin-top: 8px; font-size: 11px; color: #9ca3af;">
+                <a href="mailto:unsubscribe@chaindrops.app" style="color: #9ca3af;">Unsubscribe</a>
+              </div>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
         `,
-        text: `
-You've received ${amountInCRO} CRO!
+        text: `Payment Received: ${amountInCRO} CRO
 
-Someone just sent you crypto on the Cronos blockchain.
+From: ${senderShort}
 
-Claim your funds here: ${claimLink}
+Claim your funds: ${claimLink}
 
-How it works:
-• Click the link above to visit your secure claim page
-• Sign in with your email, phone, or Twitter
-• We'll create a wallet for you automatically (if needed)
-• Claim your funds instantly - no crypto knowledge required!
+Steps:
+1. Click the link above
+2. Sign in with this email address
+3. Funds transfer instantly to your wallet
 
-From: ${senderAddress}
-Network: Cronos Testnet
+Expires in 48 hours.
 
-Powered by ChainDrop - The easiest way to send crypto
+Sent via ChainDrop on Cronos Network
         `
       });
 
