@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const routes = require('./routes');
 const { initializeDatabase } = require('./db/schema');
+const transferService = require('./services/transferService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -81,6 +82,9 @@ async function startServer() {
       console.log(`   Get Transfer: GET /api/transfer/:claimToken`);
       console.log(`   Estimate: POST /api/transfer/estimate`);
       console.log(`\n🎯 Ready to process transfers!\n`);
+
+      // Start auto-refund scheduler (runs every 5 minutes)
+      transferService.startAutoRefundScheduler(5);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
