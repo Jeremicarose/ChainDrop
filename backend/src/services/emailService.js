@@ -29,7 +29,13 @@ const emailService = {
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'ChainDrop <notifications@chaindrop.app>',
         to: recipientEmail,
-        subject: `You've received ${amountInCRO} CRO!`,
+        replyTo: 'support@chaindrops.app',
+        subject: `🎁 You've received ${amountInCRO} CRO! - 🎁`,
+        headers: {
+          'X-Entity-Ref-ID': claimToken.substring(0, 16),
+          'List-Unsubscribe': '<mailto:unsubscribe@chaindrops.app>',
+          'Precedence': 'bulk'
+        },
         html: `
 <!DOCTYPE html>
 <html>
@@ -189,8 +195,12 @@ const emailService = {
       <p style="margin: 0 0 8px 0;">
         Powered by <strong>ChainDrop</strong> - The easiest way to send crypto
       </p>
-      <p style="margin: 0; font-size: 12px;">
+      <p style="margin: 0 0 12px 0; font-size: 12px;">
         Questions? Visit <a href="https://chaindrop.app">chaindrop.app</a>
+      </p>
+      <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+        You received this email because someone sent you cryptocurrency via ChainDrop.<br>
+        This is a transactional email. <a href="mailto:unsubscribe@chaindrops.app" style="color: #9ca3af;">Unsubscribe</a>
       </p>
     </div>
   </div>
