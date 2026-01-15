@@ -2,7 +2,9 @@
 
 # Smart auto-commit script
 # Commits and pushes based on the significance of changes
+# Runs every 15 minutes via cron
 
+# Navigate to repo root
 cd "$(dirname "$0")/../.."
 
 # Check if there are any changes
