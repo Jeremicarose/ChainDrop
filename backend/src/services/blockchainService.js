@@ -199,6 +199,102 @@ class BlockchainService {
         const feeData = await this.provider.getFeeData();
         return feeData.gasPrice;
     }
+
+    /**
+     * Withdraw funds from ghost vault (for refunds)
+     * Deploys the ghost vault if needed, then withdraws to admin, then sends to destination
+     * @param identifier The recipient identifier used to compute ghost vault address
+     * @param destinationAddress Where to send the funds (original sender for refunds)
+     * @param tokenAddress Token address (null for native CRO)
+     * @param claimId Unique claim ID for this withdrawal
+     */
+    async withdrawFromGhostVault(identifier, destinationAddress, tokenAddress, claimId) {
+        try {
+            const salt = this.generateSalt(identifier);
+            const accountAddress = await this.accountFactory.computeAccountAddress(this.wallet.address, salt);
+
+            console.log(`🏦 Ghost vault address: ${accountAddress}`);
+
+            // Check balance in ghost vault
+            const balance = await this.getBalance(accountAddress, tokenAddress);
+            console.log(`💰 Ghost vault balance: ${ethers.formatEther(balance)} CRO`);
+
+            if (balance === 0n) {
+                throw new Error('Ghost vault has no funds to withdraw');
+            }
+
+            // Check if already deployed
+            const isDeployed = await this.isAccountDeployed(accountAddress);
+            let deployTxHash = null;
+
+            if (!isDeployed) {
+                // Deploy the ghost vault with admin as owner
+                console.log(`📦 Deploying ghost vault with admin as owner...`);
+                const deployTx = await this.accountFactory.createAccount(this.wallet.address, salt);
+                const deployReceipt = await deployTx.wait();
+                deployTxHash = deployReceipt.hash;
+                console.log(`✅ Ghost vault deployed: ${deployTxHash}`);
+            } else {
+                console.log(`✅ Ghost vault already deployed`);
+            }
+
+            // Create contract instance
+            const account = new ethers.Contract(
+                accountAddress,
+                SIMPLE_ACCOUNT_ABI,
+                this.wallet
+            );
+
+            // Generate unique claim ID for this refund
+            const claimIdBytes32 = ethers.id(claimId);
+
+            // Check if this claim was already used
+            try {
+                const alreadyClaimed = await account.isClaimUsed(claimIdBytes32);
+                if (alreadyClaimed) {
+                    throw new Error('This withdrawal was already processed');
+                }
+            } catch (e) {
+                // If contract just deployed, isClaimUsed might fail, continue anyway
+                if (!e.message.includes('already processed')) {
+                    console.log(`⚠️ Could not check claim status: ${e.message}`);
+                } else {
+                    throw e;
+                }
+            }
+
+            // Withdraw from ghost vault to admin (claimFundsSimple sends to owner = admin)
+            console.log(`💸 Withdrawing ${ethers.formatEther(balance)} CRO from ghost vault to admin...`);
+            const claimTx = await account.claimFundsSimple(
+                tokenAddress || ethers.ZeroAddress,
+                balance,
+                claimIdBytes32
+            );
+            const claimReceipt = await claimTx.wait();
+            console.log(`✅ Withdrawal to admin complete: ${claimReceipt.hash}`);
+
+            // Now send from admin to destination (original sender for refunds)
+            console.log(`📤 Sending ${ethers.formatEther(balance)} CRO from admin to ${destinationAddress}...`);
+            const transferTx = await this.wallet.sendTransaction({
+                to: destinationAddress,
+                value: balance
+            });
+            await transferTx.wait();
+            console.log(`✅ Transfer to destination complete: ${transferTx.hash}`);
+
+            return {
+                success: true,
+                ghostVaultAddress: accountAddress,
+                deployTxHash,
+                withdrawTxHash: claimReceipt.hash,
+                transferTxHash: transferTx.hash,
+                amount: balance.toString()
+            };
+        } catch (error) {
+            console.error('Error withdrawing from ghost vault:', error);
+            throw error;
+        }
+    }
 }
 
 module.exports = new BlockchainService();

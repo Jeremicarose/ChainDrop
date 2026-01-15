@@ -376,31 +376,44 @@ class TransferService {
 
   /**
    * Process refund for an expired transfer
+   * Properly withdraws from ghost vault, then sends to original sender
    */
   async processRefund(transfer) {
     try {
-      console.log(`💸 Processing refund for transfer ${transfer.id}`);
-      console.log(`   Recipient: ${transfer.recipient_identifier_original}`);
-      console.log(`   Amount: ${ethers.formatEther(transfer.amount)} CRO`);
-      console.log(`   Sender: ${transfer.sender_address}`);
+      console.log(`\n💸 Processing refund for transfer ${transfer.id}`);
+      console.log(`   Recipient identifier: ${transfer.recipient_identifier_original}`);
+      console.log(`   Ghost vault: ${transfer.recipient_address}`);
+      console.log(`   Original sender: ${transfer.sender_address}`);
 
       const skipBlockchain = process.env.SKIP_BLOCKCHAIN === 'true';
-      let refundTxHash;
+      let result;
 
       if (skipBlockchain) {
         // Simulate refund
-        refundTxHash = '0x' + crypto.randomBytes(32).toString('hex');
-        console.log(`⚠️  SKIP_BLOCKCHAIN=true: Simulated refund TX: ${refundTxHash}`);
+        const fakeTxHash = '0x' + crypto.randomBytes(32).toString('hex');
+        console.log(`⚠️  SKIP_BLOCKCHAIN=true: Simulated refund`);
+        result = {
+          success: true,
+          withdrawTxHash: fakeTxHash,
+          transferTxHash: fakeTxHash,
+          amount: transfer.amount
+        };
       } else {
-        // Send funds from ghost vault back to sender
-        // Note: Funds are at the counterfactual address, we need to deploy and withdraw
-        // For simplicity, we'll use admin wallet to refund from the ghost vault balance
-        refundTxHash = await blockchainService.sendFunds(
+        // PROPER REFUND: Withdraw from ghost vault, then send to original sender
+        // This uses the recipient identifier to compute ghost vault address,
+        // deploys if needed, withdraws to admin, then sends to sender
+        const refundClaimId = `refund-${transfer.id}`;
+
+        result = await blockchainService.withdrawFromGhostVault(
+          transfer.recipient_identifier_original,
           transfer.sender_address,
-          transfer.amount,
-          transfer.token_address === 'ETH' ? null : transfer.token_address
+          transfer.token_address === 'ETH' ? null : transfer.token_address,
+          refundClaimId
         );
-        console.log(`✅ Refund TX: ${refundTxHash}`);
+
+        console.log(`✅ Refund withdrawn from ghost vault: ${result.withdrawTxHash}`);
+        console.log(`✅ Refund sent to sender: ${result.transferTxHash}`);
+        console.log(`💰 Amount refunded: ${ethers.formatEther(result.amount)} CRO`);
       }
 
       // Update transfer status
@@ -408,24 +421,19 @@ class TransferService {
         UPDATE transfers
         SET status = 'refunded', refunded_at = ?, refund_tx_hash = ?
         WHERE id = ?
-      `, [Date.now(), refundTxHash, transfer.id]);
+      `, [Date.now(), result.transferTxHash, transfer.id]);
 
-      console.log(`✅ Refund completed for transfer ${transfer.id}`);
-
-      // Send email notification to sender about refund
-      if (transfer.sender_address) {
-        // We don't have sender email, so just log it
-        console.log(`📧 Refund notification: Transfer ${transfer.id} refunded to ${transfer.sender_address}`);
-      }
+      console.log(`✅ Refund completed for transfer ${transfer.id}\n`);
 
       return {
         success: true,
         transferId: transfer.id,
-        refundTxHash,
-        amount: transfer.amount
+        refundTxHash: result.transferTxHash,
+        withdrawTxHash: result.withdrawTxHash,
+        amount: result.amount
       };
     } catch (error) {
-      console.error(`❌ Refund failed for transfer ${transfer.id}:`, error);
+      console.error(`❌ Refund failed for transfer ${transfer.id}:`, error.message);
       return {
         success: false,
         transferId: transfer.id,
