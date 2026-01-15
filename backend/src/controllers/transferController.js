@@ -1,6 +1,6 @@
 const transferService = require('../services/transferService');
 const blockchainService = require('../services/blockchainService');
-const emailService = require('../services/emailService');
+// NOTE: Email sending is handled in transferService - don't duplicate here
 
 const transferController = {
   /**
