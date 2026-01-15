@@ -183,20 +183,27 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Feature 3: One-Click Claim */}
+          {/* Feature 3: One-Click Claim - WHITEPAPER ALIGNED */}
           <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
             <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <span className="text-3xl">⚡</span>
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-900">One-Click Claim</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Recipients claim their funds instantly with email, Twitter, or phone login. We create their wallet automatically.
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">One-Click Claim</h3>
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Self-funded</span>
+            </div>
+            <p className="text-gray-600 leading-relaxed mb-4">
+              Recipients claim with zero friction. Gas is paid atomically from the vault — no ETH/CRO needed to start.
             </p>
-            <div className="mt-6 flex items-center text-cronos-600 font-semibold group-hover:translate-x-2 transition-transform">
-              <span>See how it works</span>
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-green-500">✓</span>
+                <span>Atomic reimbursement (relayer paid from vault)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-500">✓</span>
+                <span>Wallet created on first claim (ERC-4337)</span>
+              </div>
             </div>
           </div>
         </div>
