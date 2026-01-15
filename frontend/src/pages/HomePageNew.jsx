@@ -57,6 +57,25 @@ export default function HomePage() {
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 border-2 border-white flex items-center justify-center text-white text-xs font-bold">MK</div>
             <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cronos-400 to-cronos-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">+5</div>
           </div>
+
+          {/* Additional floating elements */}
+          <div className="absolute top-80 right-24 bg-white rounded-xl shadow-lg px-4 py-3 animate-float border border-gray-100" style={{ animationDelay: '1.5s' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <span className="text-xs text-gray-600">Claimed!</span>
+            </div>
+          </div>
+
+          <div className="absolute bottom-24 left-8 bg-white rounded-xl shadow-lg px-4 py-2 animate-float border border-gray-100" style={{ animationDelay: '1.8s' }}>
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🔒</span>
+              <span className="text-xs font-medium text-gray-700">Non-custodial</span>
+            </div>
+          </div>
         </div>
 
         <div className="text-center space-y-10 animate-slide-up relative z-10">
@@ -152,6 +171,45 @@ export default function HomePage() {
               </svg>
               <span className="text-gray-700">Built on Cronos</span>
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Scrolling Logo Bar - Paycrest Style */}
+      <div className="border-y border-gray-200 bg-white/50 backdrop-blur-sm py-6 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm text-gray-500 mb-4 font-medium">POWERED BY</p>
+          <div className="flex items-center justify-center gap-12 flex-wrap">
+            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">C</span>
+              </div>
+              <span className="font-semibold">Cronos</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">P</span>
+              </div>
+              <span className="font-semibold">Privy</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">4337</span>
+              </div>
+              <span className="font-semibold">ERC-4337</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">AI</span>
+              </div>
+              <span className="font-semibold">OpenAI</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">HH</span>
+              </div>
+              <span className="font-semibold">Hardhat</span>
+            </div>
           </div>
         </div>
       </div>
