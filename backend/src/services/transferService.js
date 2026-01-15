@@ -20,8 +20,8 @@ class TransferService {
         // No owner specified - defaults to admin wallet
       );
 
-      // Calculate expiry (24 hours from now)
-      const expiresAt = Date.now() + (24 * 60 * 60 * 1000);
+      // Calculate expiry (2 days from now)
+      const expiresAt = Date.now() + (2 * 24 * 60 * 60 * 1000);
 
       // Format amount for blockchain
       const formattedAmount = await blockchainService.formatAmount(amount, tokenAddress);
