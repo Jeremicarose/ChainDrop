@@ -110,6 +110,14 @@ function initializeDatabase() {
       )
     `);
 
+    // Add refund columns to transfers table (migration for existing databases)
+    db.run(`ALTER TABLE transfers ADD COLUMN refunded_at INTEGER`, (err) => {
+      // Ignore error if column already exists
+    });
+    db.run(`ALTER TABLE transfers ADD COLUMN refund_tx_hash TEXT`, (err) => {
+      // Ignore error if column already exists
+    });
+
     console.log('✅ Database initialized');
   });
 }

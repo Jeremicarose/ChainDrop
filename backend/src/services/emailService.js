@@ -255,7 +255,13 @@ Powered by ChainDrop - The easiest way to send crypto
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'ChainDrop <notifications@chaindrop.app>',
         to: recipientEmail,
-        subject: `Funds claimed! ${amountInCRO} CRO is now in your wallet`,
+        replyTo: 'support@chaindrops.app',
+        subject: `✅ Funds claimed! ${amountInCRO} CRO is now in your wallet`,
+        headers: {
+          'X-Entity-Ref-ID': txHash.substring(0, 16),
+          'List-Unsubscribe': '<mailto:unsubscribe@chaindrops.app>',
+          'Precedence': 'bulk'
+        },
         html: `
 <!DOCTYPE html>
 <html>
@@ -361,8 +367,11 @@ Powered by ChainDrop - The easiest way to send crypto
     </div>
 
     <div class="footer">
-      <p style="margin: 0;">
+      <p style="margin: 0 0 8px 0;">
         Powered by <strong>ChainDrop</strong>
+      </p>
+      <p style="margin: 0; font-size: 11px; color: #9ca3af;">
+        This is a transactional email confirming your claim. <a href="mailto:unsubscribe@chaindrops.app" style="color: #9ca3af;">Unsubscribe</a>
       </p>
     </div>
   </div>

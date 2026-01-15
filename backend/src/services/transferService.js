@@ -359,6 +359,126 @@ class TransferService {
   hashIdentifier(identifier) {
     return crypto.createHash('sha256').update(identifier).digest('hex');
   }
+
+  /**
+   * Get all expired transfers that are still pending (not claimed, not refunded)
+   */
+  async getExpiredTransfers() {
+    const transfers = await db.all(
+      `SELECT * FROM transfers
+       WHERE status = 'pending'
+       AND expires_at < ?
+       ORDER BY expires_at ASC`,
+      [Date.now()]
+    );
+    return transfers;
+  }
+
+  /**
+   * Process refund for an expired transfer
+   */
+  async processRefund(transfer) {
+    try {
+      console.log(`💸 Processing refund for transfer ${transfer.id}`);
+      console.log(`   Recipient: ${transfer.recipient_identifier_original}`);
+      console.log(`   Amount: ${ethers.formatEther(transfer.amount)} CRO`);
+      console.log(`   Sender: ${transfer.sender_address}`);
+
+      const skipBlockchain = process.env.SKIP_BLOCKCHAIN === 'true';
+      let refundTxHash;
+
+      if (skipBlockchain) {
+        // Simulate refund
+        refundTxHash = '0x' + crypto.randomBytes(32).toString('hex');
+        console.log(`⚠️  SKIP_BLOCKCHAIN=true: Simulated refund TX: ${refundTxHash}`);
+      } else {
+        // Send funds from ghost vault back to sender
+        // Note: Funds are at the counterfactual address, we need to deploy and withdraw
+        // For simplicity, we'll use admin wallet to refund from the ghost vault balance
+        refundTxHash = await blockchainService.sendFunds(
+          transfer.sender_address,
+          transfer.amount,
+          transfer.token_address === 'ETH' ? null : transfer.token_address
+        );
+        console.log(`✅ Refund TX: ${refundTxHash}`);
+      }
+
+      // Update transfer status
+      await db.run(`
+        UPDATE transfers
+        SET status = 'refunded', refunded_at = ?, refund_tx_hash = ?
+        WHERE id = ?
+      `, [Date.now(), refundTxHash, transfer.id]);
+
+      console.log(`✅ Refund completed for transfer ${transfer.id}`);
+
+      // Send email notification to sender about refund
+      if (transfer.sender_address) {
+        // We don't have sender email, so just log it
+        console.log(`📧 Refund notification: Transfer ${transfer.id} refunded to ${transfer.sender_address}`);
+      }
+
+      return {
+        success: true,
+        transferId: transfer.id,
+        refundTxHash,
+        amount: transfer.amount
+      };
+    } catch (error) {
+      console.error(`❌ Refund failed for transfer ${transfer.id}:`, error);
+      return {
+        success: false,
+        transferId: transfer.id,
+        error: error.message
+      };
+    }
+  }
+
+  /**
+   * Run auto-refund job for all expired transfers
+   */
+  async runAutoRefund() {
+    console.log('\n🔄 Running auto-refund job...');
+
+    const expiredTransfers = await this.getExpiredTransfers();
+
+    if (expiredTransfers.length === 0) {
+      console.log('✓ No expired transfers to refund');
+      return { processed: 0, refunded: 0, failed: 0 };
+    }
+
+    console.log(`📋 Found ${expiredTransfers.length} expired transfer(s) to refund`);
+
+    let refunded = 0;
+    let failed = 0;
+
+    for (const transfer of expiredTransfers) {
+      const result = await this.processRefund(transfer);
+      if (result.success) {
+        refunded++;
+      } else {
+        failed++;
+      }
+    }
+
+    console.log(`\n✅ Auto-refund complete: ${refunded} refunded, ${failed} failed`);
+    return { processed: expiredTransfers.length, refunded, failed };
+  }
+
+  /**
+   * Start auto-refund scheduler (runs every 5 minutes)
+   */
+  startAutoRefundScheduler(intervalMinutes = 5) {
+    console.log(`⏰ Starting auto-refund scheduler (every ${intervalMinutes} minutes)`);
+
+    // Run immediately on startup
+    this.runAutoRefund();
+
+    // Then run periodically
+    setInterval(() => {
+      this.runAutoRefund();
+    }, intervalMinutes * 60 * 1000);
+  }
 }
 
 module.exports = new TransferService();
