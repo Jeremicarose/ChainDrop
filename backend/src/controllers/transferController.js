@@ -38,18 +38,7 @@ const transferController = {
         tokenAddress
       );
 
-      // Send email notification (non-blocking - don't wait for it)
-      if (identifierType === 'email') {
-        emailService.sendTransferNotification(
-          recipientIdentifier,
-          amount,
-          result.claimToken,
-          senderAddress
-        ).catch(err => {
-          console.error('Failed to send email notification:', err);
-          // Don't fail the transfer if email fails
-        });
-      }
+      // Email notification is sent in transferService.createTransfer()
 
       res.status(201).json({
         success: true,
@@ -135,16 +124,7 @@ const transferController = {
 
       const result = await transferService.processClaim(claimToken, recipientWalletAddress, verifiedIdentity);
 
-      // Send claim confirmation email (non-blocking)
-      if (verifiedIdentity && verifiedIdentity.includes('@')) {
-        emailService.sendClaimConfirmation(
-          verifiedIdentity,
-          result.claimedAmount || result.amount,
-          result.transactionHash
-        ).catch(err => {
-          console.error('Failed to send claim confirmation email:', err);
-        });
-      }
+      // Claim confirmation email is sent in transferService.processClaim()
 
       res.json({
         success: true,
