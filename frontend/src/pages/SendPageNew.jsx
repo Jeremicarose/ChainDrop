@@ -109,14 +109,19 @@ export default function SendPage() {
               <div className="bg-white rounded-xl p-6 space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Amount</span>
-                  <span className="font-bold text-xl text-gray-900">{formData.amount} CRO</span>
+                  <span className="font-bold text-xl text-gray-900 tabular-nums">{formData.amount} CRO</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Recipient</span>
                   <span className="font-medium text-gray-900">{formData.recipientIdentifier}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Ghost Vault</span>
+                  <span className="text-gray-600 flex items-center gap-1">
+                    Ghost Vault
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
+                      Counterfactual
+                    </span>
+                  </span>
                   <span className="font-mono text-sm text-gray-700">
                     {result.recipientAddress.substring(0, 10)}...{result.recipientAddress.slice(-8)}
                   </span>
@@ -134,6 +139,28 @@ export default function SendPage() {
                     </svg>
                   </a>
                 </div>
+              </div>
+
+              {/* WHITEPAPER: Trust & Technical Explanation */}
+              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100">
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <span>🔐</span>
+                  <span>How Ghost Vaults Work</span>
+                </h4>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span><strong>Counterfactual address</strong> — Vault exists deterministically before deployment (CREATE2)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span><strong>Self-funded claiming</strong> — Gas is paid from the vault itself, recipient needs nothing</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-blue-500 mt-0.5">•</span>
+                    <span><strong>Identity-locked</strong> — Only verified owner of {formData.identifierType} can claim</span>
+                  </li>
+                </ul>
               </div>
             </div>
 

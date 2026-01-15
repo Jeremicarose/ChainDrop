@@ -86,26 +86,32 @@ export default function HomePage() {
             )}
           </div>
 
-          {/* Trust Indicators */}
-          <div className="flex items-center justify-center gap-8 pt-8 text-sm text-gray-500">
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+          {/* WHITEPAPER: Trust Indicators - Key Differentiators */}
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
+              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>Built on Cronos</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
+              <span className="text-gray-700">Self-funded claiming</span>
+            </span>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
+              <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+              </svg>
+              <span className="text-gray-700">No keys held by us</span>
+            </span>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
+              <svg className="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
+              </svg>
+              <span className="text-gray-700">ERC-4337 Account Abstraction</span>
+            </span>
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
+              <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span>AI-Native Payments</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <svg className="w-5 h-5 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span>No Wallet Required</span>
-            </div>
+              <span className="text-gray-700">Built on Cronos</span>
+            </span>
           </div>
         </div>
       </div>
@@ -113,20 +119,27 @@ export default function HomePage() {
       {/* Features Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Feature 1: Ghost Vaults */}
+          {/* Feature 1: Ghost Vaults - WHITEPAPER ALIGNED */}
           <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
             <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
               <span className="text-3xl">👻</span>
             </div>
-            <h3 className="text-2xl font-bold mb-4 text-gray-900">Ghost Vaults</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Send to emails, Twitter handles, or phone numbers. We create a secure vault that only the recipient can claim.
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">Ghost Vaults</h3>
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">CREATE2</span>
+            </div>
+            <p className="text-gray-600 leading-relaxed mb-4">
+              Counterfactual smart accounts that exist before deployment. Send to any identity — the vault address is deterministically computed.
             </p>
-            <div className="mt-6 flex items-center text-cronos-600 font-semibold group-hover:translate-x-2 transition-transform">
-              <span>Learn more</span>
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
+              <div className="flex items-center gap-2">
+                <span className="text-green-500">✓</span>
+                <span>No recipient action needed to receive</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-green-500">✓</span>
+                <span>Identity-locked claiming (email/Twitter/phone)</span>
+              </div>
             </div>
           </div>
 

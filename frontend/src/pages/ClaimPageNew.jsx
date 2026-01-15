@@ -298,23 +298,39 @@ export default function ClaimPage() {
               Someone sent you <strong className="text-cronos-600">{amountDisplay} CRO</strong>
             </p>
 
-            {/* Info Box */}
-            <div className="bg-cronos-50 rounded-xl p-6 mb-8">
-              <h3 className="font-bold text-gray-900 mb-3">What happens next?</h3>
+            {/* WHITEPAPER: Atomic Claim Flow */}
+            <div className="bg-cronos-50 rounded-xl p-6 mb-6">
+              <h3 className="font-bold text-gray-900 mb-3">What happens when you claim?</h3>
               <ul className="space-y-2 text-sm text-gray-700">
                 <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5">•</span>
-                  <span>Sign in with your email, phone, or Twitter</span>
+                  <span className="text-cronos-500 mt-0.5">1.</span>
+                  <span><strong>Verify identity</strong> — Sign in to prove you own this email/phone/Twitter</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5">•</span>
-                  <span>We'll create a secure wallet for you automatically</span>
+                  <span className="text-cronos-500 mt-0.5">2.</span>
+                  <span><strong>Deploy your wallet</strong> — We create a smart wallet just for you (ERC-4337)</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5">•</span>
-                  <span>Claim your funds instantly - no crypto knowledge needed</span>
+                  <span className="text-cronos-500 mt-0.5">3.</span>
+                  <span><strong>Atomic transfer</strong> — Funds move to your wallet in one transaction</span>
                 </li>
               </ul>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="flex flex-wrap justify-center gap-3 mb-6">
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                Self-funded claiming
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" /></svg>
+                No keys held by us
+              </span>
+              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" /></svg>
+                One-time claim only
+              </span>
             </div>
 
             {/* Login Button */}
@@ -323,7 +339,7 @@ export default function ClaimPage() {
             </button>
 
             <p className="text-center text-sm text-gray-500 mt-4">
-              Secure and easy - your wallet is created automatically
+              Gas is paid from the vault — you need nothing to start
             </p>
           </div>
         </div>
