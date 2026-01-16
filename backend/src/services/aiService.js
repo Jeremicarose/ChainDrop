@@ -45,7 +45,19 @@ class AIService {
   5. Determine if this is a single payment or bulk payment request
   6. If information is missing, ask for clarification
   
-  RESPOND ONLY WITH VALID JSON in this format:`
+  RESPOND ONLY WITH VALID JSON in this format:
+  {
+    "type": "payment" | "bulk_payment" | "clarification" | "error",
+    "confidence": 0.0-1.0,
+    "data": {
+      "recipient": "email/phone/twitter or null",
+      "recipientType": "email" | "phone" | "twitter" | null,
+      "amount": number or null,
+      "token": "CRO" | "USDC" | etc,
+      "note": "purpose/note or null",
+      "recipients": [] // for bulk payments
+    }
+  }`
     }
   }
 }
