@@ -170,6 +170,16 @@ class BlockchainService {
             // Generate claim ID bytes32
             const claimIdBytes32 = ethers.id(claimId);
 
+            // Track gas used for reimbursement
+            let totalGasUsed = 0n;
+            const gasPrice = await this.getGasPrice();
+
+            // Add deploy gas if we deployed
+            if (deployTxHash) {
+                const deployReceipt = await this.provider.getTransactionReceipt(deployTxHash);
+                totalGasUsed += deployReceipt.gasUsed;
+            }
+
             // Withdraw from ghost vault to admin
             console.log(`💸 Withdrawing ${ethers.formatEther(balance)} from ghost vault...`);
             const claimTx = await account.claimFundsSimple(
@@ -178,44 +188,88 @@ class BlockchainService {
                 claimIdBytes32
             );
             const claimReceipt = await claimTx.wait();
+            totalGasUsed += claimReceipt.gasUsed;
             console.log(`✅ Withdrawal complete: ${claimReceipt.hash}`);
 
-            // Calculate gas cost to deduct from user's claim (self-funded claiming)
-            // This reimburses admin for gas spent on deploy + withdraw + transfer
-            const gasPrice = await this.getGasPrice();
-            const estimatedGasUsed = 250000n; // ~250k gas for deploy + claim + transfer
-            const gasCost = gasPrice * estimatedGasUsed;
+            // For native token (CRO/ETH): deduct gas from claimed amount
+            // For ERC-20 tokens: need native token for gas (handled separately)
+            if (tokenAddress) {
+                // ERC-20 TOKEN CLAIM
+                // Problem: Gas must be paid in native token, but vault only has ERC-20
+                // Solution: Admin pays gas, sends full token amount to recipient
+                // TODO: Implement paymaster or require sender to include gas funds
+                console.log(`⚠️  Token claim - admin subsidizing gas (no native token in vault)`);
 
-            // User receives: claimed amount - gas cost
-            const userReceives = balance > gasCost ? balance - gasCost : 0n;
+                const tokenContract = new ethers.Contract(tokenAddress, [
+                    "function transfer(address to, uint256 amount) returns (bool)",
+                    "function balanceOf(address) view returns (uint256)"
+                ], this.wallet);
 
-            console.log(`💰 Claimed amount: ${ethers.formatEther(balance)} CRO`);
-            console.log(`⛽ Gas cost deducted: ${ethers.formatEther(gasCost)} CRO`);
-            console.log(`💸 User receives: ${ethers.formatEther(userReceives)} CRO`);
+                // Get admin's token balance (received from vault withdrawal)
+                const adminTokenBalance = await tokenContract.balanceOf(this.wallet.address);
 
-            if (userReceives === 0n) {
-                throw new Error(`Claim amount (${ethers.formatEther(balance)} CRO) is less than gas cost (${ethers.formatEther(gasCost)} CRO)`);
+                console.log(`📤 Sending ${ethers.formatEther(balance)} tokens to recipient...`);
+                const transferTx = await tokenContract.transfer(recipientWalletAddress, balance);
+                const transferReceipt = await transferTx.wait();
+                totalGasUsed += transferReceipt.gasUsed;
+                console.log(`✅ Token transfer complete: ${transferTx.hash}`);
+
+                const totalGasCost = gasPrice * totalGasUsed;
+                console.log(`⛽ Total gas used: ${totalGasUsed} (${ethers.formatEther(totalGasCost)} CRO) - ADMIN PAID`);
+
+                return {
+                    deployTxHash: deployTxHash || 'already-deployed',
+                    claimTxHash: claimReceipt.hash,
+                    transferTxHash: transferTx.hash,
+                    accountAddress,
+                    recipientAddress: recipientWalletAddress,
+                    originalAmount: balance.toString(),
+                    gasCost: totalGasCost.toString(),
+                    amount: balance.toString(), // Full amount for tokens (admin paid gas)
+                    isTokenClaim: true
+                };
+            } else {
+                // NATIVE TOKEN CLAIM (CRO/ETH) - Self-funded
+                // Deduct actual gas cost from claimed amount
+
+                // Estimate transfer gas
+                const transferGasEstimate = await this.provider.estimateGas({
+                    to: recipientWalletAddress,
+                    value: balance
+                });
+                const totalGasCost = gasPrice * (totalGasUsed + transferGasEstimate);
+
+                // User receives: claimed amount - actual gas cost
+                const userReceives = balance > totalGasCost ? balance - totalGasCost : 0n;
+
+                console.log(`💰 Claimed amount: ${ethers.formatEther(balance)} CRO`);
+                console.log(`⛽ Actual gas cost: ${ethers.formatEther(totalGasCost)} CRO (${totalGasUsed + transferGasEstimate} gas)`);
+                console.log(`💸 User receives: ${ethers.formatEther(userReceives)} CRO`);
+
+                if (userReceives === 0n) {
+                    throw new Error(`Claim amount (${ethers.formatEther(balance)} CRO) is less than gas cost (${ethers.formatEther(totalGasCost)} CRO)`);
+                }
+
+                // Send net amount to recipient (user pays gas from their claim)
+                console.log(`📤 Sending ${ethers.formatEther(userReceives)} to recipient ${recipientWalletAddress}...`);
+                const transferTx = await this.wallet.sendTransaction({
+                    to: recipientWalletAddress,
+                    value: userReceives
+                });
+                await transferTx.wait();
+                console.log(`✅ Transfer complete: ${transferTx.hash}`);
+
+                return {
+                    deployTxHash: deployTxHash || 'already-deployed',
+                    claimTxHash: claimReceipt.hash,
+                    transferTxHash: transferTx.hash,
+                    accountAddress,
+                    recipientAddress: recipientWalletAddress,
+                    originalAmount: balance.toString(),
+                    gasCost: totalGasCost.toString(),
+                    amount: userReceives.toString() // What user actually receives
+                };
             }
-
-            // Send net amount to recipient (user pays gas from their claim)
-            console.log(`📤 Sending ${ethers.formatEther(userReceives)} to recipient ${recipientWalletAddress}...`);
-            const transferTx = await this.wallet.sendTransaction({
-                to: recipientWalletAddress,
-                value: userReceives
-            });
-            await transferTx.wait();
-            console.log(`✅ Transfer to recipient complete: ${transferTx.hash}`);
-
-            return {
-                deployTxHash: deployTxHash || 'already-deployed',
-                claimTxHash: claimReceipt.hash,
-                transferTxHash: transferTx.hash,
-                accountAddress,
-                recipientAddress: recipientWalletAddress,
-                originalAmount: balance.toString(),
-                gasCost: gasCost.toString(),
-                amount: userReceives.toString() // What user actually receives
-            };
         } catch (error) {
             console.error('Error deploying and claiming:', error);
             throw error;
