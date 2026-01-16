@@ -16,6 +16,7 @@ export default function WalletPage() {
   const [copied, setCopied] = useState(false);
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Fetch balance
   useEffect(() => {
@@ -28,8 +29,10 @@ export default function WalletPage() {
         const balanceWei = await provider.getBalance(wallets[0].address);
         const balanceEth = ethers.formatEther(balanceWei);
         setBalance(balanceEth);
+        setIsLoading(false);
       } catch (error) {
         console.error('Error fetching balance:', error);
+        setIsLoading(false);
       }
     };
 
@@ -79,30 +82,8 @@ export default function WalletPage() {
 
         // Get current block
         const currentBlock = await provider.getBlockNumber();
-        const fromBlock = Math.max(0, currentBlock - 1000); // Last ~1000 blocks
 
-        // Fetch sent transactions
-        const sentLogs = await provider.getLogs({
-          fromBlock,
-          toBlock: 'latest',
-          topics: [
-            ethers.id('Transfer(address,address,uint256)'),
-            ethers.zeroPadValue(address, 32)
-          ]
-        });
-
-        // Fetch received transactions
-        const receivedLogs = await provider.getLogs({
-          fromBlock,
-          toBlock: 'latest',
-          topics: [
-            ethers.id('Transfer(address,address,uint256)'),
-            null,
-            ethers.zeroPadValue(address, 32)
-          ]
-        });
-
-        // Also check native CRO transfers by scanning recent blocks
+        // Check native CRO transfers by scanning recent blocks
         const nativeTransfers = [];
         for (let i = currentBlock; i > Math.max(0, currentBlock - 50); i--) {
           try {
@@ -124,7 +105,6 @@ export default function WalletPage() {
               }
             }
           } catch (e) {
-            // Skip if block fetch fails
             continue;
           }
         }
@@ -165,23 +145,36 @@ export default function WalletPage() {
   // Not authenticated state
   if (!authenticated) {
     return (
-      <div className="min-h-screen gradient-mesh relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        </div>
-
+      <div className="min-h-screen bg-[#fafbfc]">
         <Navigation />
-        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="card text-center animate-slide-up">
-            <div className="text-6xl mb-6 animate-float">💼</div>
-            <h2 className="text-3xl font-bold mb-4">My Wallet</h2>
-            <p className="text-xl text-gray-600 mb-8">
-              Sign in to view your wallet and manage your crypto
+        <div className="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            {/* Wallet Icon */}
+            <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-[#1de4c6] to-[#00a28e] flex items-center justify-center shadow-xl shadow-[#1de4c6]/20">
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v3" />
+              </svg>
+            </div>
+
+            <h1 className="text-3xl font-bold text-gray-900 mb-3" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              Your Wallet
+            </h1>
+            <p className="text-lg text-gray-600 mb-8 max-w-sm mx-auto">
+              Sign in to view your balance, claim pending funds, and manage your crypto.
             </p>
-            <button onClick={login} className="btn-primary text-lg px-8 py-4">
-              Sign In
+
+            <button
+              onClick={login}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold text-white text-lg transition-all hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+                boxShadow: '0 8px 30px -5px rgba(29, 228, 198, 0.5)'
+              }}
+            >
+              <span>Sign In to Continue</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
             </button>
           </div>
         </div>
@@ -192,20 +185,18 @@ export default function WalletPage() {
   // Wallet loading state
   if (!wallets || wallets.length === 0) {
     return (
-      <div className="min-h-screen gradient-mesh relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        </div>
-
+      <div className="min-h-screen bg-[#fafbfc]">
         <Navigation />
-        <div className="relative max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="card text-center animate-slide-up">
-            <div className="spinner mx-auto mb-6"></div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-3">Setting Up Your Wallet...</h2>
-            <p className="text-lg text-gray-600">
-              Please wait while we initialize your embedded wallet
+        <div className="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#1de4c6]/20 to-[#00a28e]/20 flex items-center justify-center">
+              <div className="w-8 h-8 border-3 border-[#1de4c6] border-t-transparent rounded-full animate-spin" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              Creating Your Wallet
+            </h2>
+            <p className="text-gray-600">
+              Setting up your embedded wallet...
             </p>
           </div>
         </div>
@@ -219,406 +210,351 @@ export default function WalletPage() {
   const estimatedUSD = balanceFloat * 0.07; // CRO price estimate
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
-      </div>
-
+    <div className="min-h-screen bg-[#fafbfc]">
       <Navigation />
 
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Header */}
-        <div className="mb-8 animate-slide-up">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">My Wallet</h1>
-          <p className="text-lg text-gray-600">Manage your crypto assets and transactions</p>
-        </div>
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Balance Card - Hero */}
+        <div
+          className="rounded-3xl p-8 mb-6 relative overflow-hidden"
+          style={{
+            background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%)',
+          }}
+        >
+          {/* Subtle gradient orb */}
+          <div
+            className="absolute -top-20 -right-20 w-64 h-64 rounded-full opacity-30 blur-3xl"
+            style={{ background: 'radial-gradient(circle, #1de4c6 0%, transparent 70%)' }}
+          />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Content - Left Side (2 columns) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Balance Card */}
-            <div className="card" style={{ background: 'linear-gradient(135deg, #14b8a6, #0d9488)', color: 'white' }}>
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.875rem', fontWeight: '500', marginBottom: '0.5rem' }}>Total Balance</p>
-                  <h2 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem', color: 'white' }}>
-                    {balanceFloat.toFixed(4)} CRO
-                  </h2>
-                  <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '1.125rem' }}>
-                    ≈ ${estimatedUSD.toFixed(2)} USD
-                  </p>
-                </div>
-                <div style={{ background: 'rgba(255, 255, 255, 0.2)', backdropFilter: 'blur(10px)', borderRadius: '0.75rem', padding: '0.5rem 1rem' }}>
-                  <div style={{ width: '0.5rem', height: '0.5rem', background: '#4ade80', borderRadius: '9999px', margin: '0 auto 0.25rem', animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}></div>
-                  <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.9)' }}>Live</p>
-                </div>
-              </div>
-
-              {/* Wallet Address */}
-              <div style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(10px)', borderRadius: '0.75rem', padding: '1rem' }}>
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <p style={{ color: 'rgba(255, 255, 255, 0.8)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Wallet Address</p>
-                    <p className="font-mono truncate" style={{ fontSize: '0.875rem', color: 'white' }}>{wallet.address}</p>
-                  </div>
-                  <button
-                    onClick={copyAddress}
-                    className="px-4 py-2 rounded-lg transition-all flex items-center gap-2 flex-shrink-0"
-                    style={{ background: 'rgba(255, 255, 255, 0.2)', color: 'white', cursor: 'pointer' }}
-                    onMouseEnter={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.3)'}
-                    onMouseLeave={(e) => e.target.style.background = 'rgba(255, 255, 255, 0.2)'}
-                  >
-                    {copied ? (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span className="text-sm font-medium">Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                        <span className="text-sm font-medium">Copy</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
+          <div className="relative">
+            {/* User greeting */}
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-sm text-gray-400">{userIdentity}</span>
             </div>
 
-            {/* HIERARCHY FIX: ONE dominant action */}
-            <div className="space-y-4">
-              {/* PRIMARY: Massive Send button */}
-              <button
-                onClick={() => navigate('/send')}
-                className="w-full btn-primary text-xl py-6 shadow-2xl"
-              >
-                <div className="flex items-center justify-center gap-3">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                  <span>Send Payment Now</span>
-                </div>
-              </button>
-
-              {/* SECONDARY: Demoted to small grid */}
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setShowReceiveModal(true)}
-                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-center transition-colors"
-                  title="Get your address to receive CRO"
-                >
-                  <svg className="w-5 h-5 mx-auto mb-1 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                  </svg>
-                  <p className="text-xs font-medium text-gray-700">Receive</p>
-                </button>
-
-                <button
-                  onClick={handleExportWallet}
-                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-center transition-colors"
-                  title="Export private key for MetaMask"
-                >
-                  <svg className="w-5 h-5 mx-auto mb-1 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                  </svg>
-                  <p className="text-xs font-medium text-gray-700">Export</p>
-                </button>
-
-                <button
-                  onClick={() => {
-                    const explorerUrl = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet';
-                    window.open(`${explorerUrl}/address/${wallet.address}`, '_blank');
-                  }}
-                  className="bg-gray-100 hover:bg-gray-200 rounded-lg p-3 text-center transition-colors"
-                  title="View full history on blockchain explorer"
-                >
-                  <svg className="w-5 h-5 mx-auto mb-1 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <p className="text-xs font-medium text-gray-700">Explorer</p>
-                </button>
-              </div>
-            </div>
-
-            {/* Pending Claims */}
-            {pendingClaims.length > 0 && (
-              <div className="card">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl flex items-center justify-center">
-                      <span className="text-xl">🎁</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900">Pending Claims</h3>
-                      <p className="text-sm text-gray-500">{pendingClaims.length} unclaimed transfer{pendingClaims.length !== 1 ? 's' : ''}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  {pendingClaims.map((claim) => (
-                    <div
-                      key={claim.id}
-                      className="bg-gradient-to-r from-cronos-50 to-yellow-50 rounded-xl p-4 border-2 border-cronos-200 hover:border-cronos-400 transition-all"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-2xl font-bold text-cronos-600">
-                              {(parseInt(claim.amount) / 1e18).toFixed(4)} CRO
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            From{' '}
-                            <span className="font-mono font-medium">
-                              {claim.sender_address?.substring(0, 10)}...{claim.sender_address?.slice(-8)}
-                            </span>
-                          </p>
-                        </div>
-                        <button
-                          onClick={() => navigate(`/claim/${claim.claim_token}`)}
-                          className="btn-primary"
-                        >
-                          Claim Now →
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Transaction History - STATE VISIBILITY */}
-            <div className="card">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">Recent Activity</h3>
-                  <p className="text-sm text-gray-500">Last 50 blocks • Auto-updates every 10s</p>
-                </div>
-              </div>
-
-              {recentTransactions.length === 0 ? (
-                /* EMPTY STATE: Teaching, proactive */
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                  <div className="text-4xl mb-3">📭</div>
-                  <p className="text-gray-900 font-semibold mb-1">No Transactions Yet</p>
-                  <p className="text-sm text-gray-600 mb-4">Send your first payment to see activity here</p>
-                  <button
-                    onClick={() => navigate('/send')}
-                    className="btn-primary"
-                  >
-                    Send Your First Payment →
-                  </button>
-                </div>
+            {/* Balance */}
+            <div className="mb-6">
+              <p className="text-sm text-gray-400 mb-1">Total Balance</p>
+              {isLoading ? (
+                <div className="h-12 w-48 bg-white/10 rounded-lg animate-pulse" />
               ) : (
-                <div className="space-y-2">
-                  {recentTransactions.map((tx, idx) => {
-                    const isSent = tx.from?.toLowerCase() === wallets[0]?.address.toLowerCase();
-                    const amount = ethers.formatEther(tx.value);
-                    const explorerUrl = `${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${tx.hash}`;
-                    const timeAgo = tx.timestamp
-                      ? `${Math.floor((Date.now() / 1000 - tx.timestamp) / 60)}m ago`
-                      : 'Recent';
-
-                    return (
-                      <div
-                        key={idx}
-                        className="bg-gray-50 hover:bg-gray-100 rounded-lg p-3 transition-all cursor-pointer"
-                        onClick={() => window.open(explorerUrl, '_blank')}
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              isSent ? 'bg-red-100' : 'bg-green-100'
-                            }`}>
-                              {isSent ? (
-                                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
-                                </svg>
-                              ) : (
-                                <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
-                                </svg>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-0.5">
-                                <p className="font-semibold text-sm text-gray-900">
-                                  {isSent ? 'Sent' : 'Received'}
-                                </p>
-                                {/* STATE BADGE: Confirmed */}
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                                  Confirmed
-                                </span>
-                              </div>
-                              <p className="text-xs text-gray-500 font-mono truncate">
-                                {isSent ? `To ${tx.to?.substring(0, 8)}...${tx.to?.slice(-4)}` : `From ${tx.from?.substring(0, 8)}...${tx.from?.slice(-4)}`}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className={`font-bold tabular-nums ${isSent ? 'text-red-600' : 'text-green-600'}`}>
-                              {isSent ? '-' : '+'}{Number(amount).toFixed(4)} CRO
-                            </p>
-                            <p className="text-xs text-gray-500 tabular-nums">{timeAgo}</p>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  <a
-                    href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/address/${wallets[0]?.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block text-center py-2 text-cronos-600 hover:text-cronos-700 font-semibold text-sm"
+                <>
+                  <h1
+                    className="text-5xl font-bold text-white mb-1 tabular-nums"
+                    style={{ fontFamily: "'Clash Display', sans-serif" }}
                   >
-                    View Full History on Explorer →
-                  </a>
-                </div>
+                    {balanceFloat.toFixed(4)} <span className="text-2xl text-gray-400">CRO</span>
+                  </h1>
+                  <p className="text-gray-400 text-lg">${estimatedUSD.toFixed(2)} USD</p>
+                </>
               )}
             </div>
-          </div>
 
-          {/* Right Sidebar */}
-          <div className="space-y-6">
-            {/* User Info Card */}
-            <div className="card">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 bg-gradient-to-br from-cronos-500 to-cronos-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xl font-bold">
-                    {userIdentity.charAt(0).toUpperCase()}
-                  </span>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-1">Logged in as</p>
-                  <p className="font-medium text-gray-900 truncate">{userIdentity}</p>
-                </div>
+            {/* Wallet Address */}
+            <div className="flex items-center gap-3 bg-white/5 rounded-xl p-3 backdrop-blur-sm">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs text-gray-500 mb-0.5">Wallet Address</p>
+                <p className="font-mono text-sm text-gray-300 truncate">{wallet.address}</p>
               </div>
-            </div>
-
-            {/* What You Can Do */}
-            <div className="card bg-gradient-to-br from-cronos-50 to-blue-50 border-2 border-cronos-200">
-              <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <span>💡</span>
-                <span>What You Can Do</span>
-              </h4>
-              <ul className="space-y-3 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Send CRO to any Cronos address instantly</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Export wallet and import into MetaMask</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Use your wallet on other dApps</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Send to exchanges to convert to fiat</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-cronos-500 mt-0.5 flex-shrink-0">✓</span>
-                  <span>Claim funds sent to your verified identity</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Network Info */}
-            <div className="card bg-gray-50">
-              <h4 className="font-bold text-gray-900 mb-3 text-sm">Network Info</h4>
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Network</span>
-                  <span className="font-medium text-gray-900">Cronos Testnet</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Chain ID</span>
-                  <span className="font-medium text-gray-900">338</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Currency</span>
-                  <span className="font-medium text-gray-900">CRO</span>
-                </div>
-              </div>
+              <button
+                onClick={copyAddress}
+                className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm font-medium transition-all flex items-center gap-2 flex-shrink-0"
+              >
+                {copied ? (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                    Copy
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Receive Modal */}
-        {showReceiveModal && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="card max-w-md w-full">
-              <div className="flex justify-between items-start mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Receive CRO</h2>
-                <button
-                  onClick={() => setShowReceiveModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
+        {/* Primary Action */}
+        <button
+          onClick={() => navigate('/send')}
+          className="w-full mb-4 py-4 rounded-2xl font-semibold text-white text-lg transition-all hover:scale-[1.02] flex items-center justify-center gap-3"
+          style={{
+            background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+            boxShadow: '0 8px 30px -5px rgba(29, 228, 198, 0.4)'
+          }}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+          </svg>
+          Send Payment
+        </button>
+
+        {/* Secondary Actions */}
+        <div className="grid grid-cols-3 gap-3 mb-8">
+          <button
+            onClick={() => setShowReceiveModal(true)}
+            className="bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl p-4 text-center transition-all group"
+          >
+            <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-700">Receive</p>
+          </button>
+
+          <button
+            onClick={handleExportWallet}
+            className="bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl p-4 text-center transition-all group"
+          >
+            <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-700">Export Key</p>
+          </button>
+
+          <button
+            onClick={() => {
+              const explorerUrl = import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet';
+              window.open(`${explorerUrl}/address/${wallet.address}`, '_blank');
+            }}
+            className="bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl p-4 text-center transition-all group"
+          >
+            <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
+              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-gray-700">Explorer</p>
+          </button>
+        </div>
+
+        {/* Pending Claims - High Priority */}
+        {pendingClaims.length > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+              <h2 className="font-semibold text-gray-900">Pending Claims</h2>
+              <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
+                {pendingClaims.length}
+              </span>
+            </div>
+
+            <div className="space-y-3">
+              {pendingClaims.map((claim) => (
+                <div
+                  key={claim.id}
+                  className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-200 rounded-2xl p-4"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                <p className="text-gray-600">Share your wallet address to receive CRO:</p>
-
-                <div className="bg-gradient-to-br from-cronos-50 to-blue-50 rounded-xl p-4 border-2 border-cronos-200">
-                  <p className="text-xs text-gray-600 mb-2">Your Wallet Address</p>
-                  <p className="font-mono text-sm break-all text-gray-900">{wallet.address}</p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    copyAddress();
-                    setTimeout(() => setShowReceiveModal(false), 1000);
-                  }}
-                  className="w-full btn-primary"
-                >
-                  {copied ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      Copied!
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                      </svg>
-                      Copy Address
-                    </span>
-                  )}
-                </button>
-
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <div className="flex gap-3">
-                    <span className="text-xl">⚠️</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-yellow-900 mb-1">Important</p>
-                      <p className="text-xs text-yellow-800">
-                        Only send CRO or Cronos-compatible tokens to this address.
-                        Sending other tokens may result in permanent loss.
-                      </p>
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-xl">
+                        🎁
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900">
+                          {(parseInt(claim.amount) / 1e18).toFixed(4)} CRO
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Waiting for you
+                        </p>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => navigate(`/claim/${claim.claim_token}`)}
+                      className="px-4 py-2 rounded-xl font-semibold text-white text-sm transition-all hover:scale-105"
+                      style={{
+                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                      }}
+                    >
+                      Claim Now
+                    </button>
                   </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
+
+        {/* Recent Activity */}
+        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100">
+            <h2 className="font-semibold text-gray-900">Recent Activity</h2>
+          </div>
+
+          {recentTransactions.length === 0 ? (
+            <div className="px-5 py-12 text-center">
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-gray-900 font-medium mb-1">No transactions yet</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Your activity will appear here after your first transaction
+              </p>
+              <button
+                onClick={() => navigate('/send')}
+                className="text-sm font-medium text-[#00a28e] hover:text-[#008f7d]"
+              >
+                Send your first payment →
+              </button>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {recentTransactions.map((tx, idx) => {
+                const isSent = tx.from?.toLowerCase() === wallet.address.toLowerCase();
+                const amount = ethers.formatEther(tx.value);
+                const explorerUrl = `${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${tx.hash}`;
+                const timeAgo = tx.timestamp
+                  ? `${Math.floor((Date.now() / 1000 - tx.timestamp) / 60)}m ago`
+                  : 'Recent';
+
+                return (
+                  <div
+                    key={idx}
+                    className="px-5 py-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => window.open(explorerUrl, '_blank')}
+                  >
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                          isSent ? 'bg-red-100' : 'bg-green-100'
+                        }`}>
+                          {isSent ? (
+                            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
+                            </svg>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {isSent ? 'Sent' : 'Received'}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            {timeAgo}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`font-semibold tabular-nums ${isSent ? 'text-red-600' : 'text-green-600'}`}>
+                          {isSent ? '-' : '+'}{Number(amount).toFixed(4)} CRO
+                        </p>
+                        <p className="text-xs text-gray-400 font-mono">
+                          {isSent
+                            ? `To ${tx.to?.substring(0, 6)}...${tx.to?.slice(-4)}`
+                            : `From ${tx.from?.substring(0, 6)}...${tx.from?.slice(-4)}`
+                          }
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="px-5 py-3 bg-gray-50">
+                <a
+                  href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/address/${wallet.address}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-medium text-[#00a28e] hover:text-[#008f7d] flex items-center justify-center gap-1"
+                >
+                  View all on Explorer
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Network Badge */}
+        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+          <div className="w-2 h-2 bg-green-400 rounded-full" />
+          <span>Cronos Testnet</span>
+          <span className="text-gray-300">•</span>
+          <span>Chain ID 338</span>
+        </div>
       </div>
+
+      {/* Receive Modal */}
+      {showReceiveModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+                Receive CRO
+              </h2>
+              <button
+                onClick={() => setShowReceiveModal(false)}
+                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <p className="text-gray-600 mb-4">
+              Share this address to receive CRO on Cronos network:
+            </p>
+
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4 border-2 border-gray-200">
+              <p className="font-mono text-sm text-gray-900 break-all leading-relaxed">
+                {wallet.address}
+              </p>
+            </div>
+
+            <button
+              onClick={() => {
+                copyAddress();
+                setTimeout(() => setShowReceiveModal(false), 1000);
+              }}
+              className="w-full py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+              style={{
+                background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+              }}
+            >
+              {copied ? (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Copied to Clipboard!
+                </>
+              ) : (
+                <>
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copy Address
+                </>
+              )}
+            </button>
+
+            <div className="mt-4 p-3 bg-amber-50 rounded-xl border border-amber-200">
+              <p className="text-xs text-amber-800">
+                <strong>Note:</strong> Only send CRO or Cronos-compatible tokens. Sending other tokens may result in permanent loss.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

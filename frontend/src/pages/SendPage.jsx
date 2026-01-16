@@ -5,6 +5,9 @@ import Navigation from '../components/Navigation';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
+// Minimum amount to cover gas costs (~0.03 CRO) plus margin
+const MIN_AMOUNT_CRO = 0.05;
+
 export default function SendPage() {
   const navigate = useNavigate();
   const { login, authenticated, ready } = usePrivy();
