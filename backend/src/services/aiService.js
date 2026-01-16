@@ -56,8 +56,27 @@ class AIService {
       "token": "CRO" | "USDC" | etc,
       "note": "purpose/note or null",
       "recipients": [] // for bulk payments
-    }
-  }`
+    },
+    "message": "Human-readabl response",
+    "missing": ["what's missing if clarification needed"]
+  }
+
+    Examples:
+    - "Send 5 CRO to alice@company.com" -> payment with recipient, amount
+    - "Pay @alice_twitter 10 for the design" -> payment, twitter recipient
+    - "Send money to the team" -> clarification needed (who? how much?)
+    - "Pay these people: bob@test.com 5, carol@test.com 3" -> bulk_payment`;
+
+        const response = await this.client.messages.create({
+          model: 'claude-3-5haiku-20241022',
+          max_tokens: 1024,
+          system: systemPrompt,
+          messages: [
+            {
+              role: 'user'
+            }
+          ]
+        })
     }
   }
 }
