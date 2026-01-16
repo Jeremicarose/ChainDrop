@@ -180,11 +180,28 @@ class BlockchainService {
             const claimReceipt = await claimTx.wait();
             console.log(`✅ Withdrawal complete: ${claimReceipt.hash}`);
 
-            // Now send from admin to recipient's wallet
-            console.log(`📤 Sending ${ethers.formatEther(balance)} to recipient ${recipientWalletAddress}...`);
+            // Calculate gas cost to deduct from user's claim (self-funded claiming)
+            // This reimburses admin for gas spent on deploy + withdraw + transfer
+            const gasPrice = await this.getGasPrice();
+            const estimatedGasUsed = 250000n; // ~250k gas for deploy + claim + transfer
+            const gasCost = gasPrice * estimatedGasUsed;
+
+            // User receives: claimed amount - gas cost
+            const userReceives = balance > gasCost ? balance - gasCost : 0n;
+
+            console.log(`💰 Claimed amount: ${ethers.formatEther(balance)} CRO`);
+            console.log(`⛽ Gas cost deducted: ${ethers.formatEther(gasCost)} CRO`);
+            console.log(`💸 User receives: ${ethers.formatEther(userReceives)} CRO`);
+
+            if (userReceives === 0n) {
+                throw new Error(`Claim amount (${ethers.formatEther(balance)} CRO) is less than gas cost (${ethers.formatEther(gasCost)} CRO)`);
+            }
+
+            // Send net amount to recipient (user pays gas from their claim)
+            console.log(`📤 Sending ${ethers.formatEther(userReceives)} to recipient ${recipientWalletAddress}...`);
             const transferTx = await this.wallet.sendTransaction({
                 to: recipientWalletAddress,
-                value: balance
+                value: userReceives
             });
             await transferTx.wait();
             console.log(`✅ Transfer to recipient complete: ${transferTx.hash}`);
@@ -195,7 +212,9 @@ class BlockchainService {
                 transferTxHash: transferTx.hash,
                 accountAddress,
                 recipientAddress: recipientWalletAddress,
-                amount: balance.toString()
+                originalAmount: balance.toString(),
+                gasCost: gasCost.toString(),
+                amount: userReceives.toString() // What user actually receives
             };
         } catch (error) {
             console.error('Error deploying and claiming:', error);
