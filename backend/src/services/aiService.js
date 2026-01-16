@@ -15,15 +15,15 @@ class AIService {
         apiKey: process.env.ANTHROPIC_API_KEY,
       });
       this.enabled = true;
-      console.log('AI Service initialized with Claude API');
+      console.log('🤖 AI Service initialized with Claude API');
     } else {
-      console.log('AI Service running in fallback mode (no ANTHROPIC_API_KEY)');
+      console.log('⚠️  AI Service running in fallback mode (no ANTHROPIC_API_KEY)');
     }
   }
 
   /**
    * Parse a natural language payment request
-   * @param {string} message - User`s natural language input
+   * @param {string} message - User's natural language input
    * @param {object} context - Additional context (user info, previous messages)
    * @returns {object} Parsed payment intent
    */
@@ -33,54 +33,281 @@ class AIService {
     }
 
     try {
-      const systemPrompt = `You are an AI assistant for ChainDrop, a crypto payment platform that enables sending payments to anyone via eamil, phone , or Twitter - even if they don't have a wallet yet.
-      
-  Your job is to parse natural language payment requests and extract structured payment data.
-  
-  IMPORTANT RULES:
-  1. Extract the recipient identifier (email, phone, or Twitter handle)
-  2. Extract the amount (numeric value)
-  3. Identify the token (default to CRO if not specified)
-  4. Extract any note/purpose for the payment
-  5. Determine if this is a single payment or bulk payment request
-  6. If information is missing, ask for clarification
-  
-  RESPOND ONLY WITH VALID JSON in this format:
-  {
-    "type": "payment" | "bulk_payment" | "clarification" | "error",
-    "confidence": 0.0-1.0,
-    "data": {
-      "recipient": "email/phone/twitter or null",
-      "recipientType": "email" | "phone" | "twitter" | null,
-      "amount": number or null,
-      "token": "CRO" | "USDC" | etc,
-      "note": "purpose/note or null",
-      "recipients": [] // for bulk payments
-    },
-    "message": "Human-readabl response",
-    "missing": ["what's missing if clarification needed"]
-  }
+      const systemPrompt = `You are an AI assistant for ChainDrop, a crypto payment platform that enables sending payments to anyone via email, phone, or Twitter - even if they don't have a wallet yet.
 
-    Examples:
-    - "Send 5 CRO to alice@company.com" -> payment with recipient, amount
-    - "Pay @alice_twitter 10 for the design" -> payment, twitter recipient
-    - "Send money to the team" -> clarification needed (who? how much?)
-    - "Pay these people: bob@test.com 5, carol@test.com 3" -> bulk_payment`;
+Your job is to parse natural language payment requests and extract structured payment data.
 
-        const response = await this.client.messages.create({
-          model: 'claude-3-5haiku-20241022',
-          max_tokens: 1024,
-          system: systemPrompt,
-          messages: [
-            {
-              role: 'user',
-              content: `Parse this payment request: "${message}"
-              
+IMPORTANT RULES:
+1. Extract the recipient identifier (email, phone, or Twitter handle)
+2. Extract the amount (numeric value)
+3. Identify the token (default to CRO if not specified)
+4. Extract any note/purpose for the payment
+5. Determine if this is a single payment or bulk payment request
+6. If information is missing, ask for clarification
+
+RESPOND ONLY WITH VALID JSON in this format:
+{
+  "type": "payment" | "bulk_payment" | "clarification" | "error",
+  "confidence": 0.0-1.0,
+  "data": {
+    "recipient": "email/phone/twitter or null",
+    "recipientType": "email" | "phone" | "twitter" | null,
+    "amount": number or null,
+    "token": "CRO" | "USDC" | etc,
+    "note": "purpose/note or null",
+    "recipients": [] // for bulk payments
+  },
+  "message": "Human-readable response",
+  "missing": ["what's missing if clarification needed"]
+}
+
+Examples:
+- "Send 5 CRO to alice@company.com" → payment with recipient, amount
+- "Pay @alice_twitter 10 for the design" → payment, twitter recipient
+- "Send money to the team" → clarification needed (who? how much?)
+- "Pay these people: bob@test.com 5, carol@test.com 3" → bulk_payment`;
+
+      const response = await this.client.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: `Parse this payment request: "${message}"
+
 Context:
-- User wallet: ${}              `
-            }
-          ]
-        })
+- User wallet: ${context.walletAddress || 'unknown'}
+- Previous messages: ${context.history ? context.history.slice(-3).join('; ') : 'none'}
+- Available balance: ${context.balance || 'unknown'} CRO`
+          }
+        ]
+      });
+
+      // Parse the JSON response
+      const content = response.content[0].text;
+
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        return {
+          success: true,
+          ...parsed
+        };
+      }
+
+      // If no JSON found, return error
+      return {
+        success: false,
+        type: 'error',
+        message: 'Could not parse AI response',
+        raw: content
+      };
+
+    } catch (error) {
+      console.error('AI parsing error:', error);
+
+      // Fall back to regex parsing
+      return this.fallbackParse(message);
     }
   }
+
+  /**
+   * Fallback regex-based parsing when AI is unavailable
+   */
+  fallbackParse(message) {
+    const result = {
+      success: true,
+      type: 'payment',
+      confidence: 0.6,
+      data: {
+        recipient: null,
+        recipientType: null,
+        amount: null,
+        token: 'CRO',
+        note: null
+      },
+      message: '',
+      missing: []
+    };
+
+    // Extract email
+    const emailMatch = message.match(/[\w.-]+@[\w.-]+\.\w+/);
+    if (emailMatch) {
+      result.data.recipient = emailMatch[0];
+      result.data.recipientType = 'email';
+    }
+
+    // Extract Twitter handle
+    const twitterMatch = message.match(/@([a-zA-Z0-9_]+)/);
+    if (twitterMatch && !emailMatch) {
+      result.data.recipient = twitterMatch[0];
+      result.data.recipientType = 'twitter';
+    }
+
+    // Extract phone number
+    const phoneMatch = message.match(/\+?[\d\s-]{10,}/);
+    if (phoneMatch && !emailMatch && !twitterMatch) {
+      result.data.recipient = phoneMatch[0].replace(/[\s-]/g, '');
+      result.data.recipientType = 'phone';
+    }
+
+    // Extract amount
+    const amountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USD|\$)?/i);
+    if (amountMatch) {
+      result.data.amount = parseFloat(amountMatch[1]);
+    }
+
+    // Extract token
+    const tokenMatch = message.match(/\b(CRO|USDC|ETH|USDT)\b/i);
+    if (tokenMatch) {
+      result.data.token = tokenMatch[1].toUpperCase();
+    }
+
+    // Check for "for" clause (note/purpose)
+    const forMatch = message.match(/for\s+(?:the\s+)?(.+?)(?:\.|$)/i);
+    if (forMatch) {
+      result.data.note = forMatch[1].trim();
+    }
+
+    // Determine what's missing
+    if (!result.data.recipient) {
+      result.missing.push('recipient');
+    }
+    if (!result.data.amount) {
+      result.missing.push('amount');
+    }
+
+    // Set response type and message
+    if (result.missing.length > 0) {
+      result.type = 'clarification';
+      result.message = `I need more info. Please specify: ${result.missing.join(', ')}`;
+      result.confidence = 0.3;
+    } else {
+      result.message = `Got it! Sending ${result.data.amount} ${result.data.token} to ${result.data.recipient}${result.data.note ? ` for ${result.data.note}` : ''}.`;
+      result.confidence = 0.8;
+    }
+
+    return result;
+  }
+
+  /**
+   * Generate a conversational response for payment flow
+   */
+  async generateResponse(context, paymentResult) {
+    if (!this.enabled) {
+      return this.generateFallbackResponse(paymentResult);
+    }
+
+    try {
+      const response = await this.client.messages.create({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 256,
+        system: `You are a friendly AI assistant for ChainDrop payments. Keep responses brief and helpful. Use casual, friendly tone. Include relevant emojis sparingly.`,
+        messages: [
+          {
+            role: 'user',
+            content: `Generate a brief response for this payment action:
+Action: ${paymentResult.success ? 'Payment sent successfully' : 'Payment failed'}
+Amount: ${paymentResult.amount} ${paymentResult.token || 'CRO'}
+Recipient: ${paymentResult.recipient}
+${paymentResult.error ? `Error: ${paymentResult.error}` : ''}
+${paymentResult.claimLink ? `Claim link: ${paymentResult.claimLink}` : ''}`
+          }
+        ]
+      });
+
+      return response.content[0].text;
+    } catch (error) {
+      return this.generateFallbackResponse(paymentResult);
+    }
+  }
+
+  /**
+   * Fallback response generation
+   */
+  generateFallbackResponse(paymentResult) {
+    if (paymentResult.success) {
+      return `✅ Sent ${paymentResult.amount} ${paymentResult.token || 'CRO'} to ${paymentResult.recipient}! They'll get an email with a claim link.`;
+    } else {
+      return `❌ Payment failed: ${paymentResult.error || 'Unknown error'}. Please try again.`;
+    }
+  }
+
+  /**
+   * Parse bulk payment CSV/text input
+   */
+  async parseBulkPayments(input) {
+    const lines = input.trim().split('\n').filter(line => line.trim());
+    const payments = [];
+    const errors = [];
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+
+      // Try CSV format: email,amount
+      const csvMatch = line.match(/^([^,]+),\s*(\d+(?:\.\d+)?)/);
+      if (csvMatch) {
+        const [, recipient, amount] = csvMatch;
+
+        // Validate recipient format
+        let recipientType = null;
+        if (recipient.includes('@') && recipient.includes('.')) {
+          recipientType = 'email';
+        } else if (recipient.startsWith('@')) {
+          recipientType = 'twitter';
+        } else if (/^\+?\d{10,}$/.test(recipient.replace(/[\s-]/g, ''))) {
+          recipientType = 'phone';
+        }
+
+        if (recipientType && parseFloat(amount) > 0) {
+          payments.push({
+            recipient: recipient.trim(),
+            recipientType,
+            amount: parseFloat(amount),
+            line: i + 1
+          });
+        } else {
+          errors.push({ line: i + 1, text: line, error: 'Invalid format' });
+        }
+      } else {
+        errors.push({ line: i + 1, text: line, error: 'Could not parse' });
+      }
+    }
+
+    return {
+      success: errors.length === 0,
+      payments,
+      errors,
+      total: payments.reduce((sum, p) => sum + p.amount, 0),
+      count: payments.length
+    };
+  }
+
+  /**
+   * Smart suggestions based on context
+   */
+  async getSuggestions(context) {
+    // Return common payment suggestions
+    const suggestions = [
+      { text: 'Send 5 CRO to...', description: 'Quick payment' },
+      { text: 'Pay my team', description: 'Bulk payment' },
+      { text: 'Refund last payment', description: 'Refund' },
+    ];
+
+    // Add recent recipients if available
+    if (context.recentRecipients) {
+      context.recentRecipients.slice(0, 3).forEach(r => {
+        suggestions.unshift({
+          text: `Send to ${r}`,
+          description: 'Recent recipient'
+        });
+      });
+    }
+
+    return suggestions.slice(0, 5);
+  }
 }
+
+module.exports = new AIService();
