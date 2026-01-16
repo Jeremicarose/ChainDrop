@@ -232,33 +232,13 @@ class TransferService {
         console.log(`✅ Deploy result:`, result);
       }
 
-      // Calculate gas costs to deduct from user's received amount
-      // Estimated gas for deploy + claim + transfer ≈ 300,000 gas
-      // At 1 gwei = 0.0003 ETH
-      const estimatedGasCost = ethers.parseEther("0.0003"); // ~$1 at current prices
+      // deployAndClaim now handles the full flow: deploy -> withdraw -> transfer
+      // Get the actual amount transferred from the result
+      const transferTxHash = result.transferTxHash || result.claimTxHash;
+      const userReceivesAmount = result.amount ? BigInt(result.amount) : BigInt(transfer.amount);
 
-      // Calculate amount user receives (original amount - gas cost)
-      const userReceivesAmount = BigInt(transfer.amount) - BigInt(estimatedGasCost);
-
-      console.log(`💰 Original amount: ${ethers.formatEther(transfer.amount)} CRO`);
-      console.log(`⛽ Gas deduction: ${ethers.formatEther(estimatedGasCost)} CRO`);
-      console.log(`💸 User receives: ${ethers.formatEther(userReceivesAmount)} CRO`);
-
-      let transferTxHash;
-
-      if (skipBlockchain) {
-        // Simulate transfer
-        transferTxHash = '0x' + Math.random().toString(16).substring(2, 66);
-        console.log(`✅ Simulated transfer: ${transferTxHash}`);
-      } else {
-        // Real blockchain transfer
-        transferTxHash = await blockchainService.sendFunds(
-          recipientWalletAddress,
-          userReceivesAmount.toString(),
-          transfer.token_address === 'ETH' ? null : transfer.token_address
-        );
-        console.log(`✅ Transfer TX: ${transferTxHash}`);
-      }
+      console.log(`💰 User received: ${ethers.formatEther(userReceivesAmount)} CRO`);
+      console.log(`✅ Transfer TX: ${transferTxHash}`);
 
       // Update transfer status
       await db.run(`
@@ -301,7 +281,6 @@ class TransferService {
         transactionHash: transferTxHash,
         claimedAmount: amountInEth,
         originalAmount: ethers.formatEther(transfer.amount),
-        gasCost: ethers.formatEther(estimatedGasCost),
         token: transfer.token_address === 'ETH' ? 'ETH' : transfer.token_address,
         deployTxHash: result.deployTxHash,
         claimTxHash: result.claimTxHash
