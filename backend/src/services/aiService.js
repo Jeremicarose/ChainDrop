@@ -73,7 +73,11 @@ class AIService {
           system: systemPrompt,
           messages: [
             {
-              role: 'user'
+              role: 'user',
+              content: `Parse this payment request: "${message}"
+              
+Context:
+- User wallet: ${}              `
             }
           ]
         })
