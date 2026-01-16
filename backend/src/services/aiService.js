@@ -33,7 +33,9 @@ class AIService {
     }
 
     try {
-      const systemPrompt = `You are an AI assistant for ChainDrop, a crypto payment platform that enables sending payments to anyone via eamil, phone , or Twitter - even if they don't have a wallet yet.`
+      const systemPrompt = `You are an AI assistant for ChainDrop, a crypto payment platform that enables sending payments to anyone via eamil, phone , or Twitter - even if they don't have a wallet yet.
+      
+      `
     }
   }
 }
