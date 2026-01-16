@@ -296,17 +296,32 @@ export default function SendPage() {
                 onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
                 placeholder="0.00"
                 step="0.001"
-                min="0"
-                className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 text-3xl font-bold pr-20 focus:border-[#1de4c6] focus:ring-0 outline-none transition-colors tabular-nums"
+                min={MIN_AMOUNT_CRO}
+                className={`w-full px-5 py-4 rounded-xl border-2 text-3xl font-bold pr-20 focus:ring-0 outline-none transition-colors tabular-nums ${
+                  formData.amount && parseFloat(formData.amount) < MIN_AMOUNT_CRO
+                    ? 'border-amber-400 focus:border-amber-500'
+                    : 'border-gray-200 focus:border-[#1de4c6]'
+                }`}
                 required
               />
               <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-lg">
                 CRO
               </span>
             </div>
-            <p className="text-sm text-gray-500 mt-3">
-              Gas fee (~0.0003 CRO) is deducted from amount when they claim
-            </p>
+            {formData.amount && parseFloat(formData.amount) < MIN_AMOUNT_CRO ? (
+              <div className="flex items-center gap-2 mt-3 text-amber-600">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                <span className="text-sm font-medium">
+                  Minimum {MIN_AMOUNT_CRO} CRO required (gas costs ~0.03 CRO)
+                </span>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 mt-3">
+                Gas fee (~0.03 CRO) is deducted from amount when they claim
+              </p>
+            )}
           </div>
 
           {/* Error */}
@@ -322,7 +337,7 @@ export default function SendPage() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading || !formData.recipientIdentifier || !formData.amount}
+            disabled={loading || !formData.recipientIdentifier || !formData.amount || parseFloat(formData.amount) < MIN_AMOUNT_CRO}
             className="w-full px-6 py-5 rounded-xl font-bold text-white text-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             style={{
               background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',

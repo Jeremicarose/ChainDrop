@@ -2,6 +2,9 @@ const transferService = require('../services/transferService');
 const blockchainService = require('../services/blockchainService');
 // NOTE: Email sending is handled in transferService - don't duplicate here
 
+// Minimum amount to cover claim gas costs (~0.03 CRO) plus margin
+const MIN_AMOUNT_CRO = '0.05';
+
 const transferController = {
   /**
    * POST /api/transfer/send
@@ -25,6 +28,15 @@ const transferController = {
         return res.status(400).json({
           error: 'Invalid identifier type',
           validTypes
+        });
+      }
+
+      // Validate minimum amount to cover gas costs
+      if (parseFloat(amount) < parseFloat(MIN_AMOUNT_CRO)) {
+        return res.status(400).json({
+          error: `Amount too low`,
+          message: `Minimum ${MIN_AMOUNT_CRO} CRO required to cover claim gas costs (~0.03 CRO)`,
+          minimum: MIN_AMOUNT_CRO
         });
       }
 
