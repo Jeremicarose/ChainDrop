@@ -272,15 +272,18 @@ class TransferService {
         }
       }
 
-      // Format amount for display (show what user actually received)
+      // Format amounts for display
       const amountInEth = ethers.formatEther(userReceivesAmount);
+      const originalAmount = result.originalAmount ? ethers.formatEther(result.originalAmount) : ethers.formatEther(transfer.amount);
+      const gasCostEth = result.gasCost ? ethers.formatEther(result.gasCost) : '0';
 
       return {
         success: true,
         deployedAccountAddress: result.accountAddress,
         transactionHash: transferTxHash,
         claimedAmount: amountInEth,
-        originalAmount: ethers.formatEther(transfer.amount),
+        originalAmount: originalAmount,
+        gasCost: gasCostEth,
         token: transfer.token_address === 'ETH' ? 'ETH' : transfer.token_address,
         deployTxHash: result.deployTxHash,
         claimTxHash: result.claimTxHash
