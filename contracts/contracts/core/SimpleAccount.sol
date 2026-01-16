@@ -52,6 +52,19 @@ contract SimpleAccount is BaseAccount {
     }
 
     /**
+     * @notice Set the owner of this account (used for decentralized ghost vaults)
+     * @dev Can only be called when owner is address(0) - allows factory to set real owner
+     *      after deploying with placeholder for deterministic addresses
+     * @param newOwner The new owner address
+     */
+    function setOwner(address newOwner) external {
+        require(owner == address(0), "owner already set");
+        require(newOwner != address(0), "invalid owner");
+        owner = newOwner;
+        emit AccountInitialized(_entryPoint, newOwner);
+    }
+
+    /**
      * @notice Return the EntryPoint address
      * @dev Required by BaseAccount
      */

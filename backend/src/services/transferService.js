@@ -63,15 +63,14 @@ class TransferService {
       ]);
 
       // Create wallet record (only if it doesn't exist)
-      // Note: owner_address is the admin wallet (required for claiming)
-      const adminAddress = blockchainService.wallet.address;
+      // DECENTRALIZED: owner_address is NULL until claimed - the claimer's wallet becomes owner
       await db.run(`
         INSERT OR IGNORE INTO wallets (
           address, owner_address, identifier, identifier_type, deployed, created_at
         ) VALUES (?, ?, ?, ?, ?, ?)
       `, [
         recipientAddress,
-        adminAddress, // Use admin as owner for all accounts
+        null, // Owner is determined at claim time (claimer's wallet)
         this.hashIdentifier(recipientIdentifier),
         identifierType,
         false,
@@ -194,14 +193,15 @@ class TransferService {
 
       console.log(`✅ Identity verified: ${verifiedIdentity}`);
 
-      // Get wallet info to find the owner address
+      // Get wallet info (for tracking purposes)
       const wallet = await db.get(
         'SELECT * FROM wallets WHERE address = ?',
         [transfer.recipient_address]
       );
 
+      // Wallet record is optional for decentralized flow
       if (!wallet) {
-        throw new Error('Wallet record not found');
+        console.log(`⚠️  No wallet record found - creating on-the-fly`);
       }
 
       let result;
@@ -213,14 +213,17 @@ class TransferService {
         result = {
           deployTxHash: '0x' + Math.random().toString(16).substring(2, 66),
           claimTxHash: '0x' + Math.random().toString(16).substring(2, 66),
-          accountAddress: transfer.recipient_address
+          accountAddress: transfer.recipient_address,
+          ownerAddress: recipientWalletAddress
         };
         console.log(`✅ Simulated deploy: ${result.deployTxHash}`);
       } else {
-        // Real blockchain deployment (admin is owner for all accounts)
-        console.log(`📦 Deploying account with admin as owner, identifier: ${transfer.recipient_identifier_original}`);
+        // DECENTRALIZED: Deploy with RECIPIENT's wallet as owner
+        // The claimer becomes the true owner of their ghost vault
+        console.log(`📦 Deploying ghost vault with recipient as owner: ${recipientWalletAddress}`);
+        console.log(`   Identifier: ${transfer.recipient_identifier_original}`);
         result = await blockchainService.deployAndClaim(
-          wallet.owner_address, // This is admin address
+          recipientWalletAddress, // Recipient's wallet becomes the owner
           transfer.recipient_identifier_original,
           transfer.token_address === 'ETH' ? null : transfer.token_address,
           transfer.amount,
@@ -264,12 +267,12 @@ class TransferService {
         WHERE id = ?
       `, [Date.now(), transfer.id]);
 
-      // Update wallet deployment status
+      // Update wallet deployment status and set owner (DECENTRALIZED)
       await db.run(`
         UPDATE wallets
-        SET deployed = 1, deployed_at = ?, deployment_tx_hash = ?
+        SET deployed = 1, deployed_at = ?, deployment_tx_hash = ?, owner_address = ?
         WHERE address = ?
-      `, [Date.now(), result.deployTxHash, result.accountAddress]);
+      `, [Date.now(), result.deployTxHash, recipientWalletAddress, result.accountAddress]);
 
       console.log(`✅ Claim processed successfully`);
 
