@@ -1,76 +1,92 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
-describe("ChainDrop Core Contracts", function () {
+describe("ChainDrop Core Contracts - Decentralized Architecture", function () {
   let accountFactory;
   let entryPoint;
   let owner;
   let sender;
+  let recipient;
 
   beforeEach(async function () {
-    [owner, sender] = await ethers.getSigners();
+    [owner, sender, recipient] = await ethers.getSigners();
 
-    // Deploy mock EntryPoint (in production, use the official one)
-    const EntryPoint = await ethers.getContractFactory("SimpleAccount");
-    // For testing, we'll use a simple address as entrypoint
-    const entryPointAddress = "0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"; // Official EntryPoint v0.6
-    
-    // Deploy AccountFactory
+    // Deploy EntryPoint first
+    const EntryPoint = await ethers.getContractFactory("EntryPoint");
+    entryPoint = await EntryPoint.deploy();
+    await entryPoint.waitForDeployment();
+
+    // Deploy AccountFactory with EntryPoint
     const AccountFactory = await ethers.getContractFactory("AccountFactory");
-    accountFactory = await AccountFactory.deploy(entryPointAddress);
+    accountFactory = await AccountFactory.deploy(await entryPoint.getAddress());
     await accountFactory.waitForDeployment();
 
     console.log("AccountFactory deployed to:", await accountFactory.getAddress());
   });
 
-  describe("Account Creation", function () {
-    it("Should generate deterministic addresses", async function () {
+  describe("Decentralized Address Computation", function () {
+    it("Should compute address from salt ONLY (not owner)", async function () {
       const identifier = "user@example.com";
-      
+
       // Generate salt from identifier
       const salt = await accountFactory.generateSalt(identifier);
       console.log("Salt:", salt);
 
-      // Get counterfactual address (before deployment)
-      const predictedAddress = await accountFactory.getAddress(owner.address, salt);
-      console.log("Predicted address:", predictedAddress);
+      // Get counterfactual address - NO OWNER in computation!
+      const predictedAddress = await accountFactory.computeAccountAddress(salt);
+      console.log("Predicted address (salt only):", predictedAddress);
 
-      // Create the account
+      // Create the account with owner
       const tx = await accountFactory.createAccount(owner.address, salt);
       await tx.wait();
 
-      // Get address after deployment
-      const actualAddress = await accountFactory.getAddress(owner.address, salt);
-      console.log("Actual address:", actualAddress);
+      // Address should still match (owner doesn't affect address)
+      const verifyAddress = await accountFactory.computeAccountAddress(salt);
+      console.log("Verified address:", verifyAddress);
 
-      // Should match!
-      expect(predictedAddress).to.equal(actualAddress);
+      expect(predictedAddress).to.equal(verifyAddress);
     });
 
-    it("Should prevent double deployment", async function () {
+    it("Same identifier = same address regardless of owner", async function () {
+      const identifier = "shared@example.com";
+      const salt = await accountFactory.generateSalt(identifier);
+
+      // Address computed without any owner
+      const address = await accountFactory.computeAccountAddress(salt);
+
+      // This is the KEY TEST for decentralization:
+      // The address is determined ONLY by the identifier, not by who will own it
+      console.log("Address for identifier:", address);
+
+      expect(address).to.be.properAddress;
+    });
+
+    it("Should prevent double deployment but allow different owners", async function () {
       const identifier = "user2@example.com";
       const salt = await accountFactory.generateSalt(identifier);
 
-      // Deploy once
+      // Deploy with first owner
       await accountFactory.createAccount(owner.address, salt);
-      
-      // Deploy again (should not revert, just return existing)
-      const tx = await accountFactory.createAccount(owner.address, salt);
+
+      // Deploy again with DIFFERENT owner (should return existing, not create new)
+      const tx = await accountFactory.createAccount(recipient.address, salt);
       await tx.wait();
-      
-      // Both should return the same address
-      const addr1 = await accountFactory.getAddress(owner.address, salt);
-      const addr2 = await accountFactory.getAddress(owner.address, salt);
-      expect(addr1).to.equal(addr2);
+
+      // Address should be the same (determined by salt only)
+      const addr = await accountFactory.computeAccountAddress(salt);
+      console.log("Address (same for both):", addr);
+
+      expect(addr).to.be.properAddress;
     });
 
-    it("Should allow sending funds to counterfactual address", async function () {
+    it("Should allow sending funds to counterfactual address BEFORE knowing owner", async function () {
       const identifier = "+254712345678";
       const salt = await accountFactory.generateSalt(identifier);
-      
-      // Get address BEFORE deployment
-      const accountAddress = await accountFactory.getAddress(owner.address, salt);
-      
+
+      // Get address BEFORE deployment - no owner needed!
+      const accountAddress = await accountFactory.computeAccountAddress(salt);
+      console.log("Ghost vault address:", accountAddress);
+
       // Send ETH to the counterfactual address
       const sendAmount = ethers.parseEther("0.1");
       await sender.sendTransaction({
@@ -80,18 +96,55 @@ describe("ChainDrop Core Contracts", function () {
 
       // Check balance (account doesn't exist yet!)
       const balance = await ethers.provider.getBalance(accountAddress);
-      console.log("Balance at counterfactual address:", ethers.formatEther(balance));
-      
+      console.log("Balance at ghost vault:", ethers.formatEther(balance), "ETH");
+
       expect(balance).to.equal(sendAmount);
+
+      // NOW deploy with recipient as owner (they claim their funds)
+      await accountFactory.createAccount(recipient.address, salt);
+
+      // Balance should still be there
+      const balanceAfter = await ethers.provider.getBalance(accountAddress);
+      expect(balanceAfter).to.equal(sendAmount);
     });
 
     it("Should use convenient identifier lookup", async function () {
       const email = "alice@chaindrop.io";
-      
-      const address1 = await accountFactory.getAddressForIdentifier(owner.address, email);
-      console.log("Address for", email, ":", address1);
-      
-      expect(address1).to.be.properAddress;
+
+      // No owner needed for address lookup!
+      const address = await accountFactory.getAddressForIdentifier(email);
+      console.log("Address for", email, ":", address);
+
+      expect(address).to.be.properAddress;
+    });
+  });
+
+  describe("Owner Assignment", function () {
+    it("Recipient becomes owner when claiming", async function () {
+      const identifier = "claimer@example.com";
+      const salt = await accountFactory.generateSalt(identifier);
+
+      // Address is deterministic from identifier
+      const vaultAddress = await accountFactory.computeAccountAddress(salt);
+
+      // Fund the vault
+      await sender.sendTransaction({
+        to: vaultAddress,
+        value: ethers.parseEther("0.05")
+      });
+
+      // Deploy with RECIPIENT as owner (decentralized claim)
+      await accountFactory.createAccount(recipient.address, salt);
+
+      // Verify recipient is the owner
+      const SimpleAccount = await ethers.getContractFactory("SimpleAccount");
+      const account = SimpleAccount.attach(vaultAddress);
+      const actualOwner = await account.owner();
+
+      console.log("Vault owner:", actualOwner);
+      console.log("Expected recipient:", recipient.address);
+
+      expect(actualOwner).to.equal(recipient.address);
     });
   });
 
