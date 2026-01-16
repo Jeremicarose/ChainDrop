@@ -20,6 +20,7 @@ export default function SendPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   // Auto-fill sender address from Privy wallet
   useEffect(() => {
@@ -30,6 +31,23 @@ export default function SendPage() {
       }));
     }
   }, [authenticated, ready, wallets]);
+
+  // Auto-detect identifier type
+  const detectIdentifierType = (value) => {
+    if (value.includes('@') && value.includes('.')) return 'email';
+    if (value.startsWith('@') || value.startsWith('twitter:')) return 'twitter';
+    if (value.startsWith('+') || /^\d{10,}$/.test(value)) return 'phone';
+    return 'email';
+  };
+
+  const handleRecipientChange = (e) => {
+    const value = e.target.value;
+    setFormData((prev) => ({
+      ...prev,
+      recipientIdentifier: value,
+      identifierType: detectIdentifierType(value),
+    }));
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -59,323 +77,288 @@ export default function SendPage() {
     }
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
   const claimLink = result ? `${window.location.origin}/claim/${result.claimToken}` : '';
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
-    alert('Copied to clipboard!');
+  const handleCopy = () => {
+    navigator.clipboard.writeText(claimLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
+  // Not authenticated
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-[#fafbfc]">
+        <Navigation />
+        <div className="max-w-lg mx-auto px-4 py-20">
+          <div className="text-center space-y-6">
+            <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-[#1de4c6] to-[#00a28e] flex items-center justify-center shadow-lg shadow-[#1de4c6]/20">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-900">Send Crypto</h1>
+            <p className="text-lg text-gray-600">
+              Sign in to send payments to anyone—even if they don't have a wallet yet.
+            </p>
+            <button
+              onClick={login}
+              className="px-8 py-4 rounded-xl font-semibold text-white text-lg transition-all hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+                boxShadow: '0 8px 30px -5px rgba(29, 228, 198, 0.4)'
+              }}
+            >
+              Sign In to Continue
+            </button>
+          </div>
+        </div>
       </div>
+    );
+  }
 
-      <Navigation />
-
-      <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Success State */}
-        {result ? (
-          <div className="space-y-6">
-            {/* Success Card */}
-            <div className="card bg-gradient-to-r from-green-50 to-cronos-50 border-2 border-green-200">
-              <div className="flex items-start gap-4 mb-6">
-                <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                  <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">Payment Sent!</h2>
-                  <p className="text-gray-600 text-lg">
-                    {formData.amount} CRO sent to <strong>{formData.recipientIdentifier}</strong>
-                  </p>
-                </div>
-              </div>
-
-              {/* Transaction Details */}
-              <div className="bg-white rounded-xl p-6 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Amount</span>
-                  <span className="font-bold text-xl text-gray-900 tabular-nums">{formData.amount} CRO</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600">Recipient</span>
-                  <span className="font-medium text-gray-900">{formData.recipientIdentifier}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-gray-600 flex items-center gap-1">
-                    Ghost Vault
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">
-                      Counterfactual
-                    </span>
-                  </span>
-                  <span className="font-mono text-sm text-gray-700">
-                    {result.recipientAddress.substring(0, 10)}...{result.recipientAddress.slice(-8)}
-                  </span>
-                </div>
-                <div className="pt-4 border-t border-gray-200">
-                  <a
-                    href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${result.txHash}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-cronos-600 hover:text-cronos-700 font-semibold flex items-center gap-2"
-                  >
-                    <span>View on Explorer</span>
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  </a>
-                </div>
-              </div>
-
-              {/* WHITEPAPER: Trust & Technical Explanation */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100">
-                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                  <span>🔐</span>
-                  <span>How Ghost Vaults Work</span>
-                </h4>
-                <ul className="space-y-2 text-sm text-gray-700">
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Counterfactual address</strong> — Vault exists deterministically before deployment (CREATE2)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Self-funded claiming</strong> — Gas is paid from the vault itself, recipient needs nothing</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <span className="text-blue-500 mt-0.5">•</span>
-                    <span><strong>Identity-locked</strong> — Only verified owner of {formData.identifierType} can claim</span>
-                  </li>
-                </ul>
-              </div>
+  // Success state
+  if (result) {
+    return (
+      <div className="min-h-screen bg-[#fafbfc]">
+        <Navigation />
+        <div className="max-w-xl mx-auto px-4 py-12">
+          {/* Success header */}
+          <div className="text-center mb-8">
+            <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+              </svg>
             </div>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Payment Sent!</h1>
+            <p className="text-gray-600">
+              <span className="font-semibold text-[#00a28e]">{formData.amount} CRO</span> is waiting for{' '}
+              <span className="font-semibold">{formData.recipientIdentifier}</span>
+            </p>
+          </div>
 
-            {/* Claim Link Card */}
-            <div className="card">
-              <h3 className="text-xl font-bold text-gray-900 mb-4">Share Claim Link</h3>
-              <p className="text-gray-600 mb-4">
-                Send this link to the recipient so they can claim their funds
-              </p>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={claimLink}
-                  readOnly
-                  className="input-field flex-1 font-mono text-sm"
-                />
-                <button
-                  onClick={() => copyToClipboard(claimLink)}
-                  className="btn-primary whitespace-nowrap"
-                >
-                  Copy Link
-                </button>
+          {/* The magic explanation */}
+          <div className="bg-gradient-to-br from-[#1de4c6]/10 to-[#3b82f6]/10 rounded-2xl p-6 mb-6 border border-[#1de4c6]/20">
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm">
+                <span className="text-xl">✨</span>
               </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-4">
-              <button
-                onClick={() => {
-                  setResult(null);
-                  setFormData({
-                    ...formData,
-                    recipientIdentifier: '',
-                    amount: '',
-                  });
-                }}
-                className="btn-primary flex-1"
-              >
-                Send Another Payment
-              </button>
-              <button onClick={() => navigate('/wallet')} className="btn-secondary flex-1">
-                View Wallet
-              </button>
+              <div>
+                <p className="font-semibold text-gray-900 mb-1">They don't need a wallet yet</p>
+                <p className="text-sm text-gray-600">
+                  A Ghost Vault is holding their funds. When they verify their {formData.identifierType}, the money appears instantly in their new wallet.
+                </p>
+              </div>
             </div>
           </div>
-        ) : (
-          /* Send Form */
-          <>
-            {!authenticated ? (
-              <div className="card text-center">
-                <div className="text-6xl mb-6">🔐</div>
-                <h2 className="text-3xl font-bold mb-4">Sign In to Send Crypto</h2>
-                <p className="text-xl text-gray-600 mb-8">
-                  Login with email, phone, or Twitter to start sending payments
-                </p>
-                <button onClick={login} className="btn-primary text-lg px-8 py-4">
-                  Sign In
-                </button>
-              </div>
-            ) : (
-              <div className="card">
-                {/* Header */}
-                <div className="mb-8">
-                  <h1 className="text-4xl font-bold text-gray-900 mb-2">Send Payment</h1>
-                  <p className="text-lg text-gray-600">
-                    Send crypto to anyone using their email, Twitter, or phone number
-                  </p>
-                </div>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  {/* Recipient Type Selection */}
-                  <div>
-                    <label className="label">Send To</label>
-                    <div className="grid grid-cols-3 gap-3 mb-3">
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, identifierType: 'email' })}
-                        className={`px-4 py-3 rounded-lg font-medium transition-all ${
-                          formData.identifierType === 'email'
-                            ? 'bg-cronos-500 text-white shadow-lg'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        📧 Email
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, identifierType: 'twitter' })}
-                        className={`px-4 py-3 rounded-lg font-medium transition-all ${
-                          formData.identifierType === 'twitter'
-                            ? 'bg-cronos-500 text-white shadow-lg'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        🐦 Twitter
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setFormData({ ...formData, identifierType: 'phone' })}
-                        className={`px-4 py-3 rounded-lg font-medium transition-all ${
-                          formData.identifierType === 'phone'
-                            ? 'bg-cronos-500 text-white shadow-lg'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        📱 Phone
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      name="recipientIdentifier"
-                      value={formData.recipientIdentifier}
-                      onChange={handleChange}
-                      placeholder={
-                        formData.identifierType === 'email'
-                          ? 'alice@example.com'
-                          : formData.identifierType === 'twitter'
-                          ? '@alice'
-                          : '+1234567890'
-                      }
-                      className="input-field"
-                      required
-                    />
-                  </div>
-
-                  {/* Amount */}
-                  <div>
-                    <label className="label">Amount (CRO)</label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        name="amount"
-                        value={formData.amount}
-                        onChange={handleChange}
-                        placeholder="0.001"
-                        step="0.001"
-                        min="0"
-                        className="input-field text-2xl font-bold pr-16"
-                        required
-                      />
-                      <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-semibold">
-                        CRO
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500 mt-2">
-                      Gas fee: ~0.0003 CRO (deducted from amount)
-                    </p>
-                  </div>
-
-                  {/* Your Wallet */}
-                  <div>
-                    <label className="label">From Your Wallet</label>
-                    <input
-                      type="text"
-                      value={formData.senderAddress}
-                      readOnly
-                      className="input-field bg-gray-50 text-gray-600 font-mono text-sm"
-                    />
-                  </div>
-
-                  {/* Error Message */}
-                  {error && (
-                    <div className="bg-red-50 border-2 border-red-200 rounded-lg p-4">
-                      <div className="flex items-center gap-3">
-                        <svg className="w-6 h-6 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                        <span className="text-red-700 font-medium">{error}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Submit Button */}
-                  <button type="submit" disabled={loading} className="btn-primary w-full text-lg py-4">
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-3">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        <span>Sending Payment...</span>
-                      </span>
-                    ) : (
-                      'Send Payment →'
-                    )}
-                  </button>
-                </form>
-
-                {/* Info Box */}
-                <div className="mt-8 bg-cronos-50 rounded-xl p-6">
-                  <h4 className="font-bold text-gray-900 mb-3">💡 How it works</h4>
-                  <ul className="space-y-2 text-sm text-gray-700">
-                    <li className="flex items-start gap-2">
-                      <span className="text-cronos-500 mt-0.5">•</span>
-                      <span>We create a secure Ghost Vault for the recipient</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-cronos-500 mt-0.5">•</span>
-                      <span>Share the claim link with them via email/DM</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-cronos-500 mt-0.5">•</span>
-                      <span>They login and claim instantly - wallet created automatically</span>
-                    </li>
-                    <li className="flex items-start gap-2">
-                      <span className="text-cronos-500 mt-0.5">•</span>
-                      <span>Gas fees are deducted from the received amount</span>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+          {/* Claim link */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
+            <label className="text-sm font-semibold text-gray-700 mb-3 block">Share this link:</label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={claimLink}
+                readOnly
+                className="flex-1 px-4 py-3 rounded-xl bg-gray-50 border border-gray-200 font-mono text-sm text-gray-700"
+              />
+              <button
+                onClick={handleCopy}
+                className={`px-5 py-3 rounded-xl font-semibold transition-all ${
+                  copied
+                    ? 'bg-green-500 text-white'
+                    : 'bg-gray-900 text-white hover:bg-gray-800'
+                }`}
+              >
+                {copied ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+            {formData.identifierType === 'email' && (
+              <p className="text-xs text-gray-500 mt-3 flex items-center gap-1">
+                <svg className="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                Email notification sent automatically
+              </p>
             )}
-          </>
-        )}
+          </div>
+
+          {/* Transaction details - collapsed */}
+          <details className="bg-white rounded-2xl border border-gray-200 mb-6 shadow-sm">
+            <summary className="px-6 py-4 cursor-pointer font-medium text-gray-700 hover:bg-gray-50 rounded-2xl">
+              Transaction Details
+            </summary>
+            <div className="px-6 pb-4 space-y-3 text-sm border-t border-gray-100 pt-4">
+              <div className="flex justify-between">
+                <span className="text-gray-500">Ghost Vault</span>
+                <span className="font-mono text-gray-700">
+                  {result.recipientAddress.substring(0, 8)}...{result.recipientAddress.slice(-6)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-500">Transaction</span>
+                <a
+                  href={`${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${result.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#00a28e] hover:underline font-mono flex items-center gap-1"
+                >
+                  {result.txHash.substring(0, 8)}...{result.txHash.slice(-6)}
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </a>
+              </div>
+            </div>
+          </details>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={() => {
+                setResult(null);
+                setFormData({ ...formData, recipientIdentifier: '', amount: '' });
+              }}
+              className="flex-1 px-6 py-4 rounded-xl font-semibold text-white transition-all hover:scale-[1.02]"
+              style={{
+                background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+              }}
+            >
+              Send Another
+            </button>
+            <button
+              onClick={() => navigate('/wallet')}
+              className="flex-1 px-6 py-4 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
+            >
+              View Wallet
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Send form
+  return (
+    <div className="min-h-screen bg-[#fafbfc]">
+      <Navigation />
+      <div className="max-w-lg mx-auto px-4 py-12">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h1 className="text-4xl font-bold text-gray-900 mb-3">Send Payment</h1>
+          <p className="text-lg text-gray-600">
+            They don't need a wallet. Just enter their email or @twitter.
+          </p>
+        </div>
+
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Recipient - ONE input, auto-detect type */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Send to
+            </label>
+            <input
+              type="text"
+              value={formData.recipientIdentifier}
+              onChange={handleRecipientChange}
+              placeholder="alice@company.com or @alice"
+              className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 text-lg focus:border-[#1de4c6] focus:ring-0 outline-none transition-colors"
+              required
+            />
+            <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
+              <span>Sending to:</span>
+              <span className={`px-2.5 py-1 rounded-full text-xs font-semibold ${
+                formData.identifierType === 'email' ? 'bg-blue-100 text-blue-700' :
+                formData.identifierType === 'twitter' ? 'bg-sky-100 text-sky-700' :
+                'bg-purple-100 text-purple-700'
+              }`}>
+                {formData.identifierType === 'email' ? 'Email' :
+                 formData.identifierType === 'twitter' ? 'Twitter' : 'Phone'}
+              </span>
+              <span className="text-gray-400">• No wallet needed</span>
+            </div>
+          </div>
+
+          {/* Amount */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Amount
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                name="amount"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                placeholder="0.00"
+                step="0.001"
+                min="0"
+                className="w-full px-5 py-4 rounded-xl border-2 border-gray-200 text-3xl font-bold pr-20 focus:border-[#1de4c6] focus:ring-0 outline-none transition-colors tabular-nums"
+                required
+              />
+              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-lg">
+                CRO
+              </span>
+            </div>
+            <p className="text-sm text-gray-500 mt-3">
+              Gas fee (~0.0003 CRO) is deducted from amount when they claim
+            </p>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+              <svg className="w-5 h-5 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <span className="text-red-700 text-sm font-medium">{error}</span>
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading || !formData.recipientIdentifier || !formData.amount}
+            className="w-full px-6 py-5 rounded-xl font-bold text-white text-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
+            style={{
+              background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+              boxShadow: '0 8px 30px -5px rgba(29, 228, 198, 0.4)'
+            }}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-3">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span>Creating Ghost Vault...</span>
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                <span>Send Payment</span>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </span>
+            )}
+          </button>
+        </form>
+
+        {/* How it works */}
+        <div className="mt-8 p-5 rounded-xl bg-gray-50 border border-gray-100">
+          <div className="flex items-start gap-3">
+            <span className="text-lg">💡</span>
+            <div className="text-sm text-gray-600">
+              <p className="font-semibold text-gray-900 mb-1">Value first, wallet later</p>
+              <p>
+                We create a Ghost Vault—a secure address derived from their identity.
+                They verify ownership and claim instantly.
+                <span className="text-[#00a28e] font-medium"> No wallet needed upfront.</span>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
