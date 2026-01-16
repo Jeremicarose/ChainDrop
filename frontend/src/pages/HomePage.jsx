@@ -7,373 +7,456 @@ export default function HomePage() {
   const { authenticated, login } = usePrivy();
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
-      </div>
+    <div className="min-h-screen">
+      {/* ===== DRAMATIC DARK HERO ===== */}
+      <div className="hero-dark min-h-[90vh] flex flex-col">
+        <div className="hero-grid" />
 
-      <Navigation />
+        {/* Floating orbs */}
+        <div className="orb orb-teal w-96 h-96 top-20 -left-48 opacity-30" />
+        <div className="orb orb-blue w-80 h-80 top-40 right-0 opacity-20" style={{ animationDelay: '5s' }} />
+        <div className="orb orb-purple w-64 h-64 bottom-20 left-1/3 opacity-20" style={{ animationDelay: '10s' }} />
 
-      {/* Hero Section */}
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
-        {/* Floating UI Elements - Paycrest Style */}
-        <div className="hidden lg:block absolute inset-0 pointer-events-none">
-          {/* Left side floating elements */}
-          <div className="absolute top-32 left-8 bg-white rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 animate-float border border-gray-100">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-cronos-400 to-cronos-500 flex items-center justify-center text-white text-sm font-bold">C</div>
-            <span className="text-sm font-medium text-gray-700">Send 50 CRO</span>
-          </div>
+        <Navigation dark />
 
-          <div className="absolute top-64 left-16 bg-white rounded-xl shadow-lg px-4 py-2 animate-float border border-gray-100" style={{ animationDelay: '0.5s' }}>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-              <span className="text-xs text-gray-600">Confirmed</span>
-            </div>
-          </div>
+        <div className="relative flex-1 flex items-center">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 w-full">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              {/* Left: Headline & CTA */}
+              <div className="space-y-8">
+                {/* AI Badge - Hero Element */}
+                <div className="animate-slide-up">
+                  <span className="ai-badge-dark">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                    AI-Powered Payments
+                  </span>
+                </div>
 
-          {/* Right side floating elements */}
-          <div className="absolute top-28 right-12 bg-white rounded-xl shadow-lg px-4 py-3 animate-float border border-gray-100" style={{ animationDelay: '0.3s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                <span className="text-sm">📧</span>
-              </div>
-              <span className="text-sm text-gray-700">jane@email.com</span>
-            </div>
-          </div>
+                {/* CLEAR HEADLINE - No cutoff */}
+                <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight animate-slide-up" style={{ animationDelay: '100ms' }}>
+                  <span className="text-white">Send crypto to</span>
+                  <br />
+                  <span className="bg-gradient-to-r from-[#1de4c6] via-[#00c9ad] to-[#3b82f6] bg-clip-text text-transparent">
+                    anyone, anywhere
+                  </span>
+                </h1>
 
-          <div className="absolute top-56 right-8 bg-white rounded-xl shadow-lg px-3 py-2 animate-float border border-gray-100" style={{ animationDelay: '0.8s' }}>
-            <span className="text-cronos-600 font-bold text-lg">💰 125.5 CRO</span>
-          </div>
+                {/* SCANNABLE subtitle - not a wall of text */}
+                <p className="text-xl text-gray-400 max-w-lg animate-slide-up" style={{ animationDelay: '200ms' }}>
+                  No wallet addresses. No seed phrases. Just send to their{' '}
+                  <span className="text-white font-medium">email</span>,{' '}
+                  <span className="text-white font-medium">Twitter</span>, or{' '}
+                  <span className="text-white font-medium">phone</span>.
+                </p>
 
-          <div className="absolute bottom-32 right-20 bg-white rounded-full shadow-lg p-3 animate-float border border-gray-100" style={{ animationDelay: '1.2s' }}>
-            <span className="text-2xl">⚡</span>
-          </div>
-
-          <div className="absolute bottom-48 left-24 flex -space-x-2 animate-float" style={{ animationDelay: '1s' }}>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 border-2 border-white flex items-center justify-center text-white text-xs font-bold">JD</div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 border-2 border-white flex items-center justify-center text-white text-xs font-bold">MK</div>
-            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-cronos-400 to-cronos-500 border-2 border-white flex items-center justify-center text-white text-xs font-bold">+5</div>
-          </div>
-
-          {/* Additional floating elements */}
-          <div className="absolute top-80 right-24 bg-white rounded-xl shadow-lg px-4 py-3 animate-float border border-gray-100" style={{ animationDelay: '1.5s' }}>
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                <svg className="w-3 h-3 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <span className="text-xs text-gray-600">Claimed!</span>
-            </div>
-          </div>
-
-          <div className="absolute bottom-24 left-8 bg-white rounded-xl shadow-lg px-4 py-2 animate-float border border-gray-100" style={{ animationDelay: '1.8s' }}>
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🔒</span>
-              <span className="text-xs font-medium text-gray-700">Non-custodial</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center space-y-10 animate-slide-up relative z-10">
-          {/* Badge */}
-          <div className="inline-flex items-center space-x-2 px-6 py-3 rounded-full text-sm font-semibold backdrop-blur-lg bg-white/80 border border-cronos-200/50 shadow-lg hover:shadow-xl transition-all hover:scale-105">
-            <span className="text-2xl animate-float">🤖</span>
-            <span className="bg-gradient-to-r from-cronos-700 to-blue-600 bg-clip-text text-transparent font-bold">Powered by AI Agents</span>
-          </div>
-
-          {/* Main Headline - Paycrest gradient style */}
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-            <span className="text-gray-900">
-              Send Crypto to
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-purple-600 via-cronos-500 to-blue-500 bg-clip-text text-transparent">
-              Email, Twitter or Phone
-            </span>
-          </h1>
-
-          {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            No wallet addresses. No complex setup. Just send crypto to anyone using their email, Twitter handle, or phone number.
-          </p>
-
-          {/* CTA Buttons - ONE DOMINANT ACTION */}
-          <div className="flex flex-col items-center justify-center gap-4 pt-4">
-            {!authenticated ? (
-              <>
-                {/* PRIMARY: Massive, can't miss */}
-                <button onClick={login} className="btn-primary text-2xl px-16 py-6 shadow-2xl">
-                  Get Started Free →
-                </button>
-                {/* SECONDARY: Subtle, demoted */}
-                <button
-                  onClick={() => navigate('/agents')}
-                  className="text-gray-600 hover:text-cronos-600 font-medium text-sm transition-colors"
-                >
-                  Learn about AI Agents
-                </button>
-              </>
-            ) : (
-              <>
-                {/* PRIMARY: Massive send action */}
-                <button
-                  onClick={() => navigate('/send')}
-                  className="btn-primary text-2xl px-16 py-6 shadow-2xl"
-                >
-                  Send Payment Now →
-                </button>
-                {/* SECONDARY: Small text links */}
-                <div className="flex gap-6 text-sm">
+                {/* ONE DOMINANT CTA */}
+                <div className="flex flex-col sm:flex-row gap-4 animate-slide-up" style={{ animationDelay: '300ms' }}>
+                  {!authenticated ? (
+                    <button onClick={login} className="btn-hero">
+                      Start Sending Free
+                      <svg className="inline-block w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </button>
+                  ) : (
+                    <button onClick={() => navigate('/send')} className="btn-hero">
+                      Send Payment
+                      <svg className="inline-block w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                      </svg>
+                    </button>
+                  )}
                   <button
-                    onClick={() => navigate('/wallet')}
-                    className="text-gray-600 hover:text-cronos-600 font-medium transition-colors"
+                    onClick={() => document.getElementById('ai-section').scrollIntoView({ behavior: 'smooth' })}
+                    className="btn-dark"
                   >
-                    View Wallet
-                  </button>
-                  <button
-                    onClick={() => navigate('/agents')}
-                    className="text-gray-600 hover:text-cronos-600 font-medium transition-colors"
-                  >
-                    AI Agents
+                    See AI in Action
                   </button>
                 </div>
-              </>
-            )}
-          </div>
 
-          {/* WHITEPAPER: Trust Indicators - Key Differentiators */}
-          <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
-              <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">Self-funded claiming</span>
-            </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
-              <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">No keys held by us</span>
-            </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
-              <svg className="w-4 h-4 text-purple-500" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" />
-              </svg>
-              <span className="text-gray-700">ERC-4337 Account Abstraction</span>
-            </span>
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium bg-white/80 backdrop-blur border border-gray-200 shadow-sm">
-              <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="text-gray-700">Built on Cronos</span>
-            </span>
-          </div>
-        </div>
-      </div>
+                {/* Trust indicators - compact */}
+                <div className="flex flex-wrap gap-4 pt-4 animate-slide-up" style={{ animationDelay: '400ms' }}>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Non-custodial</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Self-funded claiming</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <svg className="w-4 h-4 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <span>Built on Cronos</span>
+                  </div>
+                </div>
+              </div>
 
-      {/* Scrolling Logo Bar - Paycrest Style */}
-      <div className="border-y border-gray-200 bg-white/50 backdrop-blur-sm py-6 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-gray-500 mb-4 font-medium">POWERED BY</p>
-          <div className="flex items-center justify-center gap-12 flex-wrap">
-            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">C</span>
-              </div>
-              <span className="font-semibold">Cronos</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">P</span>
-              </div>
-              <span className="font-semibold">Privy</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">4337</span>
-              </div>
-              <span className="font-semibold">ERC-4337</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-green-500 to-green-600 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">AI</span>
-              </div>
-              <span className="font-semibold">OpenAI</span>
-            </div>
-            <div className="flex items-center gap-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-gray-600 to-gray-700 flex items-center justify-center">
-                <span className="text-white text-xs font-bold">HH</span>
-              </div>
-              <span className="font-semibold">Hardhat</span>
-            </div>
-          </div>
-        </div>
-      </div>
+              {/* Right: Live Demo Preview */}
+              <div className="hidden lg:block animate-slide-up" style={{ animationDelay: '300ms' }}>
+                <div className="card-glass p-6 space-y-4">
+                  {/* Simulated AI conversation */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#1de4c6] to-[#3b82f6] flex items-center justify-center flex-shrink-0">
+                      <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                      </svg>
+                    </div>
+                    <div className="bg-white/10 rounded-2xl rounded-tl-sm px-4 py-3 text-white text-sm">
+                      Send 50 CRO to alice@company.com
+                    </div>
+                  </div>
 
-      {/* Features Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="grid md:grid-cols-3 gap-8">
-          {/* Feature 1: Ghost Vaults - WHITEPAPER ALIGNED */}
-          <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <span className="text-3xl">👻</span>
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">Ghost Vaults</h3>
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700">CREATE2</span>
-            </div>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              Counterfactual smart accounts that exist before deployment. Send to any identity — the vault address is deterministically computed.
-            </p>
-            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">✓</span>
-                <span>No recipient action needed to receive</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">✓</span>
-                <span>Identity-locked claiming (email/Twitter/phone)</span>
-              </div>
-            </div>
-          </div>
+                  <div className="flex items-start gap-3 justify-end">
+                    <div className="bg-[#1de4c6]/20 rounded-2xl rounded-tr-sm px-4 py-3 text-[#1de4c6] text-sm max-w-[280px]">
+                      <p className="font-medium mb-2">Processing payment...</p>
+                      <div className="space-y-1 text-xs text-gray-400">
+                        <div className="flex items-center gap-2">
+                          <svg className="w-3 h-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span>Ghost vault created</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-3 h-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span>50 CRO deposited</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg className="w-3 h-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span>Email sent to alice</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+                      You
+                    </div>
+                  </div>
 
-          {/* Feature 2: AI Agents */}
-          <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border-2 border-cronos-200">
-            <div className="w-14 h-14 bg-gradient-to-br from-cronos-500 to-cronos-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <span className="text-3xl">🤖</span>
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">AI Agents</h3>
-              <span className="badge badge-info">NEW</span>
-            </div>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              Let AI automate your payments with policy-based spending limits, whitelists, and approval thresholds.
-            </p>
-            <div className="bg-cronos-50 rounded-lg p-4 space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-700">
-                <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Automated payroll</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Spending policies</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-700">
-                <svg className="w-4 h-4 text-cronos-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                </svg>
-                <span>Secure API keys</span>
-              </div>
-            </div>
-            <div className="mt-6 flex items-center text-cronos-600 font-semibold group-hover:translate-x-2 transition-transform cursor-pointer" onClick={() => navigate('/agents')}>
-              <span>Create AI Agent</span>
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </div>
-          </div>
-
-          {/* Feature 3: One-Click Claim - WHITEPAPER ALIGNED */}
-          <div className="card group hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-            <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-              <span className="text-3xl">⚡</span>
-            </div>
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-2xl font-bold text-gray-900">One-Click Claim</h3>
-              <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">Self-funded</span>
-            </div>
-            <p className="text-gray-600 leading-relaxed mb-4">
-              Recipients claim with zero friction. Gas is paid atomically from the vault — no ETH/CRO needed to start.
-            </p>
-            <div className="bg-gray-50 rounded-lg p-3 text-xs text-gray-600 space-y-1">
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">✓</span>
-                <span>Atomic reimbursement (relayer paid from vault)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-green-500">✓</span>
-                <span>Wallet created on first claim (ERC-4337)</span>
+                  {/* Status indicator */}
+                  <div className="flex items-center justify-center gap-2 pt-2">
+                    <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <span className="text-xs text-gray-400">Live on Cronos Testnet</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Use Cases Section */}
-      <div className="bg-gradient-to-br from-cronos-600 to-cronos-700 text-black py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">Perfect For</h2>
-            <p className="text-xl text-cronos-100">
-              From individuals to enterprises, ChainDrop makes crypto payments simple
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
-              <div className="text-4xl mb-4">💼</div>
-              <h3 className="text-xl font-bold mb-2">DAO Treasuries</h3>
-              <p className="text-cronos-100">Automate contributor payments with AI agents</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
-              <div className="text-4xl mb-4">🎮</div>
-              <h3 className="text-xl font-bold mb-2">Gaming Platforms</h3>
-              <p className="text-cronos-100">Distribute prizes to Discord/Twitter handles</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
-              <div className="text-4xl mb-4">👥</div>
-              <h3 className="text-xl font-bold mb-2">Payroll Systems</h3>
-              <p className="text-cronos-100">Pay global contractors without wallet hassles</p>
-            </div>
-
-            <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 hover:bg-white/15 transition-all">
-              <div className="text-4xl mb-4">🛒</div>
-              <h3 className="text-xl font-bold mb-2">E-Commerce</h3>
-              <p className="text-cronos-100">Process refunds automatically with AI</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        <div className="card text-center">
-          <h2 className="text-4xl font-bold mb-6 text-gray-900">
-            Ready to Send Crypto the Easy Way?
-          </h2>
-          <p className="text-xl text-gray-600 mb-8">
-            Join the future of AI-native payments on Cronos
-          </p>
-          <button onClick={!authenticated ? login : () => navigate('/send')} className="btn-primary text-lg px-10 py-4">
-            {!authenticated ? 'Get Started Free' : 'Send Your First Payment'} →
+        {/* Scroll indicator */}
+        <div className="pb-8 text-center animate-bounce-subtle">
+          <button
+            onClick={() => document.getElementById('ai-section').scrollIntoView({ behavior: 'smooth' })}
+            className="text-gray-500 hover:text-white transition-colors"
+          >
+            <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
           </button>
         </div>
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 py-8">
+      {/* ===== AI AGENTS - HERO FEATURE ===== */}
+      <section id="ai-section" className="py-24 bg-gradient-to-b from-[#0a0a0f] to-[#111119]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-600 text-sm">
+          {/* Section header */}
+          <div className="text-center mb-16">
+            <span className="ai-badge-dark mb-4 inline-flex">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+              Featured
+            </span>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Meet Your AI Payment Agent
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Automate payroll, rewards, and refunds with policy-based AI that works 24/7
+            </p>
+          </div>
+
+          {/* AI Agent Demo Card - THE HERO */}
+          <div className="card-hero max-w-4xl mx-auto mb-12">
+            <div className="grid md:grid-cols-2 gap-8">
+              {/* Left: What it does */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="icon-ai">
+                    <svg className="w-6 h-6 relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-white">AI Payment Agent</h3>
+                    <span className="badge badge-success text-xs">NEW</span>
+                  </div>
+                </div>
+
+                <p className="text-gray-400">
+                  Create an AI agent with spending rules. It handles payments automatically while you focus on what matters.
+                </p>
+
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-[#1de4c6] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-white font-medium">Daily spending limits</p>
+                      <p className="text-sm text-gray-500">Set max CRO per day</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-[#1de4c6] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-white font-medium">Recipient whitelists</p>
+                      <p className="text-sm text-gray-500">Only pay approved addresses</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <svg className="w-5 h-5 text-[#1de4c6] mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-white font-medium">Approval thresholds</p>
+                      <p className="text-sm text-gray-500">Large payments need your OK</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => authenticated ? navigate('/agents') : login()}
+                  className="btn-hero w-full sm:w-auto"
+                >
+                  {authenticated ? 'Create Your Agent' : 'Get Started'}
+                  <svg className="inline-block w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Right: Code/API preview */}
+              <div className="bg-black/50 rounded-xl p-5 font-mono text-sm overflow-hidden">
+                <div className="flex items-center gap-2 mb-4 text-gray-500">
+                  <span className="w-3 h-3 rounded-full bg-red-500/50" />
+                  <span className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                  <span className="w-3 h-3 rounded-full bg-green-500/50" />
+                  <span className="ml-2 text-xs">agent-api.js</span>
+                </div>
+                <pre className="text-gray-400 overflow-x-auto">
+                  <code>{`// One API call to pay anyone
+fetch('/api/agent/pay', {
+  headers: {
+    'X-API-Key': 'your_agent_key'
+  },
+  body: JSON.stringify({
+    recipient: 'alice@company.com',
+    amount: '50',
+    token: 'CRO'
+  })
+})
+
+// Response
+{
+  "success": true,
+  "claimLink": "chaindrop.app/claim/...",
+  "recipientNotified": true
+}`}</code>
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Secondary features grid */}
+          <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+            {/* Ghost Vaults */}
+            <div className="card-glass group">
+              <div className="flex items-start gap-4">
+                <div className="icon-ghost flex-shrink-0">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" />
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                    <path d="M9 9h.01M15 9h.01" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">Ghost Vaults</h3>
+                  <p className="text-gray-400 text-sm mb-3">
+                    Counterfactual addresses that exist before deployment. Send to anyone - they claim when ready.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 rounded bg-white/5 border border-white/10">CREATE2</span>
+                    <span className="px-2 py-1 rounded bg-white/5 border border-white/10">ERC-4337</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* One-Click Claim */}
+            <div className="card-glass group">
+              <div className="flex items-start gap-4">
+                <div className="icon-bolt flex-shrink-0">
+                  <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">One-Click Claim</h3>
+                  <p className="text-gray-400 text-sm mb-3">
+                    Recipients need zero crypto to start. Gas is paid from the vault itself - self-funded claiming.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Gasless UX</span>
+                    <span className="px-2 py-1 rounded bg-white/5 border border-white/10">Atomic</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== USE CASES - with urgency ===== */}
+      <section className="py-24 gradient-mesh">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+              Built for Real Use Cases
+            </h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              From DAOs to e-commerce, ChainDrop powers payments that just work
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* DAO Treasuries */}
+            <div className="card group ai-glow">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">DAO Treasuries</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Automate contributor payments with AI agents. Set limits, get approvals, pay globally.
+              </p>
+              <span className="text-xs text-purple-600 font-medium">Popular with DAOs</span>
+            </div>
+
+            {/* Gaming Platforms */}
+            <div className="card group ai-glow">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="6" width="20" height="12" rx="2" />
+                  <path d="M6 12h4M8 10v4M15 11h.01M18 11h.01" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Gaming Platforms</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Distribute prizes to Discord handles or Twitter usernames. No wallet setup needed.
+              </p>
+              <span className="text-xs text-pink-600 font-medium">Instant payouts</span>
+            </div>
+
+            {/* Payroll Systems */}
+            <div className="card group ai-glow">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="1" y="4" width="22" height="16" rx="2" />
+                  <path d="M1 10h22" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Global Payroll</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Pay contractors worldwide with one API call. They claim with email verification.
+              </p>
+              <span className="text-xs text-blue-600 font-medium">CSV bulk upload</span>
+            </div>
+
+            {/* E-Commerce */}
+            <div className="card group ai-glow">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center mb-4">
+                <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="9" cy="21" r="1" />
+                  <circle cx="20" cy="21" r="1" />
+                  <path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">E-Commerce</h3>
+              <p className="text-gray-600 text-sm mb-4">
+                Process refunds automatically with AI policies. Customer gets notified instantly.
+              </p>
+              <span className="text-xs text-amber-600 font-medium">API-ready</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== FINAL CTA ===== */}
+      <section className="py-24 bg-gradient-to-br from-gray-900 to-gray-800">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            Ready to simplify crypto payments?
+          </h2>
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">
+            Join the hackathon demo and see AI-powered payments in action on Cronos Testnet.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => authenticated ? navigate('/send') : login()}
+              className="btn-hero"
+            >
+              {authenticated ? 'Send Your First Payment' : 'Get Started Free'}
+              <svg className="inline-block w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </button>
+            {authenticated && (
+              <button onClick={() => navigate('/agents')} className="btn-dark">
+                Create AI Agent
+              </button>
+            )}
+          </div>
+          <p className="text-sm text-gray-500 mt-6">
+            Built for the Cronos Hackathon 2026
+          </p>
+        </div>
+      </section>
+
+      {/* ===== FOOTER ===== */}
+      <footer className="bg-gray-900 border-t border-gray-800 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-gray-400 text-sm">
             <div className="flex items-center gap-2">
-              <span className="font-semibold text-gray-900">ChainDrop</span>
-              <span>·</span>
-              <span>Built for Cronos Hackathon</span>
-              
+              <span className="font-bold text-white">ChainDrop</span>
+              <span className="text-gray-600">|</span>
+              <span>AI-Powered Crypto Payments</span>
             </div>
             <div className="flex items-center gap-6">
-              <a href="#" className="hover:text-cronos-600 transition-colors">Documentation</a>
-              <a href="#" className="hover:text-cronos-600 transition-colors">GitHub</a>
-              <a href="#" className="hover:text-cronos-600 transition-colors">Support</a>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">
+                GitHub
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Documentation
+              </a>
+              <a href="#" className="hover:text-white transition-colors">
+                Support
+              </a>
             </div>
           </div>
         </div>
