@@ -118,10 +118,11 @@ class BlockchainService {
     }
 
     /**
-     * Deploy account and claim funds (DECENTRALIZED)
-     * @dev The recipient's wallet becomes the owner of the ghost vault
-     *      Factory deploys with recipient as owner, then funds are claimed to recipient
-     * @param recipientWalletAddress The wallet address of the person claiming (becomes owner)
+     * Deploy account and claim funds (DECENTRALIZED ADDRESS, ADMIN-FACILITATED CLAIM)
+     * @dev Address is computed from salt ONLY (decentralized)
+     *      But admin deploys & withdraws to facilitate the claim process
+     *      Funds are then sent to recipient's wallet
+     * @param recipientWalletAddress The wallet address to send funds to
      * @param identifier The identifier used to compute the ghost vault address
      * @param tokenAddress Token address (null for native token)
      * @param amount Amount to claim
@@ -131,18 +132,27 @@ class BlockchainService {
         try {
             const salt = this.generateSalt(identifier);
 
-            // Get the deterministic address (computed from salt only)
+            // Get the deterministic address (computed from salt ONLY - decentralized!)
             const accountAddress = await this.accountFactory.computeAccountAddress(salt);
             console.log(`🏦 Ghost vault address: ${accountAddress}`);
+
+            // Check balance in ghost vault
+            const balance = await this.getBalance(accountAddress, tokenAddress);
+            console.log(`💰 Ghost vault balance: ${ethers.formatEther(balance)}`);
+
+            if (balance === 0n) {
+                throw new Error('Ghost vault has no funds to claim');
+            }
 
             // Check if already deployed
             const isDeployed = await this.isAccountDeployed(accountAddress);
             let deployTxHash = null;
 
             if (!isDeployed) {
-                // Deploy with RECIPIENT as owner (DECENTRALIZED - they own their own vault)
-                console.log(`📦 Deploying ghost vault with recipient (${recipientWalletAddress}) as owner`);
-                const deployTx = await this.accountFactory.createAccount(recipientWalletAddress, salt);
+                // Deploy with ADMIN as owner (to facilitate withdrawal)
+                // Note: Address is still deterministic from salt only!
+                console.log(`📦 Deploying ghost vault with admin as owner for claim facilitation`);
+                const deployTx = await this.accountFactory.createAccount(this.wallet.address, salt);
                 const deployReceipt = await deployTx.wait();
                 deployTxHash = deployReceipt.hash;
                 console.log(`✅ Ghost vault deployed at: ${accountAddress}`);
@@ -150,31 +160,42 @@ class BlockchainService {
                 console.log(`✅ Ghost vault already deployed at: ${accountAddress}`);
             }
 
-            // Now claim funds - since recipient is owner, we need them to sign
-            // But for now, admin will transfer funds directly to recipient
-            // (This is a simpler approach that doesn't require user signing)
-
-            // Get balance in ghost vault
-            const balance = await this.getBalance(accountAddress, tokenAddress);
-            console.log(`💰 Ghost vault balance: ${ethers.formatEther(balance)}`);
-
-            // For now, we'll have admin withdraw and transfer
-            // In a more decentralized version, the user would sign a transaction
+            // Create contract instance
             const account = new ethers.Contract(
                 accountAddress,
                 SIMPLE_ACCOUNT_ABI,
                 this.wallet
             );
 
-            // Check if admin can claim (admin would need to be owner)
-            // Since we now deploy with recipient as owner, admin can't claim
-            // So we just return the deployed address and let frontend handle the rest
+            // Generate claim ID bytes32
+            const claimIdBytes32 = ethers.id(claimId);
+
+            // Withdraw from ghost vault to admin
+            console.log(`💸 Withdrawing ${ethers.formatEther(balance)} from ghost vault...`);
+            const claimTx = await account.claimFundsSimple(
+                tokenAddress || ethers.ZeroAddress,
+                balance,
+                claimIdBytes32
+            );
+            const claimReceipt = await claimTx.wait();
+            console.log(`✅ Withdrawal complete: ${claimReceipt.hash}`);
+
+            // Now send from admin to recipient's wallet
+            console.log(`📤 Sending ${ethers.formatEther(balance)} to recipient ${recipientWalletAddress}...`);
+            const transferTx = await this.wallet.sendTransaction({
+                to: recipientWalletAddress,
+                value: balance
+            });
+            await transferTx.wait();
+            console.log(`✅ Transfer to recipient complete: ${transferTx.hash}`);
 
             return {
                 deployTxHash: deployTxHash || 'already-deployed',
-                claimTxHash: null, // User needs to claim themselves or we use different approach
+                claimTxHash: claimReceipt.hash,
+                transferTxHash: transferTx.hash,
                 accountAddress,
-                ownerAddress: recipientWalletAddress
+                recipientAddress: recipientWalletAddress,
+                amount: balance.toString()
             };
         } catch (error) {
             console.error('Error deploying and claiming:', error);
