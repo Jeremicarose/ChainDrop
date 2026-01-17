@@ -15,6 +15,16 @@
 
 ---
 
+### Cronos x402 Hackathon Submission
+
+**Category:** Agentic Finance
+
+**Key Integrations:**
+- Anthropic Claude API - Natural language payment parsing
+- Crypto.com AI Agent SDK - Blockchain operations
+- Cronos EVM Testnet - Smart contract deployment
+- ERC-4337 Account Abstraction - Gasless transactions
+
 </div>
 
 ## Overview
@@ -61,7 +71,7 @@ Recipients receive funds **before** creating a wallet. Wallet creation happens a
 - **Multi-Asset Support** — Send CRO or any ERC-20 token (USDC, USDT, etc.)
 - **Self-Funded Transactions** — No ongoing platform subsidies required
 - **One-Click Sharing** — Generate claim links automatically shared via email
-- **Auto-Expiry Protection** — Unclaimed transfers expire after 24 hours
+- **Transfer Tracking** — Monitor pending and claimed transfers easily
 - **AI Payment Agents** — Create autonomous agents that send payments based on triggers
 
 ### Technical Innovation
@@ -189,14 +199,17 @@ sequenceDiagram
 ```
 ├── controllers/
 │   ├── transferController.js    # HTTP request handlers for transfers
-│   └── agentController.js       # HTTP request handlers for AI agents
+│   ├── agentController.js       # HTTP request handlers for API agents
+│   └── aiController.js          # AI chat and natural language parsing
 ├── services/
 │   ├── transferService.js       # Business logic (create, claim, verify)
 │   ├── blockchainService.js     # Smart contract interactions
 │   ├── emailService.js          # Email notifications via Resend
-│   └── agentService.js          # AI agent management and execution
+│   ├── agentService.js          # API agent management and execution
+│   ├── aiService.js             # Claude API integration for NLP
+│   └── cryptoComAgentService.js # Crypto.com AI Agent SDK integration
 ├── db/
-│   └── schema.js                # PostgreSQL schema (transfers, claims, agents)
+│   └── schema.js                # SQLite schema (transfers, claims, agents)
 └── routes/
     └── index.js                 # API route definitions
 ```
@@ -205,13 +218,14 @@ sequenceDiagram
 
 ```
 ├── pages/
-│   ├── HomePageNew.jsx          # Landing page with feature showcase
-│   ├── SendPageNew.jsx          # Send crypto interface
-│   ├── ClaimPageNew.jsx         # Claim funds page
-│   ├── WalletPageNew.jsx        # Wallet dashboard
-│   └── AgentsPage.jsx           # AI agent management
+│   ├── HomePage.jsx             # Landing page with feature showcase
+│   ├── SendPage.jsx             # Send crypto interface
+│   ├── ClaimPage.jsx            # Claim funds page
+│   ├── WalletPage.jsx           # Wallet dashboard
+│   └── AgentsPage.jsx           # AI agent management + AI chat
 ├── components/
-│   └── Navigation.jsx           # Reusable navigation bar
+│   ├── Navigation.jsx           # Reusable navigation bar
+│   └── AIChat.jsx               # AI payment assistant chat interface
 └── index.css                    # Tailwind configuration & custom styles
 ```
 
@@ -226,17 +240,19 @@ sequenceDiagram
 
 **Backend**
 - Node.js + Express.js v5.2.1
-- PostgreSQL + Drizzle ORM v0.45.1
+- SQLite + Drizzle ORM v0.45.1 (PostgreSQL ready for production)
 - ethers.js v6.16.0 for blockchain interaction
 - Resend for email notifications
-- Claude API for AI agent automation
+- Anthropic Claude API for natural language payment parsing
+- Crypto.com AI Agent SDK for blockchain operations
 
 **Frontend**
-- React 18 + Vite
+- React 19 + Vite 7
 - Privy for embedded wallet authentication
 - TailwindCSS v4 with custom Cronos theme
-- React Router v6 for navigation
+- React Router v7 for navigation
 - Beautiful gradient UI with responsive design
+- AI chat interface for natural language payments
 
 ---
 
@@ -475,7 +491,7 @@ cp .env.example .env
 npm run dev
 ```
 
-Frontend runs at `http://localhost:5174`
+Frontend runs at `http://localhost:5173`
 
 ### Testing the Flow
 
@@ -527,7 +543,7 @@ Businesses pay international vendors using familiar identifiers, avoiding SWIFT 
 - **Cryptographic Proofs**: Only authenticated owner of identifier can generate valid claim proof
 - **One-Time Claims**: Salts and nonces prevent replay attacks
 - **Atomic Execution**: Deployment + claim + reimbursement succeed together or revert entirely
-- **Expiration Protection**: 24-hour claim window prevents indefinite fund holding
+- **Self-Funded Claims**: Gas costs deducted from transferred amount automatically
 
 ### Address Security
 
@@ -630,7 +646,7 @@ ChainDrop does **not** rely on ongoing gas subsidies. Each transfer is economica
 | Send to social identifier | No | Limited | Limited | **Yes** |
 | Self-sustaining economics | N/A | No (subsidies) | No (subsidies) | **Yes** |
 | Value-before-account | No | No | No | **Yes** |
-| Claim expiration protection | N/A | No | No | **Yes** |
+| AI-powered payments | No | No | No | **Yes** |
 
 ---
 
@@ -680,10 +696,10 @@ This project is licensed under the **MIT License** - see [LICENSE](LICENSE) file
 
 | Contract | Address | Explorer |
 |----------|---------|----------|
-| AccountFactory | `0x3aeEe71fE66734c33C17208556ce066E5e16E527` | [View](https://explorer.cronos.org/testnet/address/0x3aeEe71fE66734c33C17208556ce066E5e16E527) |
-| EntryPoint | `0xF58ac23bCD7ec5aB79fE3c4a2b7dc48B22268842` | [View](https://explorer.cronos.org/testnet/address/0xF58ac23bCD7ec5aB79fE3c4a2b7dc48B22268842) |
-| ChainDropPaymaster | `0x794a6C087e8592e68FF058343BA62180f7b860c9` | [View](https://explorer.cronos.org/testnet/address/0x794a6C087e8592e68FF058343BA62180f7b860c9) |
-| ClaimVerifier | `0xe7ee50c76ad156B7175BF124b69f1C80d014a2BD` | [View](https://explorer.cronos.org/testnet/address/0xe7ee50c76ad156B7175BF124b69f1C80d014a2BD) |
+| EntryPoint | `0x216e29695D99cEfE8009B7486AD99aC0f5DA2ddd` | [View](https://explorer.cronos.org/testnet/address/0x216e29695D99cEfE8009B7486AD99aC0f5DA2ddd) |
+| AccountFactory | `0xD1F80bcFe28F36a66aFcc6eBd0BDD522cD25158C` | [View](https://explorer.cronos.org/testnet/address/0xD1F80bcFe28F36a66aFcc6eBd0BDD522cD25158C) |
+| ChainDropPaymaster | `0x4C6d079F051CfcFB48f32C858E937e51Bb17095c` | [View](https://explorer.cronos.org/testnet/address/0x4C6d079F051CfcFB48f32C858E937e51Bb17095c) |
+| ClaimVerifier | `0xC40A98006023B7A74e789e3EFc9E82f191eCB619` | [View](https://explorer.cronos.org/testnet/address/0xC40A98006023B7A74e789e3EFc9E82f191eCB619) |
 
 **RPC URL:** `https://evm-t3.cronos.org`
 **Explorer:** `https://explorer.cronos.org/testnet`
