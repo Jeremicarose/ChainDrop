@@ -115,6 +115,7 @@ Context:
 
   /**
    * Fallback regex-based parsing when AI is unavailable
+   * Improved to handle common payment formats
    */
   fallbackParse(message) {
     const result = {
@@ -132,30 +133,62 @@ Context:
       missing: []
     };
 
-    // Extract email
-    const emailMatch = message.match(/[\w.-]+@[\w.-]+\.\w+/);
+    const lowerMessage = message.toLowerCase();
+
+    // Extract email (most common) - improved regex
+    const emailMatch = message.match(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/);
     if (emailMatch) {
       result.data.recipient = emailMatch[0];
       result.data.recipientType = 'email';
     }
 
-    // Extract Twitter handle
-    const twitterMatch = message.match(/@([a-zA-Z0-9_]+)/);
-    if (twitterMatch && !emailMatch) {
-      result.data.recipient = twitterMatch[0];
-      result.data.recipientType = 'twitter';
+    // Extract Twitter handle (only if no email found)
+    if (!result.data.recipient) {
+      const twitterMatch = message.match(/@([a-zA-Z_][a-zA-Z0-9_]{0,14})/);
+      if (twitterMatch && !twitterMatch[0].includes('.')) {
+        result.data.recipient = twitterMatch[0];
+        result.data.recipientType = 'twitter';
+      }
     }
 
-    // Extract phone number
-    const phoneMatch = message.match(/\+?[\d\s-]{10,}/);
-    if (phoneMatch && !emailMatch && !twitterMatch) {
-      result.data.recipient = phoneMatch[0].replace(/[\s-]/g, '');
-      result.data.recipientType = 'phone';
+    // Extract phone number (only if no email/twitter found)
+    if (!result.data.recipient) {
+      const phoneMatch = message.match(/\+?[\d\s()-]{10,}/);
+      if (phoneMatch) {
+        result.data.recipient = phoneMatch[0].replace(/[\s()-]/g, '');
+        result.data.recipientType = 'phone';
+      }
     }
 
-    // Extract amount
-    const amountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USD|\$)?/i);
-    if (amountMatch) {
+    // Extract amount - multiple patterns
+    // Pattern 1: "X CRO" or "X USDC"
+    let amountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)/i);
+
+    // Pattern 2: "$X" or "X dollars"
+    if (!amountMatch) {
+      amountMatch = message.match(/\$\s*(\d+(?:\.\d+)?)/);
+    }
+
+    // Pattern 3: Just a number in context of payment
+    if (!amountMatch && (lowerMessage.includes('send') || lowerMessage.includes('pay'))) {
+      amountMatch = message.match(/(?:send|pay)[^0-9]*(\d+(?:\.\d+)?)/i);
+    }
+
+    // Pattern 4: Any standalone number
+    if (!amountMatch) {
+      const numbers = message.match(/\d+(?:\.\d+)?/g);
+      if (numbers && numbers.length > 0) {
+        // Take the first number that looks like an amount (not part of email)
+        for (const num of numbers) {
+          if (!result.data.recipient || !result.data.recipient.includes(num)) {
+            amountMatch = [null, num];
+            break;
+          }
+        }
+      }
+    }
+
+    if (amountMatch && amountMatch[1]) {
       result.data.amount = parseFloat(amountMatch[1]);
     }
 
@@ -165,28 +198,33 @@ Context:
       result.data.token = tokenMatch[1].toUpperCase();
     }
 
-    // Check for "for" clause (note/purpose)
-    const forMatch = message.match(/for\s+(?:the\s+)?(.+?)(?:\.|$)/i);
+    // Extract note/purpose - "for X"
+    const forMatch = message.match(/\bfor\s+(.+?)(?:\.|,|$)/i);
     if (forMatch) {
-      result.data.note = forMatch[1].trim();
+      let note = forMatch[1].trim();
+      // Clean up the note (remove amount/token if captured)
+      note = note.replace(/\d+(?:\.\d+)?\s*(?:CRO|USDC|ETH|USDT)?/gi, '').trim();
+      if (note) {
+        result.data.note = note;
+      }
     }
 
     // Determine what's missing
     if (!result.data.recipient) {
-      result.missing.push('recipient');
+      result.missing.push('recipient (email, phone, or @twitter)');
     }
-    if (!result.data.amount) {
+    if (!result.data.amount || result.data.amount <= 0) {
       result.missing.push('amount');
     }
 
     // Set response type and message
     if (result.missing.length > 0) {
       result.type = 'clarification';
-      result.message = `I need more info. Please specify: ${result.missing.join(', ')}`;
+      result.message = `Please provide: ${result.missing.join(' and ')}. Example: "Send 5 CRO to alice@email.com"`;
       result.confidence = 0.3;
     } else {
-      result.message = `Got it! Sending ${result.data.amount} ${result.data.token} to ${result.data.recipient}${result.data.note ? ` for ${result.data.note}` : ''}.`;
-      result.confidence = 0.8;
+      result.message = `Ready to send ${result.data.amount} ${result.data.token} to ${result.data.recipient}${result.data.note ? ` for "${result.data.note}"` : ''}. Type "yes" to confirm.`;
+      result.confidence = 0.85;
     }
 
     return result;
