@@ -1,40 +1,26 @@
 import { useState, useEffect } from 'react';
 import { usePrivy, useWallets } from '@privy-io/react-auth';
-import { useNavigate } from 'react-router-dom';
 import Navigation from '../components/Navigation';
+import AIChat from '../components/AIChat';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AgentsPage() {
-  const navigate = useNavigate();
   const { authenticated, login } = usePrivy();
   const { wallets } = useWallets();
   const [agents, setAgents] = useState([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [showCreateForm, setShowCreateForm] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState(null);
-  const [createdAgent, setCreatedAgent] = useState(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentAgent, setPaymentAgent] = useState(null);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [paymentResult, setPaymentResult] = useState(null);
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'agents'
+  const [recentPayments, setRecentPayments] = useState([]);
 
   const [formData, setFormData] = useState({
     name: '',
-    dailyLimit: '10',
+    dailyLimit: '100',
     allowedRecipients: '*',
-    requireApproval: '5',
+    requireApproval: '50',
     allowedTokens: 'CRO'
   });
-
-  const [paymentData, setPaymentData] = useState({
-    recipient: '',
-    amount: ''
-  });
-
-  const [bulkPaymentMode, setBulkPaymentMode] = useState(false);
-  const [bulkList, setBulkList] = useState('');
-  const [bulkProgress, setBulkProgress] = useState({ current: 0, total: 0, results: [] });
 
   // Fetch agents
   useEffect(() => {
@@ -50,7 +36,7 @@ export default function AgentsPage() {
       );
       if (response.ok) {
         const data = await response.json();
-        setAgents(data.data);
+        setAgents(data.data || []);
       }
     } catch (error) {
       console.error('Error fetching agents:', error);
@@ -79,185 +65,66 @@ export default function AgentsPage() {
 
       const data = await response.json();
       if (data.success) {
-        setCreatedAgent(data.data);
-        setShowCreateForm(false);
+        setShowCreateModal(false);
         fetchAgents();
-        // Reset form
         setFormData({
           name: '',
-          dailyLimit: '10',
+          dailyLimit: '100',
           allowedRecipients: '*',
-          requireApproval: '5',
+          requireApproval: '50',
           allowedTokens: 'CRO'
         });
       }
     } catch (error) {
       console.error('Error creating agent:', error);
-      alert('Failed to create agent');
     } finally {
       setLoading(false);
     }
   };
 
-  const copyApiKey = (apiKey) => {
-    navigator.clipboard.writeText(apiKey);
-    alert('API Key copied to clipboard!');
+  const handlePaymentComplete = (payment) => {
+    setRecentPayments(prev => [payment, ...prev].slice(0, 5));
   };
 
-  const handleSendPayment = async (e) => {
-    e.preventDefault();
-    setPaymentLoading(true);
-    setPaymentResult(null);
-
-    try {
-      const response = await fetch(`${API_URL}/agent/pay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': paymentAgent.api_key
-        },
-        body: JSON.stringify({
-          recipientIdentifier: paymentData.recipient,
-          identifierType: 'email',
-          amount: paymentData.amount
-        })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setPaymentResult({ success: true, data });
-        setPaymentData({ recipient: '', amount: '' });
-        alert(`✅ Payment sent successfully!\nAmount: ${paymentData.amount} CRO\nRecipient: ${paymentData.recipient}\nClaim link sent to their email!`);
-        setShowPaymentForm(false);
-      } else {
-        setPaymentResult({ success: false, error: data.message || data.error });
-        alert(`❌ Payment failed: ${data.message || data.error}`);
-      }
-    } catch (error) {
-      console.error('Payment error:', error);
-      setPaymentResult({ success: false, error: error.message });
-      alert(`❌ Payment failed: ${error.message}`);
-    } finally {
-      setPaymentLoading(false);
-    }
-  };
-
-  const handleDeleteAgent = async (agentId) => {
-    if (!confirm('Are you sure you want to delete this agent? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/agent/revoke`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId,
-          ownerAddress: wallets[0].address
-        })
-      });
-
-      if (response.ok) {
-        alert('✅ Agent deleted successfully!');
-        fetchAgents(); // Refresh list
-      } else {
-        const error = await response.json();
-        alert(`❌ Failed to delete: ${error.message || 'Unknown error'}`);
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      alert(`❌ Failed to delete agent: ${error.message}`);
-    }
-  };
-
-  const handleBulkPayment = async (e) => {
-    e.preventDefault();
-
-    // Parse the bulk list (CSV format: email,amount per line)
-    const lines = bulkList.trim().split('\n').filter(line => line.trim());
-    const payments = [];
-
-    for (const line of lines) {
-      const [email, amount] = line.split(',').map(s => s.trim());
-      if (email && amount && email.includes('@')) {
-        payments.push({ email, amount });
-      }
-    }
-
-    if (payments.length === 0) {
-      alert('❌ No valid payments found. Format: email@example.com,amount per line');
-      return;
-    }
-
-    if (!confirm(`🤖 Agent will process ${payments.length} payments automatically.\n\nThis will:\n- Check all policy rules\n- Send payments one by one\n- Email each recipient\n\nContinue?`)) {
-      return;
-    }
-
-    setPaymentLoading(true);
-    setBulkProgress({ current: 0, total: payments.length, results: [] });
-
-    const results = [];
-
-    for (let i = 0; i < payments.length; i++) {
-      const { email, amount } = payments[i];
-      setBulkProgress({ current: i + 1, total: payments.length, results });
-
-      try {
-        const response = await fetch(`${API_URL}/agent/pay`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-API-Key': paymentAgent.api_key
-          },
-          body: JSON.stringify({
-            recipientIdentifier: email,
-            identifierType: 'email',
-            amount: amount
-          })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          results.push({ email, amount, status: 'success', claimLink: data.data?.claimLink });
-        } else {
-          results.push({ email, amount, status: 'failed', error: data.message || data.error });
-        }
-      } catch (error) {
-        results.push({ email, amount, status: 'failed', error: error.message });
-      }
-
-      // Small delay between payments
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-
-    setBulkProgress({ current: payments.length, total: payments.length, results });
-    setPaymentLoading(false);
-
-    const successful = results.filter(r => r.status === 'success').length;
-    alert(`✅ Bulk payment complete!\n\n✓ Successful: ${successful}\n✗ Failed: ${results.length - successful}\n\nCheck the results below.`);
-  };
-
+  // Not authenticated state
   if (!authenticated) {
     return (
-      <div className="min-h-screen gradient-mesh relative overflow-hidden">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-          <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        </div>
-
+      <div className="min-h-screen bg-[#fafbfc]">
         <Navigation />
-        <div className="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-20">
-          <div className="card text-center animate-slide-up">
-            <div className="text-6xl mb-6 animate-float">🤖</div>
-            <h2 className="text-3xl font-bold mb-4">AI Agents</h2>
-            <p className="text-xl text-gray-600 mb-8">
-              Create AI agents that can automatically process payments with policy-based controls
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            {/* AI Icon */}
+            <div className="w-24 h-24 mx-auto mb-8 rounded-3xl bg-gradient-to-br from-[#0f172a] to-[#1e293b] flex items-center justify-center shadow-xl relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-[#1de4c6]/20 to-transparent" />
+              <svg className="w-12 h-12 text-[#1de4c6] relative z-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+
+            <h1 className="text-4xl font-bold text-gray-900 mb-4" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              AI-Powered Payments
+            </h1>
+            <p className="text-xl text-gray-600 mb-8 max-w-lg mx-auto">
+              Send crypto using natural language. Just describe who you want to pay and how much.
             </p>
-            <button onClick={login} className="btn-primary text-lg px-8 py-4">
-              Sign In to Create Agent
+
+            <div className="bg-gray-900 rounded-2xl p-6 max-w-md mx-auto mb-8 text-left">
+              <p className="text-gray-400 text-sm mb-2">Try saying:</p>
+              <p className="text-white font-mono">"Send 5 CRO to alice@company.com"</p>
+            </div>
+
+            <button
+              onClick={login}
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-semibold text-white text-lg transition-all hover:scale-105"
+              style={{
+                background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
+                boxShadow: '0 8px 30px -5px rgba(29, 228, 198, 0.5)'
+              }}
+            >
+              <span>Sign In to Start</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
             </button>
           </div>
         </div>
@@ -266,686 +133,335 @@ export default function AgentsPage() {
   }
 
   return (
-    <div className="min-h-screen gradient-mesh relative overflow-hidden">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-gradient-to-r from-cronos-400/20 to-blue-400/20 rounded-full blur-3xl animate-float" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-gradient-to-r from-purple-400/15 to-pink-400/15 rounded-full blur-3xl animate-float" style={{ animationDelay: '1s' }} />
-        <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-gradient-to-r from-cronos-300/10 to-blue-300/10 rounded-full blur-2xl animate-float" style={{ animationDelay: '2s' }} />
-      </div>
-
+    <div className="min-h-screen bg-[#fafbfc]">
       <Navigation />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-12 animate-slide-up">
+        <div className="mb-8">
           <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">AI Agents</h1>
-              <p className="text-lg text-gray-600">
-                Automate payments with policy-based AI agents
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+                AI Agents
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Natural language payments powered by Claude
               </p>
             </div>
-            {import.meta.env.MODE === 'development' && (
-              <button
-                onClick={() => {
-                  throw new Error('Sentry Test Error - This is intentional!');
-                }}
-                className="px-3 py-1 text-xs bg-purple-100 text-purple-700 rounded hover:bg-purple-200"
-              >
-                🧪 Test Sentry
-              </button>
-            )}
-            <button
-              onClick={() => setShowCreateForm(true)}
-              className="btn-primary"
-            >
-              + Create Agent
-            </button>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 rounded-full">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              <span className="text-sm font-medium text-green-700">AI Online</span>
+            </div>
           </div>
         </div>
 
-        {/* New Agent Created Success */}
-        {createdAgent && (
-          <div className="mb-8 card bg-gradient-to-r from-green-50 to-cronos-50 border-2 border-green-200">
-            <div className="flex items-start gap-4">
-              <div className="text-4xl">🎉</div>
-              <div className="flex-1">
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Agent Created Successfully!
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Your API key has been generated. Copy it now - you won't be able to see it again!
-                </p>
-                <div className="bg-white rounded-lg p-4 border border-gray-200 mb-4">
-                  <div className="flex items-center justify-between">
-                    <code className="text-sm text-gray-800 break-all">
-                      {createdAgent.apiKey}
-                    </code>
-                    <button
-                      onClick={() => copyApiKey(createdAgent.apiKey)}
-                      className="ml-4 px-4 py-2 bg-cronos-500 text-white rounded-lg hover:bg-cronos-600 transition-colors"
-                    >
-                      Copy
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setCreatedAgent(null)}
-                  className="text-gray-600 hover:text-gray-900"
-                >
-                  Dismiss
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Create Agent Form Modal */}
-        {showCreateForm && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold">Create AI Agent</h2>
-                <button
-                  onClick={() => setShowCreateForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateAgent} className="space-y-6">
-                <div>
-                  <label className="label">Agent Name</label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Payroll Bot"
-                    className="input-field"
-                    required
-                  />
-                  <p className="text-sm text-gray-500 mt-1">A friendly name for your agent</p>
-                </div>
-
-                <div>
-                  <label className="label">Daily Spending Limit (CRO)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.dailyLimit}
-                    onChange={(e) => setFormData({ ...formData, dailyLimit: e.target.value })}
-                    placeholder="10"
-                    className="input-field"
-                    required
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Maximum CRO the agent can spend per day</p>
-                </div>
-
-                <div>
-                  <label className="label">Allowed Recipients</label>
-                  <input
-                    type="text"
-                    value={formData.allowedRecipients}
-                    onChange={(e) => setFormData({ ...formData, allowedRecipients: e.target.value })}
-                    placeholder="*@company.com,@verified_users"
-                    className="input-field"
-                    required
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Whitelist patterns (use * for all, or patterns like *@company.com)
-                  </p>
-                </div>
-
-                <div>
-                  <label className="label">Approval Threshold (CRO)</label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={formData.requireApproval}
-                    onChange={(e) => setFormData({ ...formData, requireApproval: e.target.value })}
-                    placeholder="5"
-                    className="input-field"
-                    required
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Amounts above this require manual approval
-                  </p>
-                </div>
-
-                <div>
-                  <label className="label">Allowed Tokens</label>
-                  <input
-                    type="text"
-                    value={formData.allowedTokens}
-                    onChange={(e) => setFormData({ ...formData, allowedTokens: e.target.value })}
-                    placeholder="CRO"
-                    className="input-field"
-                    required
-                  />
-                  <p className="text-sm text-gray-500 mt-1">Comma-separated list of allowed tokens</p>
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn-primary flex-1"
-                  >
-                    {loading ? 'Creating...' : 'Create Agent'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowCreateForm(false)}
-                    className="btn-ghost"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Agents List */}
-        {agents.length === 0 ? (
-          /* EMPTY STATE: Teaching, proactive with diagram */
-          <div className="card text-center">
-            <div className="text-6xl mb-6 animate-float">🤖</div>
-            <h3 className="text-3xl font-bold mb-3 text-gray-900">Create Your First AI Agent</h3>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              AI Agents automate crypto payments with smart policies—perfect for payroll, rewards, or refunds.
-            </p>
-
-            {/* Teaching diagram */}
-            <div className="grid md:grid-cols-3 gap-4 mb-8 text-left">
-              <div className="bg-cronos-50 rounded-xl p-4">
-                <div className="text-2xl mb-2">⚙️</div>
-                <h4 className="font-bold text-sm mb-1 text-gray-900">Set Policies</h4>
-                <p className="text-xs text-gray-600">Daily limits, whitelists, approval thresholds</p>
-              </div>
-              <div className="bg-blue-50 rounded-xl p-4">
-                <div className="text-2xl mb-2">🔑</div>
-                <h4 className="font-bold text-sm mb-1 text-gray-900">Get API Key</h4>
-                <p className="text-xs text-gray-600">Secure key for scripts or applications</p>
-              </div>
-              <div className="bg-green-50 rounded-xl p-4">
-                <div className="text-2xl mb-2">⚡</div>
-                <h4 className="font-bold text-sm mb-1 text-gray-900">Automate Everything</h4>
-                <p className="text-xs text-gray-600">Payments run within your rules 24/7</p>
-              </div>
-            </div>
-
-            <button onClick={() => setShowCreateForm(true)} className="btn-primary text-lg px-10 py-4">
-              Create Your First Agent →
-            </button>
-            <p className="text-sm text-gray-500 mt-4">Takes ~30 seconds to set up</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-6">
-            {agents.map((agent) => (
-              <div key={agent.id} className="card hover:shadow-2xl transition-all">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-cronos-500 to-cronos-600 rounded-xl flex items-center justify-center">
-                      <span className="text-2xl">🤖</span>
-                    </div>
-                    <div>
-                      <h3 className="text-xl font-bold">{agent.name}</h3>
-                      <span className={`badge ${agent.status === 'active' ? 'badge-success' : 'badge-error'}`}>
-                        {agent.status}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-sm">
-                  <div className="flex justify-between items-center">
-                    <span className="text-gray-600">Created:</span>
-                    <span className="font-medium">
-                      {new Date(agent.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  {agent.last_used_at && (
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Last Used:</span>
-                      <span className="font-medium">
-                        {new Date(agent.last_used_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-6 pt-6 border-t border-gray-200 space-y-3">
-                  {/* MICROCOPY: Descriptive with consequences */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => {
-                        setPaymentAgent(agent);
-                        setShowPaymentForm(true);
-                      }}
-                      disabled={agent.status !== 'active'}
-                      title={agent.status === 'active' ? 'Send payment with policy checks' : 'Agent is paused'}
-                      className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
-                        agent.status === 'active'
-                          ? 'bg-cronos-500 text-white hover:bg-cronos-600'
-                          : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                      }`}
-                    >
-                      💸 Send Payment
-                    </button>
-                    <button
-                      onClick={() => setSelectedAgent(agent)}
-                      title="View API key and configuration"
-                      className="px-4 py-2 rounded-lg font-semibold bg-blue-100 text-blue-700 hover:bg-blue-200 transition-all text-sm"
-                    >
-                      View Config
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                    onClick={async () => {
-                      // Toggle agent status
-                      const newStatus = agent.status === 'active' ? 'paused' : 'active';
-                      const confirmMsg = agent.status === 'active'
-                        ? 'Pause agent? Stops all automated payments but keeps history.'
-                        : 'Activate agent? Resumes automated payments with current policies.';
-
-                      if (!confirm(confirmMsg)) return;
-
-                      try {
-                        const response = await fetch(`${API_URL}/agent/update-status`, {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            agentId: agent.id,
-                            ownerAddress: wallets[0].address,
-                            status: newStatus
-                          }),
-                        });
-                        if (response.ok) {
-                          fetchAgents(); // Refresh list
-                        } else {
-                          const error = await response.json();
-                          alert(`Failed to update: ${error.message || 'Unknown error'}`);
-                        }
-                      } catch (err) {
-                        console.error('Failed to update agent:', err);
-                        alert('Network error. Check connection and retry.');
-                      }
-                    }}
-                    title={agent.status === 'active' ? 'Stop payments but keep history' : 'Resume payments with policies'}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all text-sm ${
-                      agent.status === 'active'
-                        ? 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        : 'bg-cronos-500 text-white hover:bg-cronos-600'
-                    }`}
-                  >
-                    {agent.status === 'active' ? '⏸️ Pause Agent' : '▶️ Activate'}
-                  </button>
-                  <button
-                    onClick={() => handleDeleteAgent(agent.id)}
-                    title="Permanently delete agent and revoke API key"
-                    className="px-4 py-2 rounded-lg font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all text-sm"
-                  >
-                    🗑️ Delete Forever
-                  </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Agent Details Modal */}
-        {selectedAgent && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="card max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-3xl font-bold mb-2">{selectedAgent.name}</h2>
-                  <span className={`badge ${selectedAgent.status === 'active' ? 'badge-success' : 'badge-error'}`}>
-                    {selectedAgent.status}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setSelectedAgent(null)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-
-              {/* API Key Section */}
-              <div className="bg-gradient-to-r from-cronos-50 to-blue-50 rounded-xl p-6 mb-6">
-                <h3 className="font-bold text-gray-900 mb-3">API Key</h3>
-                <div className="bg-white rounded-lg p-4 mb-3">
-                  <code className="text-sm font-mono break-all">{selectedAgent.api_key}</code>
-                </div>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(selectedAgent.api_key);
-                    alert('API Key copied to clipboard!');
-                  }}
-                  className="btn-secondary text-sm"
-                >
-                  Copy API Key
-                </button>
-              </div>
-
-              {/* Configuration Details */}
-              <div className="space-y-4">
-                <h3 className="font-bold text-lg">Configuration</h3>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {selectedAgent.owner_address && (
-                    <div>
-                      <p className="text-sm text-gray-600">Owner Address</p>
-                      <p className="font-mono text-sm">{selectedAgent.owner_address.substring(0, 10)}...{selectedAgent.owner_address.slice(-8)}</p>
-                    </div>
-                  )}
-
-                  <div>
-                    <p className="text-sm text-gray-600">Daily Spending Limit</p>
-                    <p className="font-semibold">{selectedAgent.policy_config?.dailyLimit || 'N/A'} CRO</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-600">Approval Threshold</p>
-                    <p className="font-semibold">{selectedAgent.policy_config?.requireApproval || 'N/A'} CRO</p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-gray-600">Allowed Tokens</p>
-                    <p className="font-semibold">{selectedAgent.policy_config?.allowedTokens || 'All'}</p>
-                  </div>
-                </div>
-
-                <div>
-                  <p className="text-sm text-gray-600 mb-2">Allowed Recipients</p>
-                  <div className="bg-gray-50 rounded-lg p-3">
-                    <code className="text-sm">{selectedAgent.policy_config?.allowedRecipients || '*'}</code>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                  <div>
-                    <p className="text-sm text-gray-600">Created</p>
-                    <p className="font-medium">{new Date(selectedAgent.created_at).toLocaleString()}</p>
-                  </div>
-
-                  {selectedAgent.last_used_at && (
-                    <div>
-                      <p className="text-sm text-gray-600">Last Used</p>
-                      <p className="font-medium">{new Date(selectedAgent.last_used_at).toLocaleString()}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Actions */}
-              <div className="flex gap-3 mt-6 pt-6 border-t border-gray-200">
-                <button
-                  onClick={() => setSelectedAgent(null)}
-                  className="btn-primary flex-1"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Documentation Section */}
-        <div className="mt-12 card bg-gradient-to-br from-gray-50 to-white">
-          <h3 className="text-2xl font-bold mb-4">How to Use AI Agents</h3>
-          <div className="space-y-4">
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cronos-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                1
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Create an Agent</h4>
-                <p className="text-gray-600">
-                  Set up policies like daily limits, whitelists, and approval thresholds
-                </p>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cronos-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                2
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Use the API Key</h4>
-                <p className="text-gray-600 mb-2">
-                  Integrate the agent into your script or application
-                </p>
-                <div className="bg-gray-900 text-gray-100 rounded-lg p-4 text-sm font-mono overflow-x-auto">
-                  <pre>{`curl -X POST ${API_URL}/agent/pay \\
-  -H "X-API-Key: YOUR_API_KEY" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "recipientIdentifier": "alice@company.com",
-    "identifierType": "email",
-    "amount": "0.5"
-  }'`}</pre>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4">
-              <div className="w-8 h-8 bg-cronos-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                3
-              </div>
-              <div>
-                <h4 className="font-semibold mb-1">Automate Everything</h4>
-                <p className="text-gray-600">
-                  Let your AI handle payroll, refunds, rewards, and more - all within your policies
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-6 border-t border-gray-200">
-            <a
-              href="/examples"
-              className="text-cronos-600 font-semibold hover:text-cronos-700 flex items-center gap-2"
-            >
-              View Example Scripts
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6">
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+              activeTab === 'chat'
+                ? 'bg-gray-900 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
               </svg>
-            </a>
-          </div>
+              AI Chat
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('agents')}
+            className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+              activeTab === 'agents'
+                ? 'bg-gray-900 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              API Agents
+              {agents.length > 0 && (
+                <span className="px-1.5 py-0.5 bg-white/20 rounded text-xs">{agents.length}</span>
+              )}
+            </span>
+          </button>
         </div>
 
-        {/* Payment Form Modal */}
-        {showPaymentForm && paymentAgent && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <div className="card max-w-md w-full">
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900">Use Agent: {paymentAgent.name}</h2>
-                  <p className="text-sm text-gray-600 mt-1">Send payment with your agent's rules</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setShowPaymentForm(false);
-                    setPaymentData({ recipient: '', amount: '' });
-                  }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        {/* AI Chat Tab */}
+        {activeTab === 'chat' && (
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* Main Chat */}
+            <div className="lg:col-span-2">
+              <AIChat onPaymentComplete={handlePaymentComplete} />
+            </div>
+
+            {/* Sidebar */}
+            <div className="space-y-6">
+              {/* How It Works */}
+              <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                </button>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                <p className="text-sm text-blue-900 font-medium mb-2">Agent Rules:</p>
-                <ul className="text-xs text-blue-800 space-y-1">
-                  <li>• Daily limit: {paymentAgent.policy_config?.dailyLimit || '10'} CRO</li>
-                  <li>• Auto-approve under: {paymentAgent.policy_config?.requireApproval || '5'} CRO</li>
-                  <li>• Allowed tokens: {paymentAgent.policy_config?.allowedTokens || 'CRO'}</li>
-                </ul>
-              </div>
-
-              <div className="flex gap-2 mb-4">
-                <button
-                  type="button"
-                  onClick={() => setBulkPaymentMode(false)}
-                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                    !bulkPaymentMode
-                      ? 'bg-cronos-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  Single Payment
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setBulkPaymentMode(true)}
-                  className={`flex-1 px-4 py-2 rounded-lg font-medium transition-all ${
-                    bulkPaymentMode
-                      ? 'bg-cronos-500 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  🚀 Bulk Payments
-                </button>
-              </div>
-
-              {!bulkPaymentMode ? (
-                <form onSubmit={handleSendPayment} className="space-y-4">
-                <div>
-                  <label className="label">Recipient Email</label>
-                  <input
-                    type="email"
-                    value={paymentData.recipient}
-                    onChange={(e) => setPaymentData({ ...paymentData, recipient: e.target.value })}
-                    placeholder="user@example.com"
-                    className="input-field"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="label">Amount (CRO)</label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={paymentData.amount}
-                    onChange={(e) => setPaymentData({ ...paymentData, amount: e.target.value })}
-                    placeholder="1.5"
-                    className="input-field"
-                    required
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-4">
-                  <button
-                    type="submit"
-                    disabled={paymentLoading}
-                    className="btn-primary flex-1"
-                  >
-                    {paymentLoading ? 'Sending...' : '💸 Send Payment'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowPaymentForm(false);
-                      setPaymentData({ recipient: '', amount: '' });
-                    }}
-                    className="btn-ghost"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-              ) : (
-                <form onSubmit={handleBulkPayment} className="space-y-4">
-                  <div>
-                    <label className="label">📄 Recipient List (CSV Format)</label>
-                    <textarea
-                      value={bulkList}
-                      onChange={(e) => setBulkList(e.target.value)}
-                      placeholder={`testchaindrop1@gmail.com,1\njeremic@company.com,2\nuser3@example.com,0.5`}
-                      className="input-field min-h-[150px] font-mono text-sm"
-                      required
-                    />
-                    <p className="text-xs text-gray-600 mt-1">
-                      Format: One payment per line as <code className="bg-gray-100 px-1 rounded">email,amount</code>
-                    </p>
-                  </div>
-
-                  {bulkProgress.total > 0 && (
-                    <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="text-sm font-medium">Processing...</span>
-                        <span className="text-sm text-gray-600">{bulkProgress.current} / {bulkProgress.total}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-cronos-500 h-2 rounded-full transition-all"
-                          style={{ width: `${(bulkProgress.current / bulkProgress.total) * 100}%` }}
-                        ></div>
-                      </div>
-                      {bulkProgress.results.length > 0 && (
-                        <div className="mt-3 max-h-40 overflow-y-auto space-y-1">
-                          {bulkProgress.results.map((result, idx) => (
-                            <div key={idx} className="text-xs flex items-center gap-2">
-                              {result.status === 'success' ? (
-                                <>
-                                  <span className="text-green-600">✓</span>
-                                  <span className="text-gray-600">{result.email}</span>
-                                  <span className="text-gray-500">- {result.amount} CRO</span>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="text-red-600">✗</span>
-                                  <span className="text-gray-600">{result.email}</span>
-                                  <span className="text-red-500">- {result.error}</span>
-                                </>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                  How It Works
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#1de4c6]/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-[#00a28e]">1</span>
                     </div>
-                  )}
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      type="submit"
-                      disabled={paymentLoading}
-                      className="btn-primary flex-1"
-                    >
-                      {paymentLoading ? `Processing ${bulkProgress.current}/${bulkProgress.total}...` : '🚀 Start Bulk Payment'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowPaymentForm(false);
-                        setBulkList('');
-                        setBulkProgress({ current: 0, total: 0, results: [] });
-                      }}
-                      className="btn-ghost"
-                    >
-                      Cancel
-                    </button>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Describe your payment</p>
+                      <p className="text-xs text-gray-500">"Send 5 CRO to alice@example.com"</p>
+                    </div>
                   </div>
-                </form>
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#1de4c6]/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-[#00a28e]">2</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">AI extracts details</p>
+                      <p className="text-xs text-gray-500">Recipient, amount, token detected</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#1de4c6]/10 flex items-center justify-center flex-shrink-0">
+                      <span className="text-xs font-bold text-[#00a28e]">3</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Confirm & send</p>
+                      <p className="text-xs text-gray-500">Recipient gets email with claim link</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Example Prompts */}
+              <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
+                <h3 className="font-semibold mb-4 flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
+                  Try These
+                </h3>
+                <div className="space-y-2">
+                  <div className="bg-white/10 rounded-lg px-3 py-2 text-sm font-mono">
+                    "Pay @alice 10 CRO for lunch"
+                  </div>
+                  <div className="bg-white/10 rounded-lg px-3 py-2 text-sm font-mono">
+                    "Send 25 to bob@company.com"
+                  </div>
+                  <div className="bg-white/10 rounded-lg px-3 py-2 text-sm font-mono">
+                    "Refund +1234567890"
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent AI Payments */}
+              {recentPayments.length > 0 && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4">Recent AI Payments</h3>
+                  <div className="space-y-3">
+                    {recentPayments.map((payment, idx) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600 truncate">{payment.recipientIdentifier}</span>
+                        <span className="font-medium text-gray-900">{payment.amount} CRO</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           </div>
         )}
+
+        {/* API Agents Tab */}
+        {activeTab === 'agents' && (
+          <div>
+            {/* Create Agent Button */}
+            <div className="flex justify-end mb-6">
+              <button
+                onClick={() => setShowCreateModal(true)}
+                className="px-5 py-2.5 rounded-xl font-medium text-white transition-all hover:scale-105"
+                style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+              >
+                + Create API Agent
+              </button>
+            </div>
+
+            {agents.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No API Agents Yet</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Create an API agent to automate payments from your scripts, bots, or applications.
+                </p>
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className="px-6 py-3 rounded-xl font-medium text-white transition-all hover:scale-105"
+                  style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+                >
+                  Create Your First Agent
+                </button>
+              </div>
+            ) : (
+              <div className="grid md:grid-cols-2 gap-4">
+                {agents.map((agent) => (
+                  <div key={agent.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1de4c6] to-[#00a28e] flex items-center justify-center">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{agent.name}</h3>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            agent.status === 'active'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {agent.status}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-sm mb-4">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Daily Limit</span>
+                        <span className="font-medium">{agent.policy_config?.dailyLimit || '10'} CRO</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Created</span>
+                        <span className="font-medium">{new Date(agent.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-gray-100">
+                      <div className="bg-gray-50 rounded-lg p-3 mb-3">
+                        <p className="text-xs text-gray-500 mb-1">API Key</p>
+                        <code className="text-xs font-mono text-gray-700 break-all">{agent.api_key}</code>
+                      </div>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(agent.api_key);
+                          alert('API key copied!');
+                        }}
+                        className="w-full py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 transition-colors"
+                      >
+                        Copy API Key
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* API Documentation */}
+            <div className="mt-8 bg-gray-900 rounded-2xl p-6 text-white">
+              <h3 className="font-semibold mb-4">API Usage</h3>
+              <pre className="bg-black/30 rounded-lg p-4 text-sm overflow-x-auto">
+{`curl -X POST ${API_URL}/agent/pay \\
+  -H "X-API-Key: YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "recipientIdentifier": "alice@example.com",
+    "identifierType": "email",
+    "amount": "1.5"
+  }'`}
+              </pre>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Create Agent Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+                Create API Agent
+              </h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateAgent} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Agent Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="Payroll Bot"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Daily Limit (CRO)</label>
+                <input
+                  type="number"
+                  value={formData.dailyLimit}
+                  onChange={(e) => setFormData({ ...formData, dailyLimit: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Allowed Recipients</label>
+                <input
+                  type="text"
+                  value={formData.allowedRecipients}
+                  onChange={(e) => setFormData({ ...formData, allowedRecipients: e.target.value })}
+                  placeholder="* (all) or *@company.com"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+                >
+                  {loading ? 'Creating...' : 'Create Agent'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-6 py-3 rounded-xl font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
