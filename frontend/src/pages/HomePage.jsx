@@ -242,6 +242,141 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ===== AI NATURAL LANGUAGE PAYMENTS ===== */}
+      <section className="py-24 bg-[#111119] border-t border-white/5">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Left: Chat Demo */}
+            <div className="relative order-2 lg:order-1">
+              <div className="bg-gradient-to-br from-[#0f172a] to-[#1e293b] rounded-3xl p-6 border border-white/10 shadow-2xl">
+                {/* Chat Header */}
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#1de4c6] to-[#00a28e] flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold">AI Payment Assistant</h4>
+                    <p className="text-gray-500 text-xs">Powered by Claude</p>
+                  </div>
+                </div>
+
+                {/* Chat Messages */}
+                <div className="space-y-4">
+                  <div className="flex justify-end">
+                    <div className="bg-gradient-to-r from-[#1de4c6] to-[#00a28e] rounded-2xl rounded-tr-sm px-4 py-2 max-w-[80%]">
+                      <p className="text-white text-sm">Send 10 CRO to alice@company.com for the design work</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="bg-white/10 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%]">
+                      <p className="text-gray-300 text-sm">Ready to send <span className="text-white font-semibold">10 CRO</span> to <span className="text-[#1de4c6]">alice@company.com</span> for "design work"</p>
+                      <div className="flex gap-2 mt-3">
+                        <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-lg text-xs font-medium">Confirm</span>
+                        <span className="px-3 py-1 bg-white/5 text-gray-400 rounded-lg text-xs">Cancel</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-end">
+                    <div className="bg-gradient-to-r from-[#1de4c6] to-[#00a28e] rounded-2xl rounded-tr-sm px-4 py-2">
+                      <p className="text-white text-sm">yes</p>
+                    </div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-2xl rounded-tl-sm px-4 py-3 max-w-[80%]">
+                      <p className="text-green-400 text-sm">✅ <span className="font-semibold">Payment sent!</span> Alice will receive an email with a claim link.</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Input */}
+                <div className="mt-6 flex gap-2">
+                  <div className="flex-1 bg-white/5 rounded-xl px-4 py-3 text-gray-500 text-sm">
+                    Type a payment request...
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#1de4c6] to-[#00a28e] flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              {/* Glow effect */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-[#1de4c6]/10 to-[#3b82f6]/10 rounded-3xl blur-2xl -z-10" />
+            </div>
+
+            {/* Right: Explanation */}
+            <div className="space-y-6 order-1 lg:order-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1de4c6]/10 border border-[#1de4c6]/20">
+                <svg className="w-4 h-4 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span className="text-[#1de4c6] text-xs font-semibold uppercase tracking-wider">AI-Powered</span>
+              </div>
+              <h2 className="text-4xl md:text-5xl font-bold text-white">
+                Pay with plain English
+              </h2>
+              <p className="text-xl text-gray-400">
+                Just describe your payment in natural language. Our AI understands intent, extracts details, and executes on <span className="text-white">Cronos blockchain</span>.
+              </p>
+              <ul className="space-y-4">
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#1de4c6]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-[#1de4c6]" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">"Send 5 CRO to bob@email.com"</p>
+                    <p className="text-gray-500 text-sm">AI extracts: recipient, amount, token</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#1de4c6]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-[#1de4c6]" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">"Pay @alice_twitter 20 for lunch"</p>
+                    <p className="text-gray-500 text-sm">Works with Twitter handles too</p>
+                  </div>
+                </li>
+                <li className="flex items-start gap-3">
+                  <div className="w-6 h-6 rounded-full bg-[#1de4c6]/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <svg className="w-3 h-3 text-[#1de4c6]" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-white font-medium">Confirm and done</p>
+                    <p className="text-gray-500 text-sm">One "yes" to execute on-chain</p>
+                  </div>
+                </li>
+              </ul>
+
+              {/* Tech badges */}
+              <div className="pt-4 flex flex-wrap gap-2">
+                <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-xs font-medium">Anthropic Claude</span>
+                <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-xs font-medium">Crypto.com SDK</span>
+                <span className="px-3 py-1.5 bg-white/5 border border-white/10 rounded-lg text-gray-400 text-xs font-medium">Cronos EVM</span>
+              </div>
+
+              <button
+                onClick={() => authenticated ? navigate('/agents') : login()}
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#1de4c6] to-[#00a28e] hover:opacity-90 rounded-xl text-white font-semibold transition-all"
+              >
+                <span>Try AI Payments</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ===== AI AGENTS - AUTOMATION ===== */}
       <section className="py-24 bg-[#111119]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -364,7 +499,7 @@ export default function HomePage() {
             </svg>
           </button>
           <p className="text-gray-600 text-sm mt-6">
-            Built for Cronos Hackathon 2026
+            Built for Cronos x402 Hackathon • Agentic Finance
           </p>
         </div>
       </section>
