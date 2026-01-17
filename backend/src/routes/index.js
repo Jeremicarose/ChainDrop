@@ -22,12 +22,17 @@ router.post('/agent/update-status', agentController.updateStatus);
 router.get('/agent/stats', agentController.getStats);
 router.get('/agent/list', agentController.list);
 
-// AI routes - Natural language payment parsing
+// AI routes - Natural language payment parsing (Claude)
 router.post('/ai/parse', aiController.parse);
 router.post('/ai/execute', aiController.execute);
 router.post('/ai/bulk-parse', aiController.bulkParse);
 router.post('/ai/chat', aiController.chat);
 router.get('/ai/suggestions', aiController.suggestions);
+
+// Crypto.com AI Agent routes (Hackathon compliance)
+router.post('/ai/agent/query', aiController.agentQuery);
+router.post('/ai/agent/autonomous', aiController.createAutonomousAgent);
+router.get('/ai/status', aiController.status);
 
 // Health check
 router.get('/health', (req, res) => {
