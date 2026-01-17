@@ -10,7 +10,7 @@ class CryptoComAgentService {
   constructor() {
     this.client = null;
     this.enabled = false;
-    this.chainId = process.env.CRONOS_CHAIN_ID || '338'; // Default to testnet
+    this.chainId = parseInt(process.env.CRONOS_CHAIN_ID || '338'); // Default to testnet
 
     this.init();
   }
@@ -22,24 +22,27 @@ class CryptoComAgentService {
       const explorerApiKey = process.env.CRONOS_EXPLORER_API_KEY;
       const openAiApiKey = process.env.OPENAI_API_KEY;
 
-      if (explorerApiKey) {
+      // SDK requires OpenAI API key for the AI agent service
+      if (explorerApiKey && openAiApiKey) {
         this.client = createClient({
-          chain: {
-            id: parseInt(this.chainId),
-            name: this.chainId === '25' ? 'cronos-mainnet' : 'cronos-testnet',
-            rpc: process.env.VITE_RPC_URL || 'https://evm-t3.cronos.org',
-          },
-          explorer: {
-            apiKey: explorerApiKey,
-          },
-          openAI: openAiApiKey ? {
+          openAI: {
             apiKey: openAiApiKey,
-          } : undefined,
+            model: 'gpt-4o',
+          },
+          chainId: this.chainId, // 25 for mainnet, 338 for testnet
+          explorerKeys: {
+            cronosMainnetKey: this.chainId === 25 ? explorerApiKey : undefined,
+            cronosTestnetKey: this.chainId === 338 ? explorerApiKey : undefined,
+          },
         });
         this.enabled = true;
         console.log('🤖 Crypto.com AI Agent Service initialized (Chain ID:', this.chainId, ')');
+      } else if (explorerApiKey) {
+        // Can still show as enabled but will use mock for actual queries
+        this.enabled = true;
+        console.log('🤖 Crypto.com AI Agent Service initialized in limited mode (set OPENAI_API_KEY for full features)');
       } else {
-        console.log('⚠️  Crypto.com AI Agent running in mock mode (set CRONOS_EXPLORER_API_KEY)');
+        console.log('⚠️  Crypto.com AI Agent running in mock mode (set CRONOS_EXPLORER_API_KEY and OPENAI_API_KEY)');
       }
     } catch (error) {
       console.log('⚠️  Crypto.com AI Agent SDK error:', error.message);
@@ -234,11 +237,13 @@ class CryptoComAgentService {
    * Get service status for health check
    */
   getStatus() {
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
     return {
       enabled: this.enabled,
       chainId: this.chainId,
-      network: this.chainId === '25' ? 'Cronos Mainnet' : 'Cronos Testnet',
-      mode: this.enabled ? 'live' : 'mock',
+      network: this.chainId === 25 ? 'Cronos Mainnet' : 'Cronos Testnet',
+      mode: this.enabled && this.client ? 'live' : (this.enabled ? 'limited' : 'mock'),
+      hasOpenAI,
       features: [
         'Natural language blockchain queries',
         'Balance & transaction lookups',

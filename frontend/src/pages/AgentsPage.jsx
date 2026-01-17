@@ -22,6 +22,24 @@ export default function AgentsPage() {
     allowedTokens: 'CRO'
   });
 
+  const [aiStatus, setAiStatus] = useState(null);
+
+  // Fetch AI status
+  useEffect(() => {
+    const fetchAiStatus = async () => {
+      try {
+        const response = await fetch(`${API_URL}/ai/status`);
+        if (response.ok) {
+          const data = await response.json();
+          setAiStatus(data);
+        }
+      } catch (error) {
+        console.error('Error fetching AI status:', error);
+      }
+    };
+    fetchAiStatus();
+  }, []);
+
   // Fetch agents
   useEffect(() => {
     if (authenticated && wallets.length > 0) {
