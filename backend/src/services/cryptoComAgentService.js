@@ -4,7 +4,7 @@
  * Used alongside Claude for hackathon compliance
  */
 
-let CryptoComClient = null;
+const { createClient } = require('@crypto.com/ai-agent-client');
 
 class CryptoComAgentService {
   constructor() {
@@ -15,32 +15,34 @@ class CryptoComAgentService {
     this.init();
   }
 
-  async init() {
+  init() {
     try {
-      // Dynamic import for the Crypto.com AI Agent Client
-      const cryptoComModule = await import('@crypto.com/ai-agent-client');
-      CryptoComClient = cryptoComModule.createClient || cryptoComModule.default?.createClient;
+      // Create the Crypto.com AI Agent client
+      // The SDK connects to Crypto.com's hosted AI agent service
+      const explorerApiKey = process.env.CRONOS_EXPLORER_API_KEY;
+      const openAiApiKey = process.env.OPENAI_API_KEY;
 
-      if (CryptoComClient && process.env.CRYPTO_COM_API_KEY) {
-        this.client = CryptoComClient({
-          openAI: {
-            apiKey: process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY,
-          },
+      if (explorerApiKey) {
+        this.client = createClient({
           chain: {
             id: parseInt(this.chainId),
+            name: this.chainId === '25' ? 'cronos-mainnet' : 'cronos-testnet',
             rpc: process.env.VITE_RPC_URL || 'https://evm-t3.cronos.org',
           },
           explorer: {
-            apiKey: process.env.CRONOS_EXPLORER_API_KEY,
-          }
+            apiKey: explorerApiKey,
+          },
+          openAI: openAiApiKey ? {
+            apiKey: openAiApiKey,
+          } : undefined,
         });
         this.enabled = true;
-        console.log('🤖 Crypto.com AI Agent Service initialized');
+        console.log('🤖 Crypto.com AI Agent Service initialized (Chain ID:', this.chainId, ')');
       } else {
-        console.log('⚠️  Crypto.com AI Agent running in mock mode (missing API keys)');
+        console.log('⚠️  Crypto.com AI Agent running in mock mode (set CRONOS_EXPLORER_API_KEY)');
       }
     } catch (error) {
-      console.log('⚠️  Crypto.com AI Agent SDK not available:', error.message);
+      console.log('⚠️  Crypto.com AI Agent SDK error:', error.message);
       this.enabled = false;
     }
   }
@@ -58,113 +60,82 @@ class CryptoComAgentService {
    * @param {object} context - Additional context (wallet, etc.)
    */
   async query(query, context = {}) {
-    if (!this.enabled) {
+    if (!this.enabled || !this.client) {
       return this.mockQuery(query, context);
     }
 
     try {
-      const response = await this.client.query({
-        query,
-        walletAddress: context.walletAddress,
-        chainId: this.chainId
-      });
+      console.log(`🤖 Crypto.com AI Agent query: "${query}"`);
+
+      // Use the SDK's generateQuery method
+      const response = await this.client.agent.generateQuery(query);
+
+      console.log('🤖 Crypto.com AI Agent response:', response);
 
       return {
         success: true,
-        response: response.message || response,
-        actions: response.actions || [],
+        message: response.message || 'Query processed',
+        data: response.object || response,
         source: 'crypto.com-ai-agent'
       };
     } catch (error) {
-      console.error('Crypto.com AI Agent error:', error);
+      console.error('Crypto.com AI Agent error:', error.message);
       return this.mockQuery(query, context);
-    }
-  }
-
-  /**
-   * Execute a blockchain action via AI Agent
-   * @param {string} action - Action type (transfer, swap, etc.)
-   * @param {object} params - Action parameters
-   */
-  async executeAction(action, params) {
-    if (!this.enabled) {
-      return {
-        success: false,
-        error: 'Crypto.com AI Agent not configured',
-        mock: true
-      };
-    }
-
-    try {
-      const response = await this.client.execute({
-        action,
-        params,
-        chainId: this.chainId
-      });
-
-      return {
-        success: true,
-        txHash: response.txHash,
-        result: response,
-        source: 'crypto.com-ai-agent'
-      };
-    } catch (error) {
-      console.error('Crypto.com AI Agent execution error:', error);
-      return {
-        success: false,
-        error: error.message
-      };
     }
   }
 
   /**
    * Get blockchain data via AI Agent
-   * @param {string} dataType - Type of data (balance, txHistory, etc.)
+   * @param {string} dataType - Type of data (balance, block, gasPrice, etc.)
    * @param {object} params - Query parameters
    */
   async getBlockchainData(dataType, params = {}) {
     const queries = {
-      balance: `What is the CRO balance of ${params.address}?`,
-      latestBlock: 'What is the latest block on Cronos?',
+      balance: `What is the CRO balance of address ${params.address} on Cronos?`,
+      latestBlock: 'What is the latest block number on Cronos?',
       gasPrice: 'What is the current gas price on Cronos?',
-      txHistory: `Show me the recent transactions for ${params.address}`
+      txHistory: `Show me the recent transactions for address ${params.address} on Cronos`,
+      tokenInfo: `What tokens does address ${params.address} hold on Cronos?`
     };
 
-    const query = queries[dataType] || `Get ${dataType} for ${JSON.stringify(params)}`;
+    const query = queries[dataType] || `Get ${dataType} for ${JSON.stringify(params)} on Cronos`;
     return this.query(query, params);
   }
 
   /**
-   * Create an autonomous payment agent
+   * Create an autonomous payment agent configuration
    * @param {object} config - Agent configuration
    */
   async createAutonomousAgent(config) {
     const {
       name,
-      schedule, // 'daily', 'weekly', 'monthly', or cron expression
+      schedule,
       recipients,
       amount,
       token = 'CRO',
       conditions = []
     } = config;
 
-    // For now, store agent config and return it
-    // In production, this would set up scheduled tasks
+    // Store agent config - in production, this would set up scheduled tasks
     const agent = {
-      id: `agent_${Date.now()}`,
+      id: `agent_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name,
       schedule,
-      recipients,
+      recipients: Array.isArray(recipients) ? recipients : [recipients],
       amount,
       token,
       conditions,
       status: 'active',
       createdAt: new Date().toISOString(),
       nextRun: this.calculateNextRun(schedule),
+      chainId: this.chainId,
       source: 'crypto.com-ai-agent'
     };
 
-    console.log(`🤖 Created autonomous agent: ${name}`);
+    console.log(`🤖 Created autonomous agent: ${name} (${agent.id})`);
+    console.log(`   Schedule: ${schedule}, Amount: ${amount} ${token}`);
+    console.log(`   Recipients: ${agent.recipients.join(', ')}`);
+
     return agent;
   }
 
@@ -174,31 +145,41 @@ class CryptoComAgentService {
   calculateNextRun(schedule) {
     const now = new Date();
     switch (schedule) {
+      case 'hourly':
+        return new Date(now.getTime() + 60 * 60 * 1000).toISOString();
       case 'daily':
         return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
       case 'weekly':
         return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
       case 'monthly':
-        return new Date(now.setMonth(now.getMonth() + 1)).toISOString();
+        const nextMonth = new Date(now);
+        nextMonth.setMonth(nextMonth.getMonth() + 1);
+        return nextMonth.toISOString();
       default:
+        // Assume it's a cron expression or custom - default to daily
         return new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
     }
   }
 
   /**
-   * Mock query for development/testing
+   * Mock query for development/testing when SDK not configured
    */
   mockQuery(query, context) {
-    console.log(`🤖 [Mock] Crypto.com AI Agent query: ${query}`);
-
-    // Parse common queries
+    console.log(`🤖 [Mock] Crypto.com AI Agent query: "${query}"`);
     const lowerQuery = query.toLowerCase();
 
+    // Simulate responses for common queries
     if (lowerQuery.includes('balance')) {
+      const address = context.address || context.walletAddress || '0x...';
       return {
         success: true,
-        response: `Balance query for ${context.walletAddress || 'wallet'}: This is a mock response. Configure CRYPTO_COM_API_KEY for real data.`,
-        mock: true,
+        message: `Balance query received for ${address}. Configure CRONOS_EXPLORER_API_KEY for live data.`,
+        data: {
+          address,
+          balance: '0.00',
+          currency: 'CRO',
+          mock: true
+        },
         source: 'mock'
       };
     }
@@ -206,8 +187,24 @@ class CryptoComAgentService {
     if (lowerQuery.includes('block')) {
       return {
         success: true,
-        response: 'Latest block: #12345678 (mock). Configure API keys for real data.',
-        mock: true,
+        message: 'Latest block on Cronos Testnet: Block data requires API key configuration.',
+        data: {
+          blockNumber: 'N/A',
+          mock: true
+        },
+        source: 'mock'
+      };
+    }
+
+    if (lowerQuery.includes('gas')) {
+      return {
+        success: true,
+        message: 'Gas price on Cronos: Configure API keys for real-time data.',
+        data: {
+          gasPrice: '5000000000',
+          unit: 'wei',
+          mock: true
+        },
         source: 'mock'
       };
     }
@@ -215,20 +212,20 @@ class CryptoComAgentService {
     if (lowerQuery.includes('send') || lowerQuery.includes('transfer')) {
       return {
         success: true,
-        response: 'Transfer request received. Use ChainDrop transfer API for actual transactions.',
-        actions: [{
-          type: 'transfer',
-          status: 'mock'
-        }],
-        mock: true,
+        message: 'Transfer request noted. Use ChainDrop payment flow to execute actual transfers.',
+        data: {
+          action: 'transfer',
+          status: 'use_chaindrop_api',
+          mock: true
+        },
         source: 'mock'
       };
     }
 
     return {
       success: true,
-      response: `Crypto.com AI Agent (mock mode): "${query}" - Configure API keys for real responses.`,
-      mock: true,
+      message: `Crypto.com AI Agent (mock): "${query}" - Configure CRONOS_EXPLORER_API_KEY for live responses.`,
+      data: { mock: true },
       source: 'mock'
     };
   }
@@ -240,11 +237,13 @@ class CryptoComAgentService {
     return {
       enabled: this.enabled,
       chainId: this.chainId,
+      network: this.chainId === '25' ? 'Cronos Mainnet' : 'Cronos Testnet',
       mode: this.enabled ? 'live' : 'mock',
       features: [
         'Natural language blockchain queries',
-        'Autonomous payment agents',
-        'Multi-chain support (Cronos EVM/zkEVM)'
+        'Balance & transaction lookups',
+        'Autonomous payment agent config',
+        'Cronos EVM integration'
       ]
     };
   }
