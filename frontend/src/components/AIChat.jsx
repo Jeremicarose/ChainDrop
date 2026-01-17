@@ -181,11 +181,7 @@ export default function AIChat({ onPaymentComplete }) {
           </div>
           <div>
             <h3 className="font-semibold text-white">AI Payment Assistant</h3>
-            <p className="text-xs text-gray-400">Powered by Claude</p>
-          </div>
-          <div className="ml-auto flex items-center gap-1.5">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-xs text-gray-400">Online</span>
+            <p className="text-xs text-gray-400">Send crypto with natural language</p>
           </div>
         </div>
       </div>
