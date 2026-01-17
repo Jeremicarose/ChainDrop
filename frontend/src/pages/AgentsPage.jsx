@@ -157,18 +157,64 @@ export default function AgentsPage() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
                 AI Agents
               </h1>
               <p className="text-gray-600 mt-1">
-                Natural language payments powered by Claude
+                Natural language payments powered by Claude + Crypto.com
               </p>
             </div>
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-green-100 rounded-full">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-sm font-medium text-green-700">AI Online</span>
+
+            {/* AI Services Status */}
+            <div className="flex items-center gap-3">
+              {/* Claude Status */}
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                aiStatus?.services?.claude?.status === 'online'
+                  ? 'bg-green-100'
+                  : 'bg-yellow-100'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  aiStatus?.services?.claude?.status === 'online'
+                    ? 'bg-green-500 animate-pulse'
+                    : 'bg-yellow-500'
+                }`} />
+                <span className={`text-sm font-medium ${
+                  aiStatus?.services?.claude?.status === 'online'
+                    ? 'text-green-700'
+                    : 'text-yellow-700'
+                }`}>
+                  Claude {aiStatus?.services?.claude?.status === 'online' ? '' : '(Fallback)'}
+                </span>
+              </div>
+
+              {/* Crypto.com Status */}
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full ${
+                aiStatus?.services?.cryptoCom?.mode === 'live'
+                  ? 'bg-green-100'
+                  : aiStatus?.services?.cryptoCom?.mode === 'limited'
+                  ? 'bg-yellow-100'
+                  : 'bg-gray-100'
+              }`}>
+                <div className={`w-2 h-2 rounded-full ${
+                  aiStatus?.services?.cryptoCom?.mode === 'live'
+                    ? 'bg-green-500 animate-pulse'
+                    : aiStatus?.services?.cryptoCom?.mode === 'limited'
+                    ? 'bg-yellow-500'
+                    : 'bg-gray-400'
+                }`} />
+                <span className={`text-sm font-medium ${
+                  aiStatus?.services?.cryptoCom?.mode === 'live'
+                    ? 'text-green-700'
+                    : aiStatus?.services?.cryptoCom?.mode === 'limited'
+                    ? 'text-yellow-700'
+                    : 'text-gray-600'
+                }`}>
+                  Crypto.com {aiStatus?.services?.cryptoCom?.mode === 'live' ? '' :
+                    aiStatus?.services?.cryptoCom?.mode === 'limited' ? '(Limited)' : '(Mock)'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -293,6 +339,85 @@ export default function AgentsPage() {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* AI Services Info */}
+              {aiStatus && (
+                <div className="bg-white rounded-2xl border border-gray-200 p-6">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                    </svg>
+                    AI Services
+                  </h3>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Claude (Anthropic)</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        aiStatus.services?.claude?.status === 'online'
+                          ? 'bg-green-100 text-green-700'
+                          : 'bg-yellow-100 text-yellow-700'
+                      }`}>
+                        {aiStatus.services?.claude?.status === 'online' ? 'Online' : 'Fallback'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Crypto.com SDK</span>
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                        aiStatus.services?.cryptoCom?.mode === 'live'
+                          ? 'bg-green-100 text-green-700'
+                          : aiStatus.services?.cryptoCom?.mode === 'limited'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-gray-100 text-gray-600'
+                      }`}>
+                        {aiStatus.services?.cryptoCom?.mode === 'live' ? 'Live' :
+                         aiStatus.services?.cryptoCom?.mode === 'limited' ? 'Limited' : 'Mock'}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-600">Network</span>
+                      <span className="text-gray-900 font-medium">
+                        Cronos {aiStatus.services?.cryptoCom?.chainId === 25 ? 'Mainnet' : 'Testnet'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Mode Explanations */}
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-500">
+                      {aiStatus.services?.claude?.status !== 'online' && (
+                        <span className="block mb-1">
+                          <span className="font-medium text-yellow-600">Fallback:</span> Using regex parsing (Claude API needs credits)
+                        </span>
+                      )}
+                      {aiStatus.services?.cryptoCom?.mode === 'limited' && (
+                        <span className="block">
+                          <span className="font-medium text-yellow-600">Limited:</span> Crypto.com SDK needs OpenAI API key for full features
+                        </span>
+                      )}
+                      {aiStatus.services?.claude?.status === 'online' && aiStatus.services?.cryptoCom?.mode === 'live' && (
+                        <span className="text-green-600 font-medium">All AI services fully operational</span>
+                      )}
+                    </p>
+                  </div>
+
+                  {/* Hackathon Badge */}
+                  {aiStatus.hackathonCompliance && (
+                    <div className="mt-4 p-3 bg-gradient-to-r from-[#1de4c6]/10 to-blue-500/10 rounded-xl">
+                      <div className="flex items-center gap-2 text-xs font-medium text-gray-700">
+                        <svg className="w-4 h-4 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Hackathon Compliant
+                      </div>
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        <span className="px-2 py-0.5 bg-white/80 rounded text-xs text-gray-600">Anthropic SDK</span>
+                        <span className="px-2 py-0.5 bg-white/80 rounded text-xs text-gray-600">Crypto.com SDK</span>
+                        <span className="px-2 py-0.5 bg-white/80 rounded text-xs text-gray-600">Cronos</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
