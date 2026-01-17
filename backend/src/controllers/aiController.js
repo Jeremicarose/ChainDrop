@@ -1,10 +1,12 @@
 /**
  * AI Controller
  * Handles AI-powered natural language payment parsing
+ * Integrates Claude (intent parsing) + Crypto.com AI Agent (blockchain ops)
  */
 
 const aiService = require('../services/aiService');
 const transferService = require('../services/transferService');
+const cryptoComAgent = require('../services/cryptoComAgentService');
 
 const aiController = {
   /**
@@ -252,6 +254,113 @@ const aiController = {
         success: false,
         error: 'Chat failed',
         message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/ai/agent/query
+   * Query the Crypto.com AI Agent for blockchain data
+   */
+  async agentQuery(req, res) {
+    try {
+      const { query, walletAddress } = req.body;
+
+      if (!query) {
+        return res.status(400).json({
+          success: false,
+          error: 'Query is required'
+        });
+      }
+
+      const result = await cryptoComAgent.query(query, { walletAddress });
+
+      res.json({
+        success: true,
+        ...result
+      });
+    } catch (error) {
+      console.error('Agent query error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Agent query failed',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/ai/agent/autonomous
+   * Create an autonomous payment agent
+   */
+  async createAutonomousAgent(req, res) {
+    try {
+      const { name, schedule, recipients, amount, token, conditions } = req.body;
+
+      if (!name || !schedule || !recipients || !amount) {
+        return res.status(400).json({
+          success: false,
+          error: 'Missing required fields: name, schedule, recipients, amount'
+        });
+      }
+
+      const agent = await cryptoComAgent.createAutonomousAgent({
+        name,
+        schedule,
+        recipients,
+        amount,
+        token,
+        conditions
+      });
+
+      res.json({
+        success: true,
+        agent
+      });
+    } catch (error) {
+      console.error('Create autonomous agent error:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to create autonomous agent',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/ai/status
+   * Get AI services status
+   */
+  async status(req, res) {
+    try {
+      const claudeStatus = aiService.enabled ? 'online' : 'fallback';
+      const cryptoComStatus = cryptoComAgent.getStatus();
+
+      res.json({
+        success: true,
+        services: {
+          claude: {
+            status: claudeStatus,
+            purpose: 'Natural language intent parsing'
+          },
+          cryptoCom: {
+            status: cryptoComStatus.enabled ? 'online' : 'mock',
+            mode: cryptoComStatus.mode,
+            chainId: cryptoComStatus.chainId,
+            purpose: 'Blockchain operations & autonomous agents',
+            features: cryptoComStatus.features
+          }
+        },
+        hackathonCompliance: {
+          anthropicSdk: true,
+          cryptoComSdk: cryptoComStatus.enabled,
+          cronosIntegration: true
+        }
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to get status'
       });
     }
   }
