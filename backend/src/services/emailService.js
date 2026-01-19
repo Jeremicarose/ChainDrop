@@ -29,6 +29,10 @@ const emailService = {
       // Format amount (convert from wei to CRO)
       const amountInCRO = (parseFloat(amount) / 1e18).toFixed(4);
 
+      // Get USD equivalent
+      const amountInUSD = await priceService.croToUsd(parseFloat(amountInCRO));
+      const usdDisplay = `$${amountInUSD.toFixed(2)}`;
+
       // Format sender for display - prefer email over wallet address
       const senderDisplay = senderEmail || `${senderAddress.substring(0, 6)}...${senderAddress.slice(-4)}`;
       const senderShort = senderDisplay;
@@ -37,7 +41,7 @@ const emailService = {
         from: process.env.EMAIL_FROM || 'ChainDrop <notifications@chaindrop.app>',
         to: recipientEmail,
         replyTo: 'support@chaindrops.app',
-        subject: `${amountInCRO} CRO sent to you via ChainDrop`,
+        subject: `💸 You received ${usdDisplay} via ChainDrop`,
         headers: {
           'X-Entity-Ref-ID': claimToken.substring(0, 16),
           'List-Unsubscribe': '<mailto:unsubscribe@chaindrops.app>'
