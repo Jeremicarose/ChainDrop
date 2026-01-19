@@ -5,6 +5,11 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AIChat({ onPaymentComplete }) {
   const { wallets } = useWallets();
+  const { user } = usePrivy();
+
+  // Get sender email from Privy user
+  const senderEmail = user?.email?.address || user?.google?.email || user?.twitter?.username || null;
+
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
@@ -120,6 +125,7 @@ export default function AIChat({ onPaymentComplete }) {
         body: JSON.stringify({
           message: `Send ${payment.amount} ${payment.token || 'CRO'} to ${payment.recipient}`,
           senderAddress: wallets[0]?.address,
+          senderEmail: senderEmail,
           autoExecute: true
         })
       });
