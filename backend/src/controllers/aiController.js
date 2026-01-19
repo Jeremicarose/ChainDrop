@@ -46,7 +46,7 @@ const aiController = {
    */
   async execute(req, res) {
     try {
-      const { message, context, senderAddress, autoExecute } = req.body;
+      const { message, context, senderAddress, senderEmail, autoExecute } = req.body;
 
       if (!message || !senderAddress) {
         return res.status(400).json({
@@ -77,7 +77,50 @@ const aiController = {
         });
       }
 
-      // Validate required fields
+      // Handle bulk payments (multiple recipients)
+      if (parsed.type === 'bulk_payment' && parsed.data.recipients && parsed.data.recipients.length > 0) {
+        const results = [];
+        const errors = [];
+
+        for (const recipient of parsed.data.recipients) {
+          try {
+            const paymentResult = await transferService.createTransfer(
+              senderAddress,
+              recipient.recipient || recipient.email,
+              recipient.recipientType || 'email',
+              (recipient.amount || parsed.data.amount).toString(),
+              null, // tokenAddress - null for native CRO
+              senderEmail
+            );
+            results.push({
+              recipient: recipient.recipient || recipient.email,
+              amount: recipient.amount || parsed.data.amount,
+              success: true,
+              claimLink: paymentResult.claimLink
+            });
+          } catch (error) {
+            errors.push({
+              recipient: recipient.recipient || recipient.email,
+              error: error.message
+            });
+          }
+        }
+
+        const totalSent = results.reduce((sum, r) => sum + parseFloat(r.amount), 0);
+        const aiResponse = `Sent ${totalSent} CRO to ${results.length} recipient(s). ${errors.length > 0 ? `${errors.length} failed.` : ''}`;
+
+        return res.json({
+          success: true,
+          executed: true,
+          type: 'bulk_payment_complete',
+          payments: results,
+          errors,
+          totalSent,
+          message: aiResponse
+        });
+      }
+
+      // Validate required fields for single payment
       if (!parsed.data.recipient || !parsed.data.amount) {
         return res.json({
           success: true,
@@ -88,13 +131,14 @@ const aiController = {
         });
       }
 
-      // Execute the payment
+      // Execute the single payment
       const paymentResult = await transferService.createTransfer(
         senderAddress,
         parsed.data.recipient,
         parsed.data.recipientType || 'email',
         parsed.data.amount.toString(),
-        null // tokenAddress - null for native CRO
+        null, // tokenAddress - null for native CRO
+        senderEmail
       );
 
       // Generate AI response

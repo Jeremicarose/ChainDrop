@@ -47,7 +47,8 @@ const transferController = {
         recipientIdentifier,
         identifierType,
         amount,
-        tokenAddress
+        tokenAddress,
+        senderEmail
       );
 
       // Email notification is sent in transferService.createTransfer()

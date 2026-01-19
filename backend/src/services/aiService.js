@@ -115,7 +115,7 @@ Context:
 
   /**
    * Fallback regex-based parsing when AI is unavailable
-   * Improved to handle common payment formats
+   * Improved to handle common payment formats including multiple recipients
    */
   fallbackParse(message) {
     const result = {
@@ -127,7 +127,8 @@ Context:
         recipientType: null,
         amount: null,
         token: 'CRO',
-        note: null
+        note: null,
+        recipients: []
       },
       message: '',
       missing: []
@@ -135,6 +136,64 @@ Context:
 
     const lowerMessage = message.toLowerCase();
 
+    // Check for multiple recipients pattern: "email1 X, email2 Y" or "X to email1 and Y to email2"
+    const emailMatches = message.match(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/g);
+
+    if (emailMatches && emailMatches.length > 1) {
+      // Multiple recipients detected - parse as bulk payment
+      result.type = 'bulk_payment';
+      result.data.recipients = [];
+
+      // Try to extract amount for each recipient
+      // Pattern: "email amount" or "amount to email" or "email, amount"
+      for (const email of emailMatches) {
+        // Look for amount near this email
+        const emailIndex = message.indexOf(email);
+        const surroundingText = message.substring(Math.max(0, emailIndex - 30), Math.min(message.length, emailIndex + email.length + 30));
+
+        // Extract amount from surrounding text
+        const amountMatch = surroundingText.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?/i);
+        const amount = amountMatch ? parseFloat(amountMatch[1]) : null;
+
+        result.data.recipients.push({
+          recipient: email,
+          recipientType: 'email',
+          amount: amount
+        });
+      }
+
+      // Check if all recipients have amounts
+      const hasAllAmounts = result.data.recipients.every(r => r.amount && r.amount > 0);
+
+      if (!hasAllAmounts) {
+        // Try to find a single amount to apply to all
+        const globalAmountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|each|per)/i);
+        if (globalAmountMatch) {
+          const globalAmount = parseFloat(globalAmountMatch[1]);
+          result.data.recipients = result.data.recipients.map(r => ({
+            ...r,
+            amount: r.amount || globalAmount
+          }));
+        }
+      }
+
+      // Validate bulk payment
+      const validRecipients = result.data.recipients.filter(r => r.amount && r.amount > 0);
+      if (validRecipients.length > 0) {
+        result.data.recipients = validRecipients;
+        const totalAmount = validRecipients.reduce((sum, r) => sum + r.amount, 0);
+        result.message = `Ready to send ${totalAmount} CRO to ${validRecipients.length} recipients. Type "yes" to confirm.`;
+        result.confidence = 0.8;
+      } else {
+        result.type = 'clarification';
+        result.message = `Found ${emailMatches.length} recipients but couldn't determine amounts. Please specify amounts, e.g., "Send 5 CRO each to alice@email.com and bob@email.com"`;
+        result.confidence = 0.4;
+      }
+
+      return result;
+    }
+
+    // Single recipient flow (original logic)
     // Extract email (most common) - improved regex
     const emailMatch = message.match(/[\w.+-]+@[\w.-]+\.[a-zA-Z]{2,}/);
     if (emailMatch) {

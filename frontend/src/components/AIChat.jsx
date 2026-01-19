@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { useWallets } from '@privy-io/react-auth';
+import { useWallets, usePrivy } from '@privy-io/react-auth';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
