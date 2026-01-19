@@ -73,8 +73,8 @@ const emailService = {
               <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%); border-radius: 12px; border: 1px solid #99f6e4;">
                 <tr>
                   <td style="padding: 24px; text-align: center;">
-                    <div style="font-size: 42px; font-weight: 700; color: #0d9488; letter-spacing: -1px;">${amountInCRO} CRO</div>
-                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">≈ $${(parseFloat(amountInCRO) * 0.07).toFixed(2)} USD</div>
+                    <div style="font-size: 42px; font-weight: 700; color: #0d9488; letter-spacing: -1px;">${usdDisplay}</div>
+                    <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">${amountInCRO} CRO</div>
                   </td>
                 </tr>
               </table>
@@ -105,7 +105,7 @@ const emailService = {
           <tr>
             <td style="padding: 0 24px 24px;">
               <a href="${claimLink}" style="display: block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 16px 24px; border-radius: 10px; font-weight: 600; font-size: 16px; text-align: center; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);">
-                Claim Your ${amountInCRO} CRO →
+                Claim Your ${usdDisplay} →
               </a>
               <div style="text-align: center; margin-top: 12px; font-size: 12px; color: #9ca3af;">
                 Expires in 48 hours
@@ -159,7 +159,7 @@ const emailService = {
 </body>
 </html>
         `,
-        text: `Payment Received: ${amountInCRO} CRO
+        text: `Payment Received: ${usdDisplay} (${amountInCRO} CRO)
 
 From: ${senderShort}
 

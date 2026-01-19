@@ -13,7 +13,7 @@ export default function AIChat({ onPaymentComplete }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hi! I'm your AI payment assistant. Tell me who you want to pay and how much. Try: \"Send 5 CRO to alice@company.com\"",
+      content: "Hi! I'm your AI payment assistant. Tell me who you want to pay and how much. Try: \"Send $5 to alice@company.com\"",
       type: 'greeting'
     }
   ]);
@@ -212,7 +212,7 @@ export default function AIChat({ onPaymentComplete }) {
   };
 
   const quickActions = [
-    { text: 'Send 1 CRO to...', prompt: 'Send 1 CRO to ' },
+    { text: 'Send $5 to...', prompt: 'Send $5 to ' },
     { text: 'Pay my team', prompt: 'I want to pay multiple people' },
     { text: 'Help', prompt: 'What can you help me with?' }
   ];
@@ -268,7 +268,10 @@ export default function AIChat({ onPaymentComplete }) {
                     <>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-amber-700">Amount:</span>
-                        <span className="font-bold">{msg.parsed.amount} {msg.parsed.token || 'CRO'}</span>
+                        <span className="font-bold">
+                          {msg.parsed.amountUsd ? `$${msg.parsed.amountUsd.toFixed(2)}` : ''}
+                          <span className="text-gray-500 text-xs ml-1">({msg.parsed.amount?.toFixed(4)} CRO)</span>
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm mt-1">
                         <span className="text-amber-700">To:</span>
@@ -284,13 +287,20 @@ export default function AIChat({ onPaymentComplete }) {
                         {msg.parsed.recipients.map((r, i) => (
                           <div key={i} className="flex items-center justify-between text-sm bg-amber-100/50 rounded px-2 py-1">
                             <span className="font-mono text-xs truncate max-w-[60%]">{r.recipient}</span>
-                            <span className="font-bold">{r.amount} CRO</span>
+                            <span className="font-bold">
+                              {r.amountUsd ? `$${r.amountUsd.toFixed(2)}` : `${r.amount?.toFixed(4)} CRO`}
+                            </span>
                           </div>
                         ))}
                       </div>
                       <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-amber-200">
                         <span className="text-amber-700">Total:</span>
-                        <span className="font-bold">{msg.parsed.recipients.reduce((sum, r) => sum + r.amount, 0)} CRO</span>
+                        <span className="font-bold">
+                          ${msg.parsed.recipients.reduce((sum, r) => sum + (r.amountUsd || 0), 0).toFixed(2)}
+                          <span className="text-gray-500 text-xs ml-1">
+                            ({msg.parsed.recipients.reduce((sum, r) => sum + r.amount, 0).toFixed(4)} CRO)
+                          </span>
+                        </span>
                       </div>
                     </>
                   )}
