@@ -6,7 +6,7 @@ const emailService = {
   /**
    * Send notification email when someone receives crypto
    */
-  async sendTransferNotification(recipientEmail, amount, claimToken, senderAddress) {
+  async sendTransferNotification(recipientEmail, amount, claimToken, senderAddress, senderEmail = null) {
     // Skip if no API key configured
     if (!resend) {
       console.log('⚠️  Email not sent - RESEND_API_KEY not configured');
@@ -26,8 +26,9 @@ const emailService = {
       // Format amount (convert from wei to CRO)
       const amountInCRO = (parseFloat(amount) / 1e18).toFixed(4);
 
-      // Format sender address for display
-      const senderShort = `${senderAddress.substring(0, 6)}...${senderAddress.slice(-4)}`;
+      // Format sender for display - prefer email over wallet address
+      const senderDisplay = senderEmail || `${senderAddress.substring(0, 6)}...${senderAddress.slice(-4)}`;
+      const senderShort = senderDisplay;
 
       const { data, error } = await resend.emails.send({
         from: process.env.EMAIL_FROM || 'ChainDrop <notifications@chaindrop.app>',
