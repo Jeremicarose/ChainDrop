@@ -1,9 +1,11 @@
 /**
  * AI Service for Natural Language Payment Parsing
  * Uses Claude API for intelligent payment intent extraction
+ * Supports USD-first UX with automatic conversion
  */
 
 const Anthropic = require('@anthropic-ai/sdk');
+const priceService = require('./priceService');
 
 class AIService {
   constructor() {
@@ -29,7 +31,7 @@ class AIService {
    */
   async parsePaymentIntent(message, context = {}) {
     if (!this.enabled) {
-      return this.fallbackParse(message);
+      return await this.fallbackParse(message);
     }
 
     try {
@@ -109,15 +111,16 @@ Context:
       console.error('AI parsing error:', error);
 
       // Fall back to regex parsing
-      return this.fallbackParse(message);
+      return await this.fallbackParse(message);
     }
   }
 
   /**
    * Fallback regex-based parsing when AI is unavailable
    * Improved to handle common payment formats including multiple recipients
+   * Now supports USD-first UX with automatic conversion
    */
-  fallbackParse(message) {
+  async fallbackParse(message) {
     const result = {
       success: true,
       type: 'payment',
@@ -144,33 +147,59 @@ Context:
       result.type = 'bulk_payment';
       result.data.recipients = [];
 
+      // Check if message uses USD ($ symbol or "dollars")
+      const isUsdBulk = message.includes('$') || lowerMessage.includes('dollar') || lowerMessage.includes('usd');
+
       // Split message by common separators to isolate each recipient's section
-      // Pattern: "email1 0.05 cro and email2 0.07 cro" or "email1 0.05, email2 0.07"
       const segments = message.split(/\s+and\s+|,\s*/i);
 
       for (const email of emailMatches) {
-        // Find the segment containing this email
         const segment = segments.find(s => s.includes(email)) || '';
-
-        // Look for amount AFTER the email in the segment (most common pattern: "email 0.05 cro")
         const emailIndex = segment.indexOf(email);
         const afterEmail = segment.substring(emailIndex + email.length);
+        const beforeEmail = segment.substring(0, emailIndex);
 
-        // Try to find amount after email first
-        let amountMatch = afterEmail.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?/i);
-
-        // If not found after, look before the email (pattern: "0.05 cro to email")
-        if (!amountMatch) {
-          const beforeEmail = segment.substring(0, emailIndex);
-          amountMatch = beforeEmail.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?/i);
+        // Look for USD amount first ($X)
+        let usdMatch = afterEmail.match(/\$\s*(\d+(?:\.\d+)?)/);
+        if (!usdMatch) {
+          usdMatch = beforeEmail.match(/\$\s*(\d+(?:\.\d+)?)/);
         }
 
-        const amount = amountMatch ? parseFloat(amountMatch[1]) : null;
+        // Look for CRO amount
+        let croMatch = afterEmail.match(/(\d+(?:\.\d+)?)\s*(?:CRO|cro)/);
+        if (!croMatch) {
+          croMatch = beforeEmail.match(/(\d+(?:\.\d+)?)\s*(?:CRO|cro)/);
+        }
+
+        // Generic number match
+        let genericMatch = afterEmail.match(/(\d+(?:\.\d+)?)/);
+        if (!genericMatch) {
+          genericMatch = beforeEmail.match(/(\d+(?:\.\d+)?)/);
+        }
+
+        let amountCro = null;
+        let amountUsd = null;
+
+        if (usdMatch) {
+          amountUsd = parseFloat(usdMatch[1]);
+          amountCro = await priceService.usdToCro(amountUsd);
+        } else if (croMatch) {
+          amountCro = parseFloat(croMatch[1]);
+          amountUsd = await priceService.croToUsd(amountCro);
+        } else if (genericMatch && isUsdBulk) {
+          // If message has $ somewhere, treat generic numbers as USD
+          amountUsd = parseFloat(genericMatch[1]);
+          amountCro = await priceService.usdToCro(amountUsd);
+        } else if (genericMatch) {
+          amountCro = parseFloat(genericMatch[1]);
+          amountUsd = await priceService.croToUsd(amountCro);
+        }
 
         result.data.recipients.push({
           recipient: email,
           recipientType: 'email',
-          amount: amount
+          amount: amountCro,
+          amountUsd: amountUsd
         });
       }
 
@@ -178,13 +207,25 @@ Context:
       const hasAllAmounts = result.data.recipients.every(r => r.amount && r.amount > 0);
 
       if (!hasAllAmounts) {
-        // Try to find a single amount to apply to all (e.g., "5 CRO each")
-        const globalAmountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?\s*(?:each|per|to all)/i);
-        if (globalAmountMatch) {
-          const globalAmount = parseFloat(globalAmountMatch[1]);
+        // Try to find a global amount (e.g., "$5 each")
+        const globalUsdMatch = message.match(/\$\s*(\d+(?:\.\d+)?)\s*(?:each|per|to all)/i);
+        const globalCroMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO)?\s*(?:each|per|to all)/i);
+
+        if (globalUsdMatch) {
+          const globalUsd = parseFloat(globalUsdMatch[1]);
+          const globalCro = await priceService.usdToCro(globalUsd);
           result.data.recipients = result.data.recipients.map(r => ({
             ...r,
-            amount: r.amount || globalAmount
+            amount: r.amount || globalCro,
+            amountUsd: r.amountUsd || globalUsd
+          }));
+        } else if (globalCroMatch) {
+          const globalCro = parseFloat(globalCroMatch[1]);
+          const globalUsd = await priceService.croToUsd(globalCro);
+          result.data.recipients = result.data.recipients.map(r => ({
+            ...r,
+            amount: r.amount || globalCro,
+            amountUsd: r.amountUsd || globalUsd
           }));
         }
       }
@@ -193,12 +234,19 @@ Context:
       const validRecipients = result.data.recipients.filter(r => r.amount && r.amount > 0);
       if (validRecipients.length > 0) {
         result.data.recipients = validRecipients;
-        const totalAmount = validRecipients.reduce((sum, r) => sum + r.amount, 0);
-        result.message = `Ready to send ${totalAmount.toFixed(2)} CRO to ${validRecipients.length} recipients. Type "yes" to confirm.`;
+        const totalCro = validRecipients.reduce((sum, r) => sum + r.amount, 0);
+        const totalUsd = validRecipients.reduce((sum, r) => sum + (r.amountUsd || 0), 0);
+
+        // USD-first display
+        const displayAmount = totalUsd > 0
+          ? `$${totalUsd.toFixed(2)} (${totalCro.toFixed(4)} CRO)`
+          : `${totalCro.toFixed(4)} CRO`;
+
+        result.message = `Ready to send **${displayAmount}** to ${validRecipients.length} recipients. Type "yes" to confirm.`;
         result.confidence = 0.8;
       } else {
         result.type = 'clarification';
-        result.message = `Found ${emailMatches.length} recipients but couldn't determine amounts. Please specify amounts, e.g., "Send 5 CRO each to alice@email.com and bob@email.com"`;
+        result.message = `Found ${emailMatches.length} recipients but couldn't determine amounts. Please specify amounts, e.g., "Send $5 each to alice@email.com and bob@email.com"`;
         result.confidence = 0.4;
       }
 
@@ -231,42 +279,78 @@ Context:
       }
     }
 
-    // Extract amount - multiple patterns
-    // Pattern 1: "X CRO" or "X USDC"
-    let amountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)/i);
+    // Extract amount - USD-first with automatic conversion
+    let amountInCro = null;
+    let amountInUsd = null;
+    let inputCurrency = 'CRO';
 
-    // Pattern 2: "$X" or "X dollars"
-    if (!amountMatch) {
-      amountMatch = message.match(/\$\s*(\d+(?:\.\d+)?)/);
+    // Pattern 1: USD format - "$X", "X dollars", "X USD" (PRIORITY)
+    const usdMatch = message.match(/\$\s*(\d+(?:\.\d+)?)|(\d+(?:\.\d+)?)\s*(?:dollars?|USD)/i);
+    if (usdMatch) {
+      const usdAmount = parseFloat(usdMatch[1] || usdMatch[2]);
+      amountInUsd = usdAmount;
+      // Convert USD to CRO
+      amountInCro = await priceService.usdToCro(usdAmount);
+      inputCurrency = 'USD';
     }
 
-    // Pattern 3: Just a number in context of payment
-    if (!amountMatch && (lowerMessage.includes('send') || lowerMessage.includes('pay'))) {
-      amountMatch = message.match(/(?:send|pay)[^0-9]*(\d+(?:\.\d+)?)/i);
+    // Pattern 2: "X CRO" or other crypto
+    if (!amountInCro) {
+      const croMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)/i);
+      if (croMatch) {
+        amountInCro = parseFloat(croMatch[1]);
+        amountInUsd = await priceService.croToUsd(amountInCro);
+      }
+    }
+
+    // Pattern 3: Just a number in context of payment (default to USD for user-friendliness)
+    if (!amountInCro && (lowerMessage.includes('send') || lowerMessage.includes('pay'))) {
+      const payMatch = message.match(/(?:send|pay)[^0-9]*(\d+(?:\.\d+)?)/i);
+      if (payMatch) {
+        // Assume USD if no currency specified (user-friendly default)
+        const amount = parseFloat(payMatch[1]);
+        if (amount >= 1) {
+          // Likely USD if >= 1 (e.g., "send 5 to bob" means $5)
+          amountInUsd = amount;
+          amountInCro = await priceService.usdToCro(amount);
+          inputCurrency = 'USD';
+        } else {
+          // Small amounts likely CRO (e.g., "send 0.5 to bob")
+          amountInCro = amount;
+          amountInUsd = await priceService.croToUsd(amount);
+        }
+      }
     }
 
     // Pattern 4: Any standalone number
-    if (!amountMatch) {
+    if (!amountInCro) {
       const numbers = message.match(/\d+(?:\.\d+)?/g);
       if (numbers && numbers.length > 0) {
-        // Take the first number that looks like an amount (not part of email)
         for (const num of numbers) {
           if (!result.data.recipient || !result.data.recipient.includes(num)) {
-            amountMatch = [null, num];
+            const amount = parseFloat(num);
+            // Default to USD for user-friendliness
+            amountInUsd = amount;
+            amountInCro = await priceService.usdToCro(amount);
+            inputCurrency = 'USD';
             break;
           }
         }
       }
     }
 
-    if (amountMatch && amountMatch[1]) {
-      result.data.amount = parseFloat(amountMatch[1]);
+    if (amountInCro) {
+      result.data.amount = amountInCro;
+      result.data.amountUsd = amountInUsd;
+      result.data.inputCurrency = inputCurrency;
     }
 
     // Extract token
     const tokenMatch = message.match(/\b(CRO|USDC|ETH|USDT)\b/i);
     if (tokenMatch) {
       result.data.token = tokenMatch[1].toUpperCase();
+    } else {
+      result.data.token = 'CRO';
     }
 
     // Extract note/purpose - "for X"
@@ -291,10 +375,14 @@ Context:
     // Set response type and message
     if (result.missing.length > 0) {
       result.type = 'clarification';
-      result.message = `Please provide: ${result.missing.join(' and ')}. Example: "Send 5 CRO to alice@email.com"`;
+      result.message = `Please provide: ${result.missing.join(' and ')}. Example: "Send $5 to alice@email.com"`;
       result.confidence = 0.3;
     } else {
-      result.message = `Ready to send ${result.data.amount} ${result.data.token} to ${result.data.recipient}${result.data.note ? ` for "${result.data.note}"` : ''}. Type "yes" to confirm.`;
+      // USD-first display
+      const usdDisplay = result.data.amountUsd ? `$${result.data.amountUsd.toFixed(2)}` : '';
+      const croDisplay = `${result.data.amount.toFixed(4)} CRO`;
+      const amountDisplay = usdDisplay ? `${usdDisplay} (${croDisplay})` : croDisplay;
+      result.message = `Ready to send **${amountDisplay}** to ${result.data.recipient}${result.data.note ? ` for "${result.data.note}"` : ''}. Type "yes" to confirm.`;
       result.confidence = 0.85;
     }
 

@@ -1,4 +1,5 @@
 const { Resend } = require('resend');
+const priceService = require('./priceService');
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
