@@ -277,11 +277,14 @@ const aiController = {
       // Parse the intent
       const parsed = await aiService.parsePaymentIntent(lastMessage.content, context);
 
-      // Build response
+      // Build response - handle both single and bulk payments
+      const isSinglePayment = parsed.type === 'payment' && parsed.data.recipient && parsed.data.amount;
+      const isBulkPayment = parsed.type === 'bulk_payment' && parsed.data.recipients && parsed.data.recipients.length > 0;
+
       const response = {
         role: 'assistant',
         content: parsed.message,
-        parsed: parsed.type === 'payment' ? parsed.data : null,
+        parsed: (isSinglePayment || isBulkPayment) ? parsed.data : null,
         type: parsed.type,
         confidence: parsed.confidence
       };
@@ -289,7 +292,7 @@ const aiController = {
       res.json({
         success: true,
         response,
-        canExecute: parsed.type === 'payment' && parsed.data.recipient && parsed.data.amount
+        canExecute: isSinglePayment || isBulkPayment
       });
 
     } catch (error) {

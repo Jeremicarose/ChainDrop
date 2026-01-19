@@ -113,17 +113,32 @@ export default function AIChat({ onPaymentComplete }) {
 
   const executePayment = async (payment) => {
     try {
+      // Check if this is a bulk payment
+      const isBulkPayment = payment.recipients && payment.recipients.length > 0;
+
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: '⏳ Processing payment...',
+        content: isBulkPayment
+          ? `⏳ Processing ${payment.recipients.length} payments...`
+          : '⏳ Processing payment...',
         type: 'processing'
       }]);
+
+      // Build the message for the API
+      let message;
+      if (isBulkPayment) {
+        // Format bulk payment message
+        const parts = payment.recipients.map(r => `${r.recipient} ${r.amount}`);
+        message = `Send to multiple: ${parts.join(', ')}`;
+      } else {
+        message = `Send ${payment.amount} ${payment.token || 'CRO'} to ${payment.recipient}`;
+      }
 
       const response = await fetch(`${API_URL}/ai/execute`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          message: `Send ${payment.amount} ${payment.token || 'CRO'} to ${payment.recipient}`,
+          message,
           senderAddress: wallets[0]?.address,
           senderEmail: senderEmail,
           autoExecute: true
@@ -138,15 +153,28 @@ export default function AIChat({ onPaymentComplete }) {
         // Remove the processing message
         setMessages(prev => prev.filter(m => m.type !== 'processing'));
 
-        setMessages(prev => [...prev, {
-          role: 'assistant',
-          content: `✅ **Payment sent!** ${payment.amount} ${payment.token || 'CRO'} to ${payment.recipient}.\n\nThey'll receive an email with a claim link.`,
-          type: 'success',
-          payment: data.payment
-        }]);
+        if (data.type === 'bulk_payment_complete') {
+          // Handle bulk payment success
+          const successCount = data.payments?.length || 0;
+          const errorCount = data.errors?.length || 0;
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `✅ **Bulk payment complete!** Sent ${data.totalSent} CRO to ${successCount} recipient(s).${errorCount > 0 ? `\n\n⚠️ ${errorCount} payment(s) failed.` : ''}\n\nThey'll receive emails with claim links.`,
+            type: 'success',
+            payments: data.payments
+          }]);
+        } else {
+          // Handle single payment success
+          setMessages(prev => [...prev, {
+            role: 'assistant',
+            content: `✅ **Payment sent!** ${payment.amount} ${payment.token || 'CRO'} to ${payment.recipient}.\n\nThey'll receive an email with a claim link.`,
+            type: 'success',
+            payment: data.payment
+          }]);
+        }
 
         if (onPaymentComplete) {
-          onPaymentComplete(data.payment);
+          onPaymentComplete(data.payment || data.payments);
         }
       } else {
         setMessages(prev => prev.filter(m => m.type !== 'processing'));
