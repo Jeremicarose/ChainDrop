@@ -8,7 +8,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 export default function WalletPage() {
   const navigate = useNavigate();
-  const { login, authenticated, user, exportWallet } = usePrivy();
+  const { login, authenticated, user, exportWallet, ready } = usePrivy();
   const { wallets } = useWallets();
 
   const [balance, setBalance] = useState('0');
