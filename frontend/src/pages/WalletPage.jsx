@@ -9,7 +9,7 @@ const API_URL = import.meta.env.VITE_API_URL;
 export default function WalletPage() {
   const navigate = useNavigate();
   const { login, authenticated, user, exportWallet, ready } = usePrivy();
-  const { wallets } = useWallets();
+  const { wallets: privyWallets } = useWallets();
 
   const [balance, setBalance] = useState('0');
   const [pendingClaims, setPendingClaims] = useState([]);
@@ -17,6 +17,30 @@ export default function WalletPage() {
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [externalWallet, setExternalWallet] = useState(null);
+
+  // Try to get external wallet (Rabby, MetaMask, etc.)
+  useEffect(() => {
+    const getExternalWallet = async () => {
+      if (window.ethereum && authenticated && ready && (!privyWallets || privyWallets.length === 0)) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length > 0) {
+            setExternalWallet({ address: accounts[0], type: 'external' });
+          }
+        } catch (err) {
+          console.error('Error getting external wallet:', err);
+        }
+      }
+    };
+
+    if (authenticated && ready) {
+      getExternalWallet();
+    }
+  }, [authenticated, ready, privyWallets]);
+
+  // Combine Privy wallets with external wallet
+  const wallets = privyWallets?.length > 0 ? privyWallets : (externalWallet ? [externalWallet] : []);
 
   // Fetch balance
   useEffect(() => {
@@ -182,7 +206,29 @@ export default function WalletPage() {
     );
   }
 
-  // Wallet loading state
+  // Privy still loading
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-[#fafbfc]">
+        <Navigation />
+        <div className="max-w-lg mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-[#1de4c6]/20 to-[#00a28e]/20 flex items-center justify-center">
+              <div className="w-8 h-8 border-3 border-[#1de4c6] border-t-transparent rounded-full animate-spin" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+              Loading...
+            </h2>
+            <p className="text-gray-600">
+              Connecting to your account...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Wallet loading state - only show after Privy is ready
   if (!wallets || wallets.length === 0) {
     return (
       <div className="min-h-screen bg-[#fafbfc]">
@@ -197,6 +243,9 @@ export default function WalletPage() {
             </h2>
             <p className="text-gray-600">
               Setting up your embedded wallet...
+            </p>
+            <p className="text-sm text-gray-400 mt-4">
+              If using an external wallet (Rabby/MetaMask), make sure it's connected.
             </p>
           </div>
         </div>
@@ -311,17 +360,28 @@ export default function WalletPage() {
             <p className="text-sm font-medium text-gray-700">Receive</p>
           </button>
 
-          <button
-            onClick={handleExportWallet}
-            className="bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl p-4 text-center transition-all group"
-          >
-            <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
-              <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
-              </svg>
+          {wallet.type !== 'external' ? (
+            <button
+              onClick={handleExportWallet}
+              className="bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 rounded-xl p-4 text-center transition-all group"
+            >
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 group-hover:bg-gray-200 flex items-center justify-center transition-colors">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-gray-700">Export Key</p>
+            </button>
+          ) : (
+            <div className="bg-white border border-gray-200 rounded-xl p-4 text-center opacity-60">
+              <div className="w-10 h-10 mx-auto mb-2 rounded-xl bg-gray-100 flex items-center justify-center">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-gray-500">External</p>
             </div>
-            <p className="text-sm font-medium text-gray-700">Export Key</p>
-          </button>
+          )}
 
           <button
             onClick={() => {

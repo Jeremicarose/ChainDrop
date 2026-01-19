@@ -373,7 +373,7 @@ export default function SendPage() {
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading || !formData.recipientIdentifier || !formData.amount || parseFloat(formData.amount) < MIN_AMOUNT_CRO}
+            disabled={loading || !formData.senderAddress || !formData.recipientIdentifier || !formData.amount || parseFloat(formData.amount) < MIN_AMOUNT_CRO}
             className="w-full px-6 py-5 rounded-xl font-bold text-white text-lg transition-all hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100"
             style={{
               background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
