@@ -8,7 +8,7 @@ class TransferService {
   /**
    * Initiate a new transfer
    */
-  async createTransfer(senderAddress, recipientIdentifier, identifierType, amount, tokenAddress = null) {
+  async createTransfer(senderAddress, recipientIdentifier, identifierType, amount, tokenAddress = null, senderEmail = null) {
     try {
       const transferId = crypto.randomUUID();
       const claimId = `claim-${transferId}`;
@@ -86,7 +86,8 @@ class TransferService {
           recipientIdentifier,
           formattedAmount.toString(),
           claimToken,
-          senderAddress
+          senderAddress,
+          senderEmail
         );
 
         if (emailResult.success) {

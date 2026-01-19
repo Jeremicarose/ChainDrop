@@ -12,7 +12,7 @@ const transferController = {
    */
   async send(req, res) {
     try {
-      const { senderAddress, recipientIdentifier, identifierType, amount, tokenAddress } = req.body;
+      const { senderAddress, recipientIdentifier, identifierType, amount, tokenAddress, senderEmail } = req.body;
 
       // Validation
       if (!senderAddress || !recipientIdentifier || !identifierType || !amount) {
