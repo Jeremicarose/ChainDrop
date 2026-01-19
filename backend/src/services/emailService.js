@@ -7,6 +7,8 @@ const emailService = {
    * Send notification email when someone receives crypto
    */
   async sendTransferNotification(recipientEmail, amount, claimToken, senderAddress, senderEmail = null) {
+    console.log(`📧 Email params - senderAddress: ${senderAddress}, senderEmail: ${senderEmail || 'NOT PROVIDED'}`);
+
     // Skip if no API key configured
     if (!resend) {
       console.log('⚠️  Email not sent - RESEND_API_KEY not configured');
