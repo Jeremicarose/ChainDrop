@@ -94,37 +94,92 @@ export default function WalletPage() {
     }
   }, [authenticated, user]);
 
-  // Fetch recent transaction history
+  // Fetch recent transaction history from ChainDrop API + blockchain
   useEffect(() => {
     const fetchTransactionHistory = async () => {
       if (!wallets || wallets.length === 0) return;
 
+      const address = wallets[0].address;
+      const allTxs = [];
+
+      // 1. Fetch transfers sent BY this wallet from ChainDrop API
+      try {
+        const sentResponse = await fetch(`${API_URL}/transfer/sender/${address}`);
+        if (sentResponse.ok) {
+          const sentData = await sentResponse.json();
+          if (sentData.success && sentData.data) {
+            sentData.data.forEach(transfer => {
+              allTxs.push({
+                hash: transfer.tx_hash,
+                from: address,
+                to: transfer.recipient_address,
+                value: transfer.amount,
+                timestamp: Math.floor(transfer.created_at / 1000),
+                type: 'chaindrop_sent',
+                status: transfer.status,
+                recipient: transfer.recipient_identifier_original
+              });
+            });
+          }
+        }
+      } catch (e) {
+        console.error('Error fetching sent transfers:', e);
+      }
+
+      // 2. Fetch transfers sent TO this user's identity from ChainDrop API
+      const identity = user?.email?.address || user?.phone?.number || user?.twitter?.username;
+      if (identity) {
+        try {
+          const receivedResponse = await fetch(`${API_URL}/transfer/recipient/${encodeURIComponent(identity)}`);
+          if (receivedResponse.ok) {
+            const receivedData = await receivedResponse.json();
+            if (receivedData.success && receivedData.data) {
+              receivedData.data.forEach(transfer => {
+                // Only show claimed transfers as "received"
+                if (transfer.status === 'claimed') {
+                  allTxs.push({
+                    hash: transfer.tx_hash,
+                    from: transfer.sender_address,
+                    to: address,
+                    value: transfer.amount,
+                    timestamp: Math.floor((transfer.claimed_at || transfer.created_at) / 1000),
+                    type: 'chaindrop_received',
+                    status: transfer.status
+                  });
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Error fetching received transfers:', e);
+        }
+      }
+
+      // 3. Also try blockchain scan for direct transfers (limited to recent blocks)
       try {
         const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://evm-t3.cronos.org';
         const provider = new ethers.JsonRpcProvider(rpcUrl);
-        const address = wallets[0].address;
-
-        // Get current block
         const currentBlock = await provider.getBlockNumber();
 
-        // Check native CRO transfers by scanning recent blocks
-        const nativeTransfers = [];
-        for (let i = currentBlock; i > Math.max(0, currentBlock - 50); i--) {
+        // Only scan last 20 blocks to be fast
+        for (let i = currentBlock; i > Math.max(0, currentBlock - 20); i--) {
           try {
             const block = await provider.getBlock(i, true);
             if (block && block.transactions) {
               for (const tx of block.transactions) {
                 if (tx.to?.toLowerCase() === address.toLowerCase() ||
                     tx.from?.toLowerCase() === address.toLowerCase()) {
-                  nativeTransfers.push({
-                    hash: tx.hash,
-                    from: tx.from,
-                    to: tx.to,
-                    value: typeof tx.value === 'object' ? tx.value.toString() : String(tx.value),
-                    blockNumber: tx.blockNumber,
-                    timestamp: block.timestamp,
-                    type: 'native'
-                  });
+                  // Avoid duplicates with ChainDrop transfers
+                  if (!allTxs.find(t => t.hash === tx.hash)) {
+                    allTxs.push({
+                      hash: tx.hash,
+                      from: tx.from,
+                      to: tx.to,
+                      value: typeof tx.value === 'object' ? tx.value.toString() : String(tx.value),
+                      timestamp: block.timestamp,
+                      type: 'native'
+                    });
+                  }
                 }
               }
             }
@@ -132,22 +187,22 @@ export default function WalletPage() {
             continue;
           }
         }
-
-        // Sort by block number descending and take most recent 10
-        const allTxs = nativeTransfers
-          .sort((a, b) => b.blockNumber - a.blockNumber)
-          .slice(0, 10);
-
-        setRecentTransactions(allTxs);
       } catch (error) {
-        console.error('Error fetching transaction history:', error);
+        console.error('Error scanning blockchain:', error);
       }
+
+      // Sort by timestamp descending and take most recent 10
+      const sortedTxs = allTxs
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
+        .slice(0, 10);
+
+      setRecentTransactions(sortedTxs);
     };
 
     if (authenticated && wallets.length > 0) {
       fetchTransactionHistory();
     }
-  }, [authenticated, wallets]);
+  }, [authenticated, wallets, user]);
 
   const copyAddress = () => {
     if (wallets && wallets.length > 0) {
@@ -473,12 +528,27 @@ export default function WalletPage() {
           ) : (
             <div className="divide-y divide-gray-100">
               {recentTransactions.map((tx, idx) => {
-                const isSent = tx.from?.toLowerCase() === wallet.address.toLowerCase();
+                const isSent = tx.type === 'chaindrop_sent' || tx.from?.toLowerCase() === wallet.address.toLowerCase();
                 const amount = ethers.formatEther(tx.value);
                 const explorerUrl = `${import.meta.env.VITE_EXPLORER_URL || 'https://explorer.cronos.org/testnet'}/tx/${tx.hash}`;
-                const timeAgo = tx.timestamp
-                  ? `${Math.floor((Date.now() / 1000 - tx.timestamp) / 60)}m ago`
-                  : 'Recent';
+
+                // Calculate time ago
+                let timeAgo = 'Recent';
+                if (tx.timestamp) {
+                  const minutes = Math.floor((Date.now() / 1000 - tx.timestamp) / 60);
+                  if (minutes < 60) {
+                    timeAgo = `${minutes}m ago`;
+                  } else if (minutes < 1440) {
+                    timeAgo = `${Math.floor(minutes / 60)}h ago`;
+                  } else {
+                    timeAgo = `${Math.floor(minutes / 1440)}d ago`;
+                  }
+                }
+
+                // Get display info based on transaction type
+                const isChainDrop = tx.type === 'chaindrop_sent' || tx.type === 'chaindrop_received';
+                const recipientDisplay = tx.recipient || (tx.to ? `${tx.to.substring(0, 6)}...${tx.to.slice(-4)}` : 'Unknown');
+                const senderDisplay = tx.from ? `${tx.from.substring(0, 6)}...${tx.from.slice(-4)}` : 'Unknown';
 
                 return (
                   <div
@@ -502,8 +572,18 @@ export default function WalletPage() {
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">
+                          <p className="font-medium text-gray-900 flex items-center gap-2">
                             {isSent ? 'Sent' : 'Received'}
+                            {isChainDrop && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-[#1de4c6]/10 text-[#00a28e]">
+                                ChainDrop
+                              </span>
+                            )}
+                            {tx.status === 'pending' && (
+                              <span className="text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+                                Pending
+                              </span>
+                            )}
                           </p>
                           <p className="text-sm text-gray-500">
                             {timeAgo}
@@ -514,10 +594,10 @@ export default function WalletPage() {
                         <p className={`font-semibold tabular-nums ${isSent ? 'text-red-600' : 'text-green-600'}`}>
                           {isSent ? '-' : '+'}{Number(amount).toFixed(4)} CRO
                         </p>
-                        <p className="text-xs text-gray-400 font-mono">
+                        <p className="text-xs text-gray-400">
                           {isSent
-                            ? `To ${tx.to?.substring(0, 6)}...${tx.to?.slice(-4)}`
-                            : `From ${tx.from?.substring(0, 6)}...${tx.from?.slice(-4)}`
+                            ? `To ${recipientDisplay}`
+                            : `From ${senderDisplay}`
                           }
                         </p>
                       </div>
