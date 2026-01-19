@@ -15,16 +15,6 @@
 
 ---
 
-### Cronos x402 Hackathon Submission
-
-**Category:** Agentic Finance
-
-**Key Integrations:**
-- Anthropic Claude API - Natural language payment parsing
-- Crypto.com AI Agent SDK - Blockchain operations
-- Cronos EVM Testnet - Smart contract deployment
-- ERC-4337 Account Abstraction - Gasless transactions
-
 </div>
 
 ## Overview
@@ -199,17 +189,14 @@ sequenceDiagram
 ```
 ├── controllers/
 │   ├── transferController.js    # HTTP request handlers for transfers
-│   ├── agentController.js       # HTTP request handlers for API agents
-│   └── aiController.js          # AI chat and natural language parsing
+│   └── agentController.js       # HTTP request handlers for AI agents
 ├── services/
 │   ├── transferService.js       # Business logic (create, claim, verify)
 │   ├── blockchainService.js     # Smart contract interactions
 │   ├── emailService.js          # Email notifications via Resend
-│   ├── agentService.js          # API agent management and execution
-│   ├── aiService.js             # Claude API integration for NLP
-│   └── cryptoComAgentService.js # Crypto.com AI Agent SDK integration
+│   └── agentService.js          # AI agent management and execution
 ├── db/
-│   └── schema.js                # SQLite schema (transfers, claims, agents)
+│   └── schema.js                # PostgreSQL schema (transfers, claims, agents)
 └── routes/
     └── index.js                 # API route definitions
 ```
@@ -543,7 +530,7 @@ Businesses pay international vendors using familiar identifiers, avoiding SWIFT 
 - **Cryptographic Proofs**: Only authenticated owner of identifier can generate valid claim proof
 - **One-Time Claims**: Salts and nonces prevent replay attacks
 - **Atomic Execution**: Deployment + claim + reimbursement succeed together or revert entirely
-- **Self-Funded Claims**: Gas costs deducted from transferred amount automatically
+- **Expiration Protection**: 24-hour claim window prevents indefinite fund holding
 
 ### Address Security
 
@@ -646,7 +633,7 @@ ChainDrop does **not** rely on ongoing gas subsidies. Each transfer is economica
 | Send to social identifier | No | Limited | Limited | **Yes** |
 | Self-sustaining economics | N/A | No (subsidies) | No (subsidies) | **Yes** |
 | Value-before-account | No | No | No | **Yes** |
-| AI-powered payments | No | No | No | **Yes** |
+| Claim expiration protection | N/A | No | No | **Yes** |
 
 ---
 
