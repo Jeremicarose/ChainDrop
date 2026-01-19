@@ -203,23 +203,100 @@ export default function ClaimPage() {
             </a>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3">
-            <button
-              onClick={() => navigate('/wallet')}
-              className="flex-1 px-6 py-4 rounded-xl font-semibold text-white transition-all hover:scale-[1.02]"
-              style={{
-                background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)',
-              }}
+          {/* Off-ramp Options - What to do with your money */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+              <span className="text-xl">💡</span>
+              What would you like to do?
+            </h3>
+            <div className="space-y-3">
+              {/* Cash out to bank */}
+              <a
+                href={`https://www.moonpay.com/sell?defaultCryptoCurrency=cro&walletAddress=${wallets[0]?.address}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-[#1de4c6] hover:bg-[#1de4c6]/5 transition-all group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">🏦</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 group-hover:text-[#00a28e]">Cash out to Bank</p>
+                  <p className="text-sm text-gray-500">Convert to USD and withdraw to your bank account</p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00a28e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
+
+              {/* Buy gift cards */}
+              <a
+                href="https://www.bitrefill.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-[#1de4c6] hover:bg-[#1de4c6]/5 transition-all group"
+              >
+                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">🎁</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 group-hover:text-[#00a28e]">Buy Gift Cards</p>
+                  <p className="text-sm text-gray-500">Amazon, Netflix, Uber, and 1000+ more</p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00a28e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </a>
+
+              {/* Send to someone else */}
+              <button
+                onClick={() => navigate('/agents')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-[#1de4c6] hover:bg-[#1de4c6]/5 transition-all group text-left"
+              >
+                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">💸</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 group-hover:text-[#00a28e]">Send to Someone</p>
+                  <p className="text-sm text-gray-500">Pay a friend or family using their email</p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00a28e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+
+              {/* Keep in wallet */}
+              <button
+                onClick={() => navigate('/wallet')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border border-gray-200 hover:border-[#1de4c6] hover:bg-[#1de4c6]/5 transition-all group text-left"
+              >
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <span className="text-2xl">👛</span>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-gray-900 group-hover:text-[#00a28e]">Keep in Wallet</p>
+                  <p className="text-sm text-gray-500">Save it for later or use in DeFi apps</p>
+                </div>
+                <svg className="w-5 h-5 text-gray-400 group-hover:text-[#00a28e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          {/* Transaction link - moved below */}
+          <div className="text-center">
+            <a
+              href={explorerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-gray-500 hover:text-[#00a28e] text-sm"
             >
-              Go to Wallet
-            </button>
-            <button
-              onClick={() => navigate('/send')}
-              className="flex-1 px-6 py-4 rounded-xl font-semibold bg-gray-100 text-gray-700 hover:bg-gray-200 transition-all"
-            >
-              Send Crypto
-            </button>
+              View transaction on Explorer
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
           </div>
         </div>
       </div>
