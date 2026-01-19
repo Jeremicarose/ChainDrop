@@ -2,6 +2,7 @@ const express = require('express');
 const transferController = require('../controllers/transferController');
 const agentController = require('../controllers/agentController');
 const aiController = require('../controllers/aiController');
+const priceService = require('../services/priceService');
 
 const router = express.Router();
 
@@ -34,13 +35,40 @@ router.post('/ai/agent/query', aiController.agentQuery);
 router.post('/ai/agent/autonomous', aiController.createAutonomousAgent);
 router.get('/ai/status', aiController.status);
 
+// Price routes - USD conversion
+router.get('/price/cro', async (req, res) => {
+  try {
+    const price = await priceService.getCroPrice();
+    res.json({ success: true, price, currency: 'USD' });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+router.post('/price/convert', async (req, res) => {
+  try {
+    const { amount, from = 'CRO' } = req.body;
+    if (from.toUpperCase() === 'USD') {
+      const result = await priceService.parseAmount(`$${amount}`);
+      res.json({ success: true, ...result });
+    } else {
+      const result = await priceService.getDisplayAmount(amount);
+      res.json({ success: true, ...result });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // Health check
-router.get('/health', (req, res) => {
+router.get('/health', async (req, res) => {
+  const croPrice = await priceService.getCroPrice();
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'ChainDrop API',
-    ai: process.env.ANTHROPIC_API_KEY ? 'enabled' : 'fallback'
+    ai: process.env.ANTHROPIC_API_KEY ? 'enabled' : 'fallback',
+    croPrice: croPrice
   });
 });
 
