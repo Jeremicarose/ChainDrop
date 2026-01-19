@@ -144,15 +144,27 @@ Context:
       result.type = 'bulk_payment';
       result.data.recipients = [];
 
-      // Try to extract amount for each recipient
-      // Pattern: "email amount" or "amount to email" or "email, amount"
-      for (const email of emailMatches) {
-        // Look for amount near this email
-        const emailIndex = message.indexOf(email);
-        const surroundingText = message.substring(Math.max(0, emailIndex - 30), Math.min(message.length, emailIndex + email.length + 30));
+      // Split message by common separators to isolate each recipient's section
+      // Pattern: "email1 0.05 cro and email2 0.07 cro" or "email1 0.05, email2 0.07"
+      const segments = message.split(/\s+and\s+|,\s*/i);
 
-        // Extract amount from surrounding text
-        const amountMatch = surroundingText.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?/i);
+      for (const email of emailMatches) {
+        // Find the segment containing this email
+        const segment = segments.find(s => s.includes(email)) || '';
+
+        // Look for amount AFTER the email in the segment (most common pattern: "email 0.05 cro")
+        const emailIndex = segment.indexOf(email);
+        const afterEmail = segment.substring(emailIndex + email.length);
+
+        // Try to find amount after email first
+        let amountMatch = afterEmail.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?/i);
+
+        // If not found after, look before the email (pattern: "0.05 cro to email")
+        if (!amountMatch) {
+          const beforeEmail = segment.substring(0, emailIndex);
+          amountMatch = beforeEmail.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?/i);
+        }
+
         const amount = amountMatch ? parseFloat(amountMatch[1]) : null;
 
         result.data.recipients.push({
@@ -166,8 +178,8 @@ Context:
       const hasAllAmounts = result.data.recipients.every(r => r.amount && r.amount > 0);
 
       if (!hasAllAmounts) {
-        // Try to find a single amount to apply to all
-        const globalAmountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|each|per)/i);
+        // Try to find a single amount to apply to all (e.g., "5 CRO each")
+        const globalAmountMatch = message.match(/(\d+(?:\.\d+)?)\s*(?:CRO|USDC|ETH|USDT)?\s*(?:each|per|to all)/i);
         if (globalAmountMatch) {
           const globalAmount = parseFloat(globalAmountMatch[1]);
           result.data.recipients = result.data.recipients.map(r => ({
@@ -182,7 +194,7 @@ Context:
       if (validRecipients.length > 0) {
         result.data.recipients = validRecipients;
         const totalAmount = validRecipients.reduce((sum, r) => sum + r.amount, 0);
-        result.message = `Ready to send ${totalAmount} CRO to ${validRecipients.length} recipients. Type "yes" to confirm.`;
+        result.message = `Ready to send ${totalAmount.toFixed(2)} CRO to ${validRecipients.length} recipients. Type "yes" to confirm.`;
         result.confidence = 0.8;
       } else {
         result.type = 'clarification';

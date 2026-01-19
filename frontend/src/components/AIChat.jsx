@@ -85,9 +85,23 @@ export default function AIChat({ onPaymentComplete }) {
         // If we can execute, ask for confirmation
         if (data.canExecute && data.response.parsed) {
           setPendingPayment(data.response.parsed);
+
+          // Build confirmation message for single or bulk payment
+          const parsed = data.response.parsed;
+          const isBulk = parsed.recipients && parsed.recipients.length > 0;
+
+          let confirmContent;
+          if (isBulk) {
+            const total = parsed.recipients.reduce((sum, r) => sum + r.amount, 0);
+            const recipientList = parsed.recipients.map(r => `• ${r.recipient}: ${r.amount} CRO`).join('\n');
+            confirmContent = `Ready to send **${total} CRO** to **${parsed.recipients.length} recipients**:\n${recipientList}\n\nType "yes" to confirm or "no" to cancel.`;
+          } else {
+            confirmContent = `Ready to send **${parsed.amount} ${parsed.token || 'CRO'}** to **${parsed.recipient}**. Type "yes" to confirm or "no" to cancel.`;
+          }
+
           setMessages(prev => [...prev, {
             role: 'assistant',
-            content: `Ready to send **${data.response.parsed.amount} ${data.response.parsed.token || 'CRO'}** to **${data.response.parsed.recipient}**. Type "yes" to confirm or "no" to cancel.`,
+            content: confirmContent,
             type: 'confirmation',
             parsed: data.response.parsed
           }]);
@@ -249,14 +263,37 @@ export default function AIChat({ onPaymentComplete }) {
               {/* Payment preview */}
               {msg.type === 'confirmation' && msg.parsed && (
                 <div className="mt-3 pt-3 border-t border-amber-200">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-amber-700">Amount:</span>
-                    <span className="font-bold">{msg.parsed.amount} {msg.parsed.token || 'CRO'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm mt-1">
-                    <span className="text-amber-700">To:</span>
-                    <span className="font-mono text-xs">{msg.parsed.recipient}</span>
-                  </div>
+                  {/* Single payment preview */}
+                  {msg.parsed.recipient && (
+                    <>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-amber-700">Amount:</span>
+                        <span className="font-bold">{msg.parsed.amount} {msg.parsed.token || 'CRO'}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-1">
+                        <span className="text-amber-700">To:</span>
+                        <span className="font-mono text-xs">{msg.parsed.recipient}</span>
+                      </div>
+                    </>
+                  )}
+                  {/* Bulk payment preview */}
+                  {msg.parsed.recipients && msg.parsed.recipients.length > 0 && (
+                    <>
+                      <div className="text-sm text-amber-700 mb-2">Recipients:</div>
+                      <div className="space-y-1 max-h-32 overflow-y-auto">
+                        {msg.parsed.recipients.map((r, i) => (
+                          <div key={i} className="flex items-center justify-between text-sm bg-amber-100/50 rounded px-2 py-1">
+                            <span className="font-mono text-xs truncate max-w-[60%]">{r.recipient}</span>
+                            <span className="font-bold">{r.amount} CRO</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between text-sm mt-2 pt-2 border-t border-amber-200">
+                        <span className="text-amber-700">Total:</span>
+                        <span className="font-bold">{msg.parsed.recipients.reduce((sum, r) => sum + r.amount, 0)} CRO</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={() => {
