@@ -21,29 +21,53 @@ export default function AgentsPage() {
   // Detect external wallet (Rabby, MetaMask, etc.)
   useEffect(() => {
     const detectExternalWallet = async () => {
-      if (window.ethereum && ready) {
+      if (window.ethereum) {
         try {
+          // Try to get already connected accounts
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts && accounts.length > 0) {
             setExternalWallet({ address: accounts[0] });
+            return;
+          }
+          // Fallback to selectedAddress (older wallets)
+          if (window.ethereum.selectedAddress) {
+            setExternalWallet({ address: window.ethereum.selectedAddress });
           }
         } catch (error) {
           console.error('Error detecting external wallet:', error);
+          // Fallback to selectedAddress on error
+          if (window.ethereum.selectedAddress) {
+            setExternalWallet({ address: window.ethereum.selectedAddress });
+          }
         }
       }
     };
+
+    // Run detection immediately and when ready changes
     detectExternalWallet();
 
+    // Also run after a short delay to catch late-loading wallets
+    const timeout = setTimeout(detectExternalWallet, 500);
+
     // Listen for account changes
+    const handleAccountsChanged = (accounts) => {
+      if (accounts && accounts.length > 0) {
+        setExternalWallet({ address: accounts[0] });
+      } else {
+        setExternalWallet(null);
+      }
+    };
+
     if (window.ethereum) {
-      window.ethereum.on('accountsChanged', (accounts) => {
-        if (accounts.length > 0) {
-          setExternalWallet({ address: accounts[0] });
-        } else {
-          setExternalWallet(null);
-        }
-      });
+      window.ethereum.on('accountsChanged', handleAccountsChanged);
     }
+
+    return () => {
+      clearTimeout(timeout);
+      if (window.ethereum) {
+        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+      }
+    };
   }, [ready]);
 
   // Get the active wallet address
@@ -62,7 +86,7 @@ export default function AgentsPage() {
   const [formData, setFormData] = useState({
     name: '',
     dailyLimit: '100',
-    allowedRecipients: '*',
+    allowedRecipients: '',
     requireApproval: '50',
     allowedTokens: 'CRO'
   });
@@ -121,7 +145,7 @@ export default function AgentsPage() {
   const handleCreateAgent = async (e) => {
     e.preventDefault();
     if (!walletAddress) {
-      alert('No wallet connected');
+      alert('No wallet detected. Please make sure your wallet (Rabby/MetaMask) is unlocked and connected to this site.');
       return;
     }
     setLoading(true);
@@ -149,7 +173,7 @@ export default function AgentsPage() {
         setFormData({
           name: '',
           dailyLimit: '100',
-          allowedRecipients: '*',
+          allowedRecipients: '',
           requireApproval: '50',
           allowedTokens: 'CRO'
         });
@@ -294,8 +318,23 @@ export default function AgentsPage() {
     return date.toLocaleDateString();
   };
 
+  // Loading state
+  if (!ready) {
+    return (
+      <div className="min-h-screen bg-[#fafbfc]">
+        <Navigation />
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+          <div className="text-center">
+            <div className="animate-spin w-12 h-12 border-4 border-[#1de4c6] border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Not authenticated state
-  if (!authenticated) {
+  if (!authenticated && !walletAddress) {
     return (
       <div className="min-h-screen bg-[#fafbfc]">
         <Navigation />
@@ -346,7 +385,7 @@ export default function AgentsPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
               AI Agents
@@ -354,6 +393,38 @@ export default function AgentsPage() {
             <p className="text-gray-600 mt-1">
               Natural language payments powered by AI
             </p>
+          </div>
+          {/* Wallet Status */}
+          <div className="text-right">
+            {walletAddress ? (
+              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-sm text-green-700 font-medium">
+                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+                </span>
+              </div>
+            ) : (
+              <button
+                onClick={async () => {
+                  if (window.ethereum) {
+                    try {
+                      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                      if (accounts.length > 0) {
+                        setExternalWallet({ address: accounts[0] });
+                      }
+                    } catch (error) {
+                      console.error('Failed to connect wallet:', error);
+                    }
+                  } else {
+                    alert('No wallet extension found. Please install Rabby or MetaMask.');
+                  }
+                }}
+                className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 hover:bg-yellow-100 transition-colors"
+              >
+                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                <span className="text-sm text-yellow-700 font-medium">Connect Wallet</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -845,9 +916,10 @@ export default function AgentsPage() {
                   type="text"
                   value={formData.allowedRecipients}
                   onChange={(e) => setFormData({ ...formData, allowedRecipients: e.target.value })}
-                  placeholder="* (all) or *@company.com"
+                  placeholder="*@company.com, alice@example.com"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
                 />
+                <p className="text-xs text-gray-500 mt-1">Leave empty for all recipients, or use patterns like *@company.com</p>
               </div>
 
               <div className="flex gap-3 pt-4">
