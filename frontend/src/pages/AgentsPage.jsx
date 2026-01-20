@@ -216,11 +216,12 @@ export default function AgentsPage() {
   };
 
   const handlePauseScheduledPayment = async (id) => {
+    if (!walletAddress) return;
     try {
       const response = await fetch(`${API_URL}/agent/schedule/${id}/pause`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownerAddress: wallets[0].address })
+        body: JSON.stringify({ ownerAddress: walletAddress })
       });
       if (response.ok) {
         fetchScheduledPayments();
@@ -231,11 +232,12 @@ export default function AgentsPage() {
   };
 
   const handleResumeScheduledPayment = async (id) => {
+    if (!walletAddress) return;
     try {
       const response = await fetch(`${API_URL}/agent/schedule/${id}/resume`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownerAddress: wallets[0].address })
+        body: JSON.stringify({ ownerAddress: walletAddress })
       });
       if (response.ok) {
         fetchScheduledPayments();
@@ -246,13 +248,14 @@ export default function AgentsPage() {
   };
 
   const handleCancelScheduledPayment = async (id) => {
+    if (!walletAddress) return;
     if (!confirm('Are you sure you want to cancel this scheduled payment?')) return;
 
     try {
       const response = await fetch(`${API_URL}/agent/schedule/${id}/cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ownerAddress: wallets[0].address })
+        body: JSON.stringify({ ownerAddress: walletAddress })
       });
       if (response.ok) {
         fetchScheduledPayments();
