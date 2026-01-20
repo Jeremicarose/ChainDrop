@@ -1015,12 +1015,13 @@ export default function AgentsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Max Executions (optional)</label>
                 <input
                   type="number"
+                  min="1"
                   value={scheduleForm.maxExecutions}
                   onChange={(e) => setScheduleForm({ ...scheduleForm, maxExecutions: e.target.value })}
                   placeholder="Unlimited"
                   className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
                 />
-                <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited recurring payments</p>
+                <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited, or set minimum 1</p>
               </div>
 
               <div className="flex gap-3 pt-4">
