@@ -7,7 +7,9 @@ const priceService = require('../services/priceService');
 const router = express.Router();
 
 // Transfer routes - specific routes before parameterized routes
-router.post('/transfer/send', transferController.send);
+router.post('/transfer/send', transferController.send);  // Legacy: backend sends (for backwards compat)
+router.post('/transfer/prepare', transferController.prepare);  // NEW: Get recipient address for user to send
+router.post('/transfer/record', transferController.record);    // NEW: Record after user sends
 router.post('/transfer/claim', transferController.claim);
 router.post('/transfer/estimate', transferController.estimate);
 router.get('/transfer/stats', transferController.getStats);

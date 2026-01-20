@@ -300,6 +300,214 @@ const transferController = {
         message: error.message
       });
     }
+  },
+
+  /**
+   * POST /api/transfer/prepare
+   * Prepare a transfer - returns recipient address for user to send to directly
+   * User's wallet will sign and send the transaction
+   */
+  async prepare(req, res) {
+    try {
+      const { recipientIdentifier, identifierType, amount } = req.body;
+
+      if (!recipientIdentifier || !identifierType || !amount) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          required: ['recipientIdentifier', 'identifierType', 'amount']
+        });
+      }
+
+      // Validate minimum amount
+      if (parseFloat(amount) < parseFloat(MIN_AMOUNT_CRO)) {
+        return res.status(400).json({
+          error: `Amount too low`,
+          message: `Minimum ${MIN_AMOUNT_CRO} CRO required to cover claim gas costs`,
+          minimum: MIN_AMOUNT_CRO
+        });
+      }
+
+      // Get counterfactual address (ghost vault for recipient)
+      const recipientAddress = await blockchainService.getCounterfactualAddress(recipientIdentifier);
+      const gasPrice = await blockchainService.getGasPrice();
+
+      // Generate claim token in advance
+      const crypto = require('crypto');
+      const claimToken = crypto.randomBytes(32).toString('hex');
+      const claimLink = `${process.env.CLAIM_LINK_BASE_URL}/${claimToken}`;
+
+      console.log(`📋 Prepared transfer to ${recipientIdentifier}`);
+      console.log(`   Ghost vault: ${recipientAddress}`);
+
+      res.json({
+        success: true,
+        data: {
+          recipientAddress,        // User sends CRO to this address
+          recipientIdentifier,
+          identifierType,
+          amount,
+          claimToken,              // To be used when recording
+          claimLink,
+          gasPrice: gasPrice.toString(),
+          instructions: 'Send CRO to recipientAddress, then call /api/transfer/record with txHash'
+        }
+      });
+    } catch (error) {
+      console.error('Prepare error:', error);
+      res.status(500).json({
+        error: 'Failed to prepare transfer',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/transfer/record
+   * Record a transfer after user has sent it from their wallet
+   * This does NOT send funds - user already sent them
+   */
+  async record(req, res) {
+    try {
+      const {
+        senderAddress,
+        recipientIdentifier,
+        identifierType,
+        amount,
+        txHash,
+        claimToken,
+        senderEmail
+      } = req.body;
+
+      if (!senderAddress || !recipientIdentifier || !identifierType || !amount || !txHash || !claimToken) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          required: ['senderAddress', 'recipientIdentifier', 'identifierType', 'amount', 'txHash', 'claimToken']
+        });
+      }
+
+      // Verify the transaction exists on-chain
+      const provider = new (require('ethers').JsonRpcProvider)(process.env.RPC_URL);
+      const receipt = await provider.getTransactionReceipt(txHash);
+
+      if (!receipt) {
+        return res.status(400).json({
+          error: 'Transaction not found',
+          message: 'Please wait for transaction to be mined and try again'
+        });
+      }
+
+      if (receipt.status !== 1) {
+        return res.status(400).json({
+          error: 'Transaction failed',
+          message: 'The transaction was reverted on-chain'
+        });
+      }
+
+      // Get recipient address
+      const recipientAddress = await blockchainService.getCounterfactualAddress(recipientIdentifier);
+
+      // Verify transaction was sent to the correct address
+      const tx = await provider.getTransaction(txHash);
+      if (tx.to.toLowerCase() !== recipientAddress.toLowerCase()) {
+        return res.status(400).json({
+          error: 'Invalid transaction',
+          message: 'Transaction was not sent to the correct recipient address'
+        });
+      }
+
+      const crypto = require('crypto');
+      const transferId = crypto.randomUUID();
+      const claimId = `claim-${transferId}`;
+      const claimLink = `${process.env.CLAIM_LINK_BASE_URL}/${claimToken}`;
+      const expiresAt = Date.now() + (2 * 24 * 60 * 60 * 1000); // 2 days
+
+      // Format amount
+      const formattedAmount = await blockchainService.formatAmount(amount);
+
+      // Save to database
+      const db = require('../db/schema');
+      await db.run(`
+        INSERT INTO transfers (
+          id, sender_address, recipient_identifier, recipient_identifier_type,
+          recipient_identifier_original, recipient_address, token_address, amount, claim_id, claim_token,
+          claim_link, tx_hash, created_at, expires_at, status
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        transferId,
+        senderAddress,
+        crypto.createHash('sha256').update(recipientIdentifier).digest('hex'),
+        identifierType,
+        recipientIdentifier,
+        recipientAddress,
+        'ETH',
+        formattedAmount.toString(),
+        claimId,
+        claimToken,
+        claimLink,
+        txHash,
+        Date.now(),
+        expiresAt,
+        'pending'
+      ]);
+
+      // Create wallet record
+      await db.run(`
+        INSERT OR IGNORE INTO wallets (
+          address, owner_address, identifier, identifier_type, deployed, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `, [
+        recipientAddress,
+        null,
+        crypto.createHash('sha256').update(recipientIdentifier).digest('hex'),
+        identifierType,
+        false,
+        Date.now()
+      ]);
+
+      console.log(`✅ Transfer recorded: ${transferId}`);
+      console.log(`   From: ${senderAddress}`);
+      console.log(`   To: ${recipientIdentifier} (${recipientAddress})`);
+      console.log(`   Amount: ${amount} CRO`);
+      console.log(`   TxHash: ${txHash}`);
+
+      // Send email notification
+      if (identifierType === 'email') {
+        const emailService = require('../services/emailService');
+        console.log(`📧 Sending email notification to ${recipientIdentifier}`);
+        const emailResult = await emailService.sendTransferNotification(
+          recipientIdentifier,
+          formattedAmount.toString(),
+          claimToken,
+          senderAddress,
+          senderEmail
+        );
+
+        if (emailResult.success) {
+          console.log(`✅ Email sent successfully`);
+        } else {
+          console.log(`⚠️  Email not sent: ${emailResult.reason || emailResult.error}`);
+        }
+      }
+
+      res.status(201).json({
+        success: true,
+        message: 'Transfer recorded successfully',
+        data: {
+          transferId,
+          recipientAddress,
+          claimLink,
+          claimToken,
+          txHash,
+          expiresAt
+        }
+      });
+    } catch (error) {
+      console.error('Record transfer error:', error);
+      res.status(500).json({
+        error: 'Failed to record transfer',
+        message: error.message
+      });
+    }
   }
 };
 
