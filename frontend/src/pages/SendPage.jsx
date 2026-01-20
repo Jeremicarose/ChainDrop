@@ -75,6 +75,8 @@ export default function SendPage() {
     }));
   };
 
+  const [sendStep, setSendStep] = useState(''); // '', 'preparing', 'signing', 'confirming', 'recording'
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -82,24 +84,109 @@ export default function SendPage() {
     setResult(null);
 
     try {
-      const response = await fetch(`${API_URL}/transfer/send`, {
+      // Check if wallet is available
+      if (!window.ethereum) {
+        throw new Error('No wallet found. Please install Rabby or MetaMask.');
+      }
+
+      // Step 1: Prepare - get recipient address and claim token from backend
+      setSendStep('preparing');
+      console.log('📋 Step 1: Preparing transfer...');
+
+      const prepareResponse = await fetch(`${API_URL}/transfer/prepare`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          recipientIdentifier: formData.recipientIdentifier,
+          identifierType: formData.identifierType,
+          amount: formData.amount,
+        }),
       });
 
-      const data = await response.json();
+      const prepareData = await prepareResponse.json();
 
-      if (data.success) {
-        setResult(data.data);
-      } else {
-        setError(data.error || 'Failed to send transfer');
+      if (!prepareData.success) {
+        throw new Error(prepareData.error || 'Failed to prepare transfer');
       }
+
+      const { recipientAddress, claimToken } = prepareData.data;
+      console.log(`✅ Recipient ghost vault: ${recipientAddress}`);
+
+      // Step 2: Send - user's wallet signs and sends transaction
+      setSendStep('signing');
+      console.log('✍️ Step 2: Requesting wallet signature...');
+
+      // Use ethers.js with the browser wallet
+      const { ethers } = await import('ethers');
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      // Convert amount to wei
+      const amountWei = ethers.parseEther(formData.amount);
+
+      console.log(`💸 Sending ${formData.amount} CRO to ${recipientAddress}...`);
+
+      const tx = await signer.sendTransaction({
+        to: recipientAddress,
+        value: amountWei,
+      });
+
+      console.log(`📤 Transaction submitted: ${tx.hash}`);
+
+      // Step 3: Wait for confirmation
+      setSendStep('confirming');
+      console.log('⏳ Step 3: Waiting for confirmation...');
+
+      const receipt = await tx.wait();
+      console.log(`✅ Transaction confirmed in block ${receipt.blockNumber}`);
+
+      // Step 4: Record - save to database and send email notification
+      setSendStep('recording');
+      console.log('📝 Step 4: Recording transfer...');
+
+      const recordResponse = await fetch(`${API_URL}/transfer/record`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          senderAddress: formData.senderAddress,
+          recipientIdentifier: formData.recipientIdentifier,
+          identifierType: formData.identifierType,
+          amount: formData.amount,
+          txHash: tx.hash,
+          claimToken,
+        }),
+      });
+
+      const recordData = await recordResponse.json();
+
+      if (!recordData.success) {
+        // Transaction succeeded but recording failed - still show success
+        console.warn('Warning: Transfer succeeded but recording failed:', recordData.error);
+        setResult({
+          recipientAddress,
+          txHash: tx.hash,
+          claimToken,
+          claimLink: `${window.location.origin}/claim/${claimToken}`,
+        });
+      } else {
+        console.log(`✅ Transfer recorded: ${recordData.data.transferId}`);
+        setResult(recordData.data);
+      }
+
     } catch (err) {
-      setError('Failed to initiate transfer');
       console.error('Send error:', err);
+
+      // Handle user rejection
+      if (err.code === 4001 || err.code === 'ACTION_REJECTED') {
+        setError('Transaction rejected. Please try again.');
+      } else if (err.message?.includes('insufficient funds')) {
+        setError('Insufficient CRO balance. Please add funds to your wallet.');
+      } else {
+        setError(err.message || 'Failed to send transfer');
+      }
     } finally {
       setLoading(false);
+      setSendStep('');
     }
   };
 
@@ -386,7 +473,13 @@ export default function SendPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span>Creating Ghost Vault...</span>
+                <span>
+                  {sendStep === 'preparing' && 'Preparing transfer...'}
+                  {sendStep === 'signing' && 'Please sign in wallet...'}
+                  {sendStep === 'confirming' && 'Confirming transaction...'}
+                  {sendStep === 'recording' && 'Recording transfer...'}
+                  {!sendStep && 'Processing...'}
+                </span>
               </span>
             ) : (
               <span className="flex items-center justify-center gap-2">
