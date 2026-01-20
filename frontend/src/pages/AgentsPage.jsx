@@ -6,16 +6,58 @@ import AIChat from '../components/AIChat';
 const API_URL = import.meta.env.VITE_API_URL;
 
 export default function AgentsPage() {
-  const { authenticated, login } = usePrivy();
+  const { authenticated, login, ready } = usePrivy();
   const { wallets } = useWallets();
   const [agents, setAgents] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showScheduleModal, setShowSchedulwModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'agents', or 'scheduled'
   const [recentPayments, setRecentPayments] = useState([]);
-  const [scheduledPayments, setScheduledPayment] = useState([]);
+  const [scheduledPayments, setScheduledPayments] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
+  const [externalWallet, setExternalWallet] = useState(null);
+
+  // Detect external wallet (Rabby, MetaMask, etc.)
+  useEffect(() => {
+    const detectExternalWallet = async () => {
+      if (window.ethereum && ready) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length > 0) {
+            setExternalWallet({ address: accounts[0] });
+          }
+        } catch (error) {
+          console.error('Error detecting external wallet:', error);
+        }
+      }
+    };
+    detectExternalWallet();
+
+    // Listen for account changes
+    if (window.ethereum) {
+      window.ethereum.on('accountsChanged', (accounts) => {
+        if (accounts.length > 0) {
+          setExternalWallet({ address: accounts[0] });
+        } else {
+          setExternalWallet(null);
+        }
+      });
+    }
+  }, [ready]);
+
+  // Get the active wallet address
+  const getWalletAddress = () => {
+    if (wallets && wallets.length > 0) {
+      return wallets[0].address;
+    }
+    if (externalWallet) {
+      return externalWallet.address;
+    }
+    return null;
+  };
+
+  const walletAddress = getWalletAddress();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -25,19 +67,32 @@ export default function AgentsPage() {
     allowedTokens: 'CRO'
   });
 
-  
+  const [scheduleForm, setScheduleForm] = useState({
+    agentKeyId: '',
+    name: '',
+    recipientIdentifier: '',
+    recipientType: 'email',
+    amount: '',
+    scheduleType: 'weekly',
+    frequency: '',
+    startDate: '',
+    endDate: '',
+    maxExecutions: ''
+  });
 
   // Fetch agents
   useEffect(() => {
-    if (authenticated && wallets.length > 0) {
+    if (authenticated && walletAddress) {
       fetchAgents();
+      fetchScheduledPayments();
     }
-  }, [authenticated, wallets]);
+  }, [authenticated, walletAddress]);
 
   const fetchAgents = async () => {
+    if (!walletAddress) return;
     try {
       const response = await fetch(
-        `${API_URL}/agent/list?ownerAddress=${wallets[0].address}`
+        `${API_URL}/agent/list?ownerAddress=${walletAddress}`
       );
       if (response.ok) {
         const data = await response.json();
@@ -48,8 +103,27 @@ export default function AgentsPage() {
     }
   };
 
+  const fetchScheduledPayments = async () => {
+    if (!walletAddress) return;
+    try {
+      const response = await fetch(
+        `${API_URL}/agent/schedule/list?ownerAddress=${walletAddress}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setScheduledPayments(data.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching scheduled payments:', error);
+    }
+  };
+
   const handleCreateAgent = async (e) => {
     e.preventDefault();
+    if (!walletAddress) {
+      alert('No wallet connected');
+      return;
+    }
     setLoading(true);
 
     try {
@@ -57,7 +131,7 @@ export default function AgentsPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ownerAddress: wallets[0].address,
+          ownerAddress: walletAddress,
           name: formData.name,
           policies: {
             dailyLimit: formData.dailyLimit,
@@ -87,8 +161,134 @@ export default function AgentsPage() {
     }
   };
 
+  const handleCreateScheduledPayment = async (e) => {
+    e.preventDefault();
+    if (!walletAddress) {
+      alert('No wallet connected');
+      return;
+    }
+    setLoading(true);
+
+    try {
+      const response = await fetch(`${API_URL}/agent/schedule/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          agentKeyId: scheduleForm.agentKeyId,
+          ownerAddress: walletAddress,
+          name: scheduleForm.name,
+          recipientIdentifier: scheduleForm.recipientIdentifier,
+          recipientType: scheduleForm.recipientType,
+          amount: scheduleForm.amount,
+          scheduleType: scheduleForm.scheduleType,
+          frequency: scheduleForm.frequency || null,
+          startDate: scheduleForm.startDate ? new Date(scheduleForm.startDate).getTime() : null,
+          endDate: scheduleForm.endDate ? new Date(scheduleForm.endDate).getTime() : null,
+          maxExecutions: scheduleForm.maxExecutions ? parseInt(scheduleForm.maxExecutions) : null
+        })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setShowScheduleModal(false);
+        fetchScheduledPayments();
+        setScheduleForm({
+          agentKeyId: '',
+          name: '',
+          recipientIdentifier: '',
+          recipientType: 'email',
+          amount: '',
+          scheduleType: 'weekly',
+          frequency: '',
+          startDate: '',
+          endDate: '',
+          maxExecutions: ''
+        });
+      } else {
+        alert(data.error || 'Failed to create scheduled payment');
+      }
+    } catch (error) {
+      console.error('Error creating scheduled payment:', error);
+      alert('Failed to create scheduled payment');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePauseScheduledPayment = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/agent/schedule/${id}/pause`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerAddress: wallets[0].address })
+      });
+      if (response.ok) {
+        fetchScheduledPayments();
+      }
+    } catch (error) {
+      console.error('Error pausing scheduled payment:', error);
+    }
+  };
+
+  const handleResumeScheduledPayment = async (id) => {
+    try {
+      const response = await fetch(`${API_URL}/agent/schedule/${id}/resume`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerAddress: wallets[0].address })
+      });
+      if (response.ok) {
+        fetchScheduledPayments();
+      }
+    } catch (error) {
+      console.error('Error resuming scheduled payment:', error);
+    }
+  };
+
+  const handleCancelScheduledPayment = async (id) => {
+    if (!confirm('Are you sure you want to cancel this scheduled payment?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/agent/schedule/${id}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ownerAddress: wallets[0].address })
+      });
+      if (response.ok) {
+        fetchScheduledPayments();
+      }
+    } catch (error) {
+      console.error('Error cancelling scheduled payment:', error);
+    }
+  };
+
   const handlePaymentComplete = (payment) => {
     setRecentPayments(prev => [payment, ...prev].slice(0, 5));
+  };
+
+  const getScheduleTypeLabel = (type) => {
+    const labels = {
+      once: 'One-time',
+      daily: 'Daily',
+      weekly: 'Weekly',
+      biweekly: 'Bi-weekly',
+      monthly: 'Monthly',
+      custom: 'Custom'
+    };
+    return labels[type] || type;
+  };
+
+  const formatNextRun = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diff = date - now;
+
+    if (diff < 0) return 'Overdue';
+    if (diff < 60000) return 'Less than a minute';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)} minutes`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours`;
+    return date.toLocaleDateString();
   };
 
   // Not authenticated state
@@ -155,7 +355,7 @@ export default function AgentsPage() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 mb-6">
+        <div className="flex gap-2 mb-6 flex-wrap">
           <button
             onClick={() => setActiveTab('chat')}
             className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
@@ -187,6 +387,26 @@ export default function AgentsPage() {
               API Agents
               {agents.length > 0 && (
                 <span className="px-1.5 py-0.5 bg-white/20 rounded text-xs">{agents.length}</span>
+              )}
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab('scheduled')}
+            className={`px-5 py-2.5 rounded-xl font-medium transition-all ${
+              activeTab === 'scheduled'
+                ? 'bg-gray-900 text-white'
+                : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
+            }`}
+          >
+            <span className="flex items-center gap-2">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Scheduled
+              {scheduledPayments.filter(p => p.status === 'active').length > 0 && (
+                <span className="px-1.5 py-0.5 bg-white/20 rounded text-xs">
+                  {scheduledPayments.filter(p => p.status === 'active').length}
+                </span>
               )}
             </span>
           </button>
@@ -355,15 +575,27 @@ export default function AgentsPage() {
                         <p className="text-xs text-gray-500 mb-1">API Key</p>
                         <code className="text-xs font-mono text-gray-700 break-all">{agent.api_key}</code>
                       </div>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(agent.api_key);
-                          alert('API key copied!');
-                        }}
-                        className="w-full py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 transition-colors"
-                      >
-                        Copy API Key
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(agent.api_key);
+                            alert('API key copied!');
+                          }}
+                          className="flex-1 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 transition-colors"
+                        >
+                          Copy Key
+                        </button>
+                        <button
+                          onClick={() => {
+                            setScheduleForm({ ...scheduleForm, agentKeyId: agent.id });
+                            setShowScheduleModal(true);
+                          }}
+                          className="flex-1 py-2 rounded-lg text-sm font-medium text-white transition-colors"
+                          style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+                        >
+                          Schedule Payment
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -383,6 +615,180 @@ export default function AgentsPage() {
     "amount": "1.5"
   }'`}
               </pre>
+            </div>
+          </div>
+        )}
+
+        {/* Scheduled Payments Tab */}
+        {activeTab === 'scheduled' && (
+          <div>
+            {/* Create Scheduled Payment Button */}
+            <div className="flex justify-end mb-6">
+              <button
+                onClick={() => setShowScheduleModal(true)}
+                disabled={agents.length === 0}
+                className="px-5 py-2.5 rounded-xl font-medium text-white transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+              >
+                + Schedule Payment
+              </button>
+            </div>
+
+            {agents.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Create an Agent First</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  You need at least one API agent to schedule payments. Go to the API Agents tab to create one.
+                </p>
+                <button
+                  onClick={() => setActiveTab('agents')}
+                  className="px-6 py-3 rounded-xl font-medium text-white transition-all hover:scale-105"
+                  style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+                >
+                  Go to API Agents
+                </button>
+              </div>
+            ) : scheduledPayments.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">No Scheduled Payments</h3>
+                <p className="text-gray-600 mb-6 max-w-md mx-auto">
+                  Set up recurring payments to automate your transfers. Perfect for subscriptions, salaries, or regular payments.
+                </p>
+                <button
+                  onClick={() => setShowScheduleModal(true)}
+                  className="px-6 py-3 rounded-xl font-medium text-white transition-all hover:scale-105"
+                  style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+                >
+                  Create Your First Schedule
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {scheduledPayments.map((payment) => (
+                  <div key={payment.id} className="bg-white rounded-2xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                          payment.status === 'active'
+                            ? 'bg-gradient-to-br from-[#1de4c6] to-[#00a28e]'
+                            : payment.status === 'paused'
+                            ? 'bg-yellow-100'
+                            : 'bg-gray-100'
+                        }`}>
+                          <svg className={`w-6 h-6 ${
+                            payment.status === 'active' ? 'text-white' : 'text-gray-500'
+                          }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-900">{payment.name}</h3>
+                          <p className="text-sm text-gray-500">{payment.recipient_identifier}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">{payment.amount} {payment.currency}</p>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          payment.status === 'active'
+                            ? 'bg-green-100 text-green-700'
+                            : payment.status === 'paused'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : payment.status === 'completed'
+                            ? 'bg-blue-100 text-blue-700'
+                            : 'bg-gray-100 text-gray-600'
+                        }`}>
+                          {payment.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500">Schedule</p>
+                        <p className="font-medium">{getScheduleTypeLabel(payment.schedule_type)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Next Run</p>
+                        <p className="font-medium">{formatNextRun(payment.next_run_at)}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Executions</p>
+                        <p className="font-medium">
+                          {payment.total_executions}
+                          {payment.max_executions ? ` / ${payment.max_executions}` : ''}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-500">Agent</p>
+                        <p className="font-medium">{payment.agent_name || 'Unknown'}</p>
+                      </div>
+                    </div>
+
+                    {payment.status !== 'cancelled' && payment.status !== 'completed' && (
+                      <div className="mt-4 pt-4 border-t border-gray-100 flex gap-2">
+                        {payment.status === 'active' ? (
+                          <button
+                            onClick={() => handlePauseScheduledPayment(payment.id)}
+                            className="px-4 py-2 rounded-lg bg-yellow-100 hover:bg-yellow-200 text-sm font-medium text-yellow-700 transition-colors"
+                          >
+                            Pause
+                          </button>
+                        ) : payment.status === 'paused' ? (
+                          <button
+                            onClick={() => handleResumeScheduledPayment(payment.id)}
+                            className="px-4 py-2 rounded-lg bg-green-100 hover:bg-green-200 text-sm font-medium text-green-700 transition-colors"
+                          >
+                            Resume
+                          </button>
+                        ) : null}
+                        <button
+                          onClick={() => handleCancelScheduledPayment(payment.id)}
+                          className="px-4 py-2 rounded-lg bg-red-100 hover:bg-red-200 text-sm font-medium text-red-700 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Programmable Payments Info */}
+            <div className="mt-8 bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Programmable Payments
+              </h3>
+              <p className="text-gray-300 mb-4">
+                Automate your crypto payments with scheduled transfers. Perfect for:
+              </p>
+              <div className="grid md:grid-cols-3 gap-4">
+                <div className="bg-white/10 rounded-lg p-4">
+                  <p className="font-medium mb-1">Subscriptions</p>
+                  <p className="text-sm text-gray-400">Monthly payments to service providers</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <p className="font-medium mb-1">Payroll</p>
+                  <p className="text-sm text-gray-400">Weekly or bi-weekly salary payments</p>
+                </div>
+                <div className="bg-white/10 rounded-lg p-4">
+                  <p className="font-medium mb-1">Allowances</p>
+                  <p className="text-sm text-gray-400">Regular payments to family or teams</p>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -453,6 +859,177 @@ export default function AgentsPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
+                  className="px-6 py-3 rounded-xl font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Scheduled Payment Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+                Schedule Payment
+              </h2>
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateScheduledPayment} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Agent</label>
+                <select
+                  value={scheduleForm.agentKeyId}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, agentKeyId: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  required
+                >
+                  <option value="">Select an agent</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>{agent.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Payment Name</label>
+                <input
+                  type="text"
+                  value={scheduleForm.name}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, name: e.target.value })}
+                  placeholder="Monthly Subscription"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Recipient</label>
+                  <input
+                    type="text"
+                    value={scheduleForm.recipientIdentifier}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, recipientIdentifier: e.target.value })}
+                    placeholder="alice@example.com"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    value={scheduleForm.recipientType}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, recipientType: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  >
+                    <option value="email">Email</option>
+                    <option value="phone">Phone</option>
+                    <option value="social">Social</option>
+                    <option value="address">Wallet</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (CRO)</label>
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={scheduleForm.amount}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, amount: e.target.value })}
+                  placeholder="10"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Type</label>
+                <select
+                  value={scheduleForm.scheduleType}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, scheduleType: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  required
+                >
+                  <option value="once">One-time</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="biweekly">Bi-weekly</option>
+                  <option value="monthly">Monthly</option>
+                  <option value="custom">Custom (specify hours)</option>
+                </select>
+              </div>
+
+              {scheduleForm.scheduleType === 'custom' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Frequency (hours)</label>
+                  <input
+                    type="number"
+                    value={scheduleForm.frequency}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, frequency: e.target.value })}
+                    placeholder="24"
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date (optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={scheduleForm.startDate}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, startDate: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date (optional)</label>
+                  <input
+                    type="datetime-local"
+                    value={scheduleForm.endDate}
+                    onChange={(e) => setScheduleForm({ ...scheduleForm, endDate: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Max Executions (optional)</label>
+                <input
+                  type="number"
+                  value={scheduleForm.maxExecutions}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, maxExecutions: e.target.value })}
+                  placeholder="Unlimited"
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
+                />
+                <p className="text-xs text-gray-500 mt-1">Leave empty for unlimited recurring payments</p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 py-3 rounded-xl font-semibold text-white transition-all hover:scale-[1.02] disabled:opacity-50"
+                  style={{ background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 100%)' }}
+                >
+                  {loading ? 'Creating...' : 'Create Schedule'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowScheduleModal(false)}
                   className="px-6 py-3 rounded-xl font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors"
                 >
                   Cancel
