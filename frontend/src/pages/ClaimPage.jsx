@@ -16,6 +16,23 @@ export default function ClaimPage() {
   const [error, setError] = useState(null);
   const [claiming, setClaiming] = useState(false);
   const [claimSuccess, setClaimSuccess] = useState(null);
+  const [croPrice, setCroPrice] = useState(0.09); // Default price
+
+  // Fetch CRO price
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const response = await fetch(`${API_URL}/price/cro`);
+        const data = await response.json();
+        if (data.success && data.price) {
+          setCroPrice(data.price);
+        }
+      } catch (err) {
+        console.error('Error fetching CRO price:', err);
+      }
+    };
+    fetchPrice();
+  }, []);
 
   // Fetch transfer details
   useEffect(() => {
@@ -100,9 +117,11 @@ export default function ClaimPage() {
     }
   };
 
-  const amountDisplay = transfer?.amount
-    ? `${(parseFloat(transfer.amount) / 1e18).toFixed(4)}`
-    : '...';
+  // Calculate amounts
+  const amountInCRO = transfer?.amount ? parseFloat(transfer.amount) / 1e18 : 0;
+  const amountInUSD = amountInCRO * croPrice;
+  const croDisplay = amountInCRO.toFixed(4);
+  const usdDisplay = `$${amountInUSD.toFixed(2)}`;
 
   // Loading state
   if (loading) {
@@ -158,11 +177,14 @@ export default function ClaimPage() {
           {/* Amount received */}
           <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-6 text-center shadow-lg">
             <p className="text-gray-500 text-sm mb-2">You received</p>
-            <p className="text-5xl font-bold text-[#00a28e] mb-2 tabular-nums">
-              {claimSuccess.claimedAmount} CRO
+            <p className="text-5xl font-bold text-[#00a28e] mb-1 tabular-nums">
+              ${(parseFloat(claimSuccess.claimedAmount) * croPrice).toFixed(2)}
             </p>
-            {claimSuccess.gasCost && (
-              <p className="text-sm text-gray-500">
+            <p className="text-lg text-gray-500 mb-3">
+              ({claimSuccess.claimedAmount} CRO)
+            </p>
+            {claimSuccess.gasCost && parseFloat(claimSuccess.gasCost) > 0 && (
+              <p className="text-sm text-gray-400">
                 Gas fee: {claimSuccess.gasCost} CRO (auto-deducted)
               </p>
             )}
@@ -419,11 +441,14 @@ export default function ClaimPage() {
         {/* Amount */}
         <div className="bg-white rounded-2xl border border-gray-200 p-8 mb-6 text-center shadow-sm">
           <p className="text-gray-500 text-sm mb-2">You're receiving</p>
-          <p className="text-5xl font-bold text-[#00a28e] mb-2 tabular-nums">
-            {amountDisplay} CRO
+          <p className="text-5xl font-bold text-[#00a28e] mb-1 tabular-nums">
+            {usdDisplay}
           </p>
-          <p className="text-sm text-gray-500">
-            Gas fee (~0.0003 CRO) will be deducted automatically
+          <p className="text-lg text-gray-500 mb-3">
+            ({croDisplay} CRO)
+          </p>
+          <p className="text-sm text-gray-400">
+            Gas fee (~0.03 CRO) will be deducted automatically
           </p>
         </div>
 
