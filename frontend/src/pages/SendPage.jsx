@@ -24,6 +24,9 @@ export default function SendPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [croPrice, setCroPrice] = useState(0.07); // Default CRO price in USD
+  const [usdAmount, setUsdAmount] = useState('');
+  const [inputMode, setInputMode] = useState('usd'); // 'usd' or 'cro'
 
   // Auto-fill sender address from Privy wallet or external wallet
   useEffect(() => {
@@ -57,6 +60,49 @@ export default function SendPage() {
       getWalletAddress();
     }
   }, [authenticated, ready, wallets]);
+
+  // Fetch CRO price
+  useEffect(() => {
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch(`${API_URL}/price/cro`);
+        const data = await res.json();
+        if (data.success && data.price) {
+          setCroPrice(data.price);
+        }
+      } catch (err) {
+        console.error('Failed to fetch CRO price:', err);
+      }
+    };
+    fetchPrice();
+    // Refresh price every 60 seconds
+    const interval = setInterval(fetchPrice, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle USD amount change - convert to CRO
+  const handleUsdChange = (e) => {
+    const usd = e.target.value;
+    setUsdAmount(usd);
+    if (usd && croPrice > 0) {
+      const cro = (parseFloat(usd) / croPrice).toFixed(4);
+      setFormData(prev => ({ ...prev, amount: cro }));
+    } else {
+      setFormData(prev => ({ ...prev, amount: '' }));
+    }
+  };
+
+  // Handle CRO amount change - convert to USD
+  const handleCroChange = (e) => {
+    const cro = e.target.value;
+    setFormData(prev => ({ ...prev, amount: cro }));
+    if (cro && croPrice > 0) {
+      const usd = (parseFloat(cro) * croPrice).toFixed(2);
+      setUsdAmount(usd);
+    } else {
+      setUsdAmount('');
+    }
+  };
 
   // Auto-detect identifier type
   const detectIdentifierType = (value) => {
@@ -407,43 +453,61 @@ export default function SendPage() {
             </div>
           </div>
 
-          {/* Amount */}
+          {/* Amount - USD Primary, CRO Secondary */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Amount
             </label>
-            <div className="relative">
+
+            {/* USD Input - Big */}
+            <div className="relative mb-3">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-3xl">
+                $
+              </span>
               <input
                 type="number"
-                name="amount"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+                value={usdAmount}
+                onChange={handleUsdChange}
                 placeholder="0.00"
-                step="0.001"
-                min={MIN_AMOUNT_CRO}
-                className={`w-full px-5 py-4 rounded-xl border-2 text-3xl font-bold pr-20 focus:ring-0 outline-none transition-colors tabular-nums ${
+                step="0.01"
+                min="0.01"
+                className={`w-full pl-12 pr-5 py-4 rounded-xl border-2 text-3xl font-bold focus:ring-0 outline-none transition-colors tabular-nums ${
                   formData.amount && parseFloat(formData.amount) < MIN_AMOUNT_CRO
                     ? 'border-amber-400 focus:border-amber-500'
                     : 'border-gray-200 focus:border-[#1de4c6]'
                 }`}
                 required
               />
-              <span className="absolute right-5 top-1/2 -translate-y-1/2 text-gray-400 font-semibold text-lg">
-                CRO
+            </div>
+
+            {/* CRO Display - Small */}
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-2 text-gray-500">
+                <svg className="w-5 h-5" viewBox="0 0 32 32" fill="currentColor">
+                  <circle cx="16" cy="16" r="14" fill="#002D74" opacity="0.1"/>
+                  <path d="M16 4C9.373 4 4 9.373 4 16s5.373 12 12 12 12-5.373 12-12S22.627 4 16 4zm5.894 8.221l-1.618 5.728a.5.5 0 01-.482.367h-7.588a.5.5 0 01-.482-.367l-1.618-5.728a.5.5 0 01.482-.633h2.824l1.588 4.5 1.588-4.5h2.824a.5.5 0 01.482.633z" fill="#002D74"/>
+                </svg>
+                <span className="text-lg font-semibold tabular-nums">
+                  {formData.amount ? parseFloat(formData.amount).toFixed(4) : '0.0000'} CRO
+                </span>
+              </div>
+              <span className="text-xs text-gray-400">
+                1 CRO ≈ ${croPrice.toFixed(4)}
               </span>
             </div>
+
             {formData.amount && parseFloat(formData.amount) < MIN_AMOUNT_CRO ? (
               <div className="flex items-center gap-2 mt-3 text-amber-600">
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                 </svg>
                 <span className="text-sm font-medium">
-                  Minimum {MIN_AMOUNT_CRO} CRO required (gas costs ~0.03 CRO)
+                  Minimum ${(MIN_AMOUNT_CRO * croPrice).toFixed(2)} required (gas costs)
                 </span>
               </div>
             ) : (
               <p className="text-sm text-gray-500 mt-3">
-                Gas fee (~0.03 CRO) is deducted from amount when they claim
+                Gas fee (~$0.002) is deducted from amount when they claim
               </p>
             )}
           </div>
