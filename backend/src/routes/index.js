@@ -24,6 +24,16 @@ router.post('/agent/update-status', agentController.updateStatus);
 router.get('/agent/stats', agentController.getStats);
 router.get('/agent/list', agentController.list);
 
+// Scheduled Payments routes (Programmable Payments)
+router.post('/agent/schedule/create', agentController.createScheduledPayment);
+router.get('/agent/schedule/list', agentController.listScheduledPayments);
+router.get('/agent/schedule/stats', agentController.getSchedulerStats);
+router.get('/agent/schedule/:id', agentController.getScheduledPayment);
+router.get('/agent/schedule/:id/history', agentController.getScheduledPaymentHistory);
+router.post('/agent/schedule/:id/pause', agentController.pauseScheduledPayment);
+router.post('/agent/schedule/:id/resume', agentController.resumeScheduledPayment);
+router.post('/agent/schedule/:id/cancel', agentController.cancelScheduledPayment);
+
 // AI routes - Natural language payment parsing (Claude)
 router.post('/ai/parse', aiController.parse);
 router.post('/ai/execute', aiController.execute);

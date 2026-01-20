@@ -5,6 +5,7 @@ require('dotenv').config();
 
 const routes = require('./routes');
 const { initializeDatabase } = require('./db/schema');
+const schedulerService = require('./services/schedulerService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -81,6 +82,9 @@ async function startServer() {
       console.log(`   Get Transfer: GET /api/transfer/:claimToken`);
       console.log(`   Estimate: POST /api/transfer/estimate`);
       console.log(`\n🎯 Ready to process transfers!\n`);
+
+      // Start scheduler service for programmable payments
+      schedulerService.start();
     });
   } catch (error) {
     console.error('Failed to start server:', error);
@@ -91,11 +95,13 @@ async function startServer() {
 // Handle graceful shutdown
 process.on('SIGTERM', () => {
   console.log('SIGTERM received, shutting down gracefully...');
+  schedulerService.stop();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('\nSIGINT received, shutting down gracefully...');
+  schedulerService.stop();
   process.exit(0);
 });
 

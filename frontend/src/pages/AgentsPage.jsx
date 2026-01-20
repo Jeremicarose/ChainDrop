@@ -10,9 +10,12 @@ export default function AgentsPage() {
   const { wallets } = useWallets();
   const [agents, setAgents] = useState([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showScheduleModal, setShowSchedulwModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('chat'); // 'chat' or 'agents'
+  const [activeTab, setActiveTab] = useState('chat'); // 'chat', 'agents', or 'scheduled'
   const [recentPayments, setRecentPayments] = useState([]);
+  const [scheduledPayments, setScheduledPayment] = useState([]);
+  const [selectedAgent, setSelectedAgent] = useState(null);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,6 +24,8 @@ export default function AgentsPage() {
     requireApproval: '50',
     allowedTokens: 'CRO'
   });
+
+  
 
   // Fetch agents
   useEffect(() => {
