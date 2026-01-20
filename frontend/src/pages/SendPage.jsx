@@ -116,9 +116,23 @@ export default function SendPage() {
       setSendStep('signing');
       console.log('✍️ Step 2: Requesting wallet signature...');
 
-      // Use ethers.js with the browser wallet
+      // Use ethers.js with Privy wallet OR external wallet (Rabby/MetaMask)
       const { ethers } = await import('ethers');
-      const provider = new ethers.BrowserProvider(window.ethereum);
+      let provider;
+
+      // Try Privy embedded wallet first
+      if (wallets?.length > 0) {
+        console.log(`Using Privy wallet: ${wallets[0].walletClientType}`);
+        const privyProvider = await wallets[0].getEthereumProvider();
+        provider = new ethers.BrowserProvider(privyProvider);
+      } else if (window.ethereum) {
+        // Fallback to external wallet (Rabby/MetaMask)
+        console.log('Using external wallet (Rabby/MetaMask)');
+        provider = new ethers.BrowserProvider(window.ethereum);
+      } else {
+        throw new Error('No wallet available. Please connect a wallet.');
+      }
+
       const signer = await provider.getSigner();
 
       // Convert amount to wei
