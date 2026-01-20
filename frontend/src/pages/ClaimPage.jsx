@@ -352,7 +352,7 @@ export default function ClaimPage() {
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mb-3">You've Got Crypto!</h1>
             <p className="text-xl text-gray-600">
-              Someone sent you <span className="font-bold text-[#00a28e]">{amountDisplay} CRO</span>
+              Someone sent you <span className="font-bold text-[#00a28e]">{usdDisplay}</span> <span className="text-gray-500">({croDisplay} CRO)</span>
             </p>
           </div>
 
