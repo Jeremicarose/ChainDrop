@@ -1,5 +1,6 @@
 const agentService = require('../services/agentService');
 const transferService = require('../services/transferService');
+const schedulerService = require('../services/schedulerService');
 
 const agentController = {
   /**
@@ -288,6 +289,312 @@ const agentController = {
       console.error('Update status error:', error);
       res.status(500).json({
         error: 'Failed to update agent status',
+        message: error.message
+      });
+    }
+  },
+
+  // ==========================================
+  // SCHEDULED PAYMENTS (Programmable Payments)
+  // ==========================================
+
+  /**
+   * POST /api/agent/schedule/create
+   * Create a new scheduled payment
+   */
+  async createScheduledPayment(req, res) {
+    try {
+      const {
+        agentKeyId,
+        ownerAddress,
+        name,
+        recipientIdentifier,
+        recipientType,
+        amount,
+        currency,
+        scheduleType,
+        frequency,
+        startDate,
+        endDate,
+        maxExecutions
+      } = req.body;
+
+      if (!agentKeyId || !ownerAddress || !name || !recipientIdentifier || !amount || !scheduleType) {
+        return res.status(400).json({
+          error: 'Missing required fields',
+          required: ['agentKeyId', 'ownerAddress', 'name', 'recipientIdentifier', 'amount', 'scheduleType']
+        });
+      }
+
+      // Verify the agent exists and belongs to this owner
+      const agents = await agentService.listAgents(ownerAddress);
+      const agent = agents.find(a => a.id === agentKeyId);
+      if (!agent) {
+        return res.status(403).json({
+          error: 'Agent not found or not owned by this address'
+        });
+      }
+
+      console.log(`📅 Creating scheduled payment: ${name} for agent ${agent.name}`);
+
+      const scheduledPayment = await schedulerService.createScheduledPayment({
+        agentKeyId,
+        ownerAddress,
+        name,
+        recipientIdentifier,
+        recipientType: recipientType || 'email',
+        amount,
+        currency: currency || 'CRO',
+        scheduleType,
+        frequency,
+        startDate,
+        endDate,
+        maxExecutions
+      });
+
+      res.status(201).json({
+        success: true,
+        message: 'Scheduled payment created successfully',
+        data: scheduledPayment
+      });
+    } catch (error) {
+      console.error('Create scheduled payment error:', error);
+      res.status(500).json({
+        error: 'Failed to create scheduled payment',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/agent/schedule/list
+   * List scheduled payments for an owner
+   */
+  async listScheduledPayments(req, res) {
+    try {
+      const { ownerAddress, agentKeyId } = req.query;
+
+      if (!ownerAddress && !agentKeyId) {
+        return res.status(400).json({
+          error: 'Missing required parameter',
+          required: ['ownerAddress or agentKeyId']
+        });
+      }
+
+      let payments;
+      if (agentKeyId) {
+        payments = await schedulerService.getScheduledPaymentsByAgent(agentKeyId);
+      } else {
+        payments = await schedulerService.getScheduledPaymentsByOwner(ownerAddress);
+      }
+
+      res.json({
+        success: true,
+        data: payments
+      });
+    } catch (error) {
+      console.error('List scheduled payments error:', error);
+      res.status(500).json({
+        error: 'Failed to list scheduled payments',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/agent/schedule/:id
+   * Get a specific scheduled payment
+   */
+  async getScheduledPayment(req, res) {
+    try {
+      const { id } = req.params;
+
+      const payment = await schedulerService.getScheduledPayment(id);
+      if (!payment) {
+        return res.status(404).json({
+          error: 'Scheduled payment not found'
+        });
+      }
+
+      // Get execution history
+      const history = await schedulerService.getExecutionHistory(id, 10);
+
+      res.json({
+        success: true,
+        data: {
+          ...payment,
+          executionHistory: history
+        }
+      });
+    } catch (error) {
+      console.error('Get scheduled payment error:', error);
+      res.status(500).json({
+        error: 'Failed to get scheduled payment',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/agent/schedule/:id/pause
+   * Pause a scheduled payment
+   */
+  async pauseScheduledPayment(req, res) {
+    try {
+      const { id } = req.params;
+      const { ownerAddress } = req.body;
+
+      if (!ownerAddress) {
+        return res.status(400).json({
+          error: 'Missing ownerAddress'
+        });
+      }
+
+      // Verify ownership
+      const payment = await schedulerService.getScheduledPayment(id);
+      if (!payment || payment.owner_address !== ownerAddress) {
+        return res.status(403).json({
+          error: 'Scheduled payment not found or not owned by this address'
+        });
+      }
+
+      const updated = await schedulerService.pauseScheduledPayment(id);
+
+      res.json({
+        success: true,
+        message: 'Scheduled payment paused',
+        data: updated
+      });
+    } catch (error) {
+      console.error('Pause scheduled payment error:', error);
+      res.status(500).json({
+        error: 'Failed to pause scheduled payment',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/agent/schedule/:id/resume
+   * Resume a paused scheduled payment
+   */
+  async resumeScheduledPayment(req, res) {
+    try {
+      const { id } = req.params;
+      const { ownerAddress } = req.body;
+
+      if (!ownerAddress) {
+        return res.status(400).json({
+          error: 'Missing ownerAddress'
+        });
+      }
+
+      // Verify ownership
+      const payment = await schedulerService.getScheduledPayment(id);
+      if (!payment || payment.owner_address !== ownerAddress) {
+        return res.status(403).json({
+          error: 'Scheduled payment not found or not owned by this address'
+        });
+      }
+
+      const updated = await schedulerService.resumeScheduledPayment(id);
+
+      res.json({
+        success: true,
+        message: 'Scheduled payment resumed',
+        data: updated
+      });
+    } catch (error) {
+      console.error('Resume scheduled payment error:', error);
+      res.status(500).json({
+        error: 'Failed to resume scheduled payment',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * POST /api/agent/schedule/:id/cancel
+   * Cancel a scheduled payment
+   */
+  async cancelScheduledPayment(req, res) {
+    try {
+      const { id } = req.params;
+      const { ownerAddress } = req.body;
+
+      if (!ownerAddress) {
+        return res.status(400).json({
+          error: 'Missing ownerAddress'
+        });
+      }
+
+      // Verify ownership
+      const payment = await schedulerService.getScheduledPayment(id);
+      if (!payment || payment.owner_address !== ownerAddress) {
+        return res.status(403).json({
+          error: 'Scheduled payment not found or not owned by this address'
+        });
+      }
+
+      const updated = await schedulerService.cancelScheduledPayment(id);
+
+      res.json({
+        success: true,
+        message: 'Scheduled payment cancelled',
+        data: updated
+      });
+    } catch (error) {
+      console.error('Cancel scheduled payment error:', error);
+      res.status(500).json({
+        error: 'Failed to cancel scheduled payment',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/agent/schedule/:id/history
+   * Get execution history for a scheduled payment
+   */
+  async getScheduledPaymentHistory(req, res) {
+    try {
+      const { id } = req.params;
+      const { limit } = req.query;
+
+      const history = await schedulerService.getExecutionHistory(id, parseInt(limit) || 20);
+
+      res.json({
+        success: true,
+        data: history
+      });
+    } catch (error) {
+      console.error('Get execution history error:', error);
+      res.status(500).json({
+        error: 'Failed to get execution history',
+        message: error.message
+      });
+    }
+  },
+
+  /**
+   * GET /api/agent/schedule/stats
+   * Get scheduler statistics
+   */
+  async getSchedulerStats(req, res) {
+    try {
+      const stats = await schedulerService.getStats();
+
+      res.json({
+        success: true,
+        data: {
+          ...stats,
+          schedulerRunning: schedulerService.isRunning
+        }
+      });
+    } catch (error) {
+      console.error('Get scheduler stats error:', error);
+      res.status(500).json({
+        error: 'Failed to get scheduler stats',
         message: error.message
       });
     }
