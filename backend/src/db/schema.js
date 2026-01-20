@@ -110,6 +110,58 @@ function initializeDatabase() {
       )
     `);
 
+    // Scheduled Payments table (programmable payments)
+    db.run(`
+      CREATE TABLE IF NOT EXISTS scheduled_payments (
+        id TEXT PRIMARY KEY,
+        agent_key_id TEXT NOT NULL,
+        owner_address TEXT NOT NULL,
+        name TEXT NOT NULL,
+        recipient_identifier TEXT NOT NULL,
+        recipient_type TEXT NOT NULL DEFAULT 'email',
+        amount TEXT NOT NULL,
+        currency TEXT NOT NULL DEFAULT 'CRO',
+
+        -- Schedule configuration
+        schedule_type TEXT NOT NULL,
+        frequency TEXT,
+        cron_expression TEXT,
+        start_date INTEGER NOT NULL,
+        end_date INTEGER,
+        next_run_at INTEGER,
+
+        -- Execution tracking
+        total_executions INTEGER DEFAULT 0,
+        max_executions INTEGER,
+        last_executed_at INTEGER,
+        last_transfer_id TEXT,
+
+        -- Status
+        status TEXT NOT NULL DEFAULT 'active',
+        paused_at INTEGER,
+        cancelled_at INTEGER,
+        created_at INTEGER NOT NULL,
+        updated_at INTEGER,
+
+        FOREIGN KEY (agent_key_id) REFERENCES agent_keys(id)
+      )
+    `);
+
+    // Scheduled Payment Executions log
+    db.run(`
+      CREATE TABLE IF NOT EXISTS scheduled_payment_executions (
+        id TEXT PRIMARY KEY,
+        scheduled_payment_id TEXT NOT NULL,
+        transfer_id TEXT,
+        status TEXT NOT NULL,
+        amount TEXT NOT NULL,
+        error_message TEXT,
+        executed_at INTEGER NOT NULL,
+        FOREIGN KEY (scheduled_payment_id) REFERENCES scheduled_payments(id),
+        FOREIGN KEY (transfer_id) REFERENCES transfers(id)
+      )
+    `);
+
     // Add refund columns to transfers table (migration for existing databases)
     db.run(`ALTER TABLE transfers ADD COLUMN refunded_at INTEGER`, (err) => {
       // Ignore error if column already exists
