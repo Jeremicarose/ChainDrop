@@ -16,72 +16,34 @@ export default function AgentsPage() {
   const [recentPayments, setRecentPayments] = useState([]);
   const [scheduledPayments, setScheduledPayments] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [externalWallet, setExternalWallet] = useState(null);
+  const [walletAddress, setWalletAddress] = useState(null);
 
-  // Detect external wallet (Rabby, MetaMask, etc.)
+  // Get wallet address - same pattern as SendPage
   useEffect(() => {
-    const detectExternalWallet = async () => {
-      if (window.ethereum) {
+    const getWalletAddress = async () => {
+      // First try Privy wallets
+      if (wallets?.length > 0) {
+        setWalletAddress(wallets[0].address);
+        return;
+      }
+
+      // Fallback: try external wallet (Rabby, MetaMask, etc.)
+      if (window.ethereum && authenticated && ready) {
         try {
-          // Try to get already connected accounts
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts && accounts.length > 0) {
-            setExternalWallet({ address: accounts[0] });
-            return;
+            setWalletAddress(accounts[0]);
           }
-          // Fallback to selectedAddress (older wallets)
-          if (window.ethereum.selectedAddress) {
-            setExternalWallet({ address: window.ethereum.selectedAddress });
-          }
-        } catch (error) {
-          console.error('Error detecting external wallet:', error);
-          // Fallback to selectedAddress on error
-          if (window.ethereum.selectedAddress) {
-            setExternalWallet({ address: window.ethereum.selectedAddress });
-          }
+        } catch (err) {
+          console.error('Error getting external wallet:', err);
         }
       }
     };
 
-    // Run detection immediately and when ready changes
-    detectExternalWallet();
-
-    // Also run after a short delay to catch late-loading wallets
-    const timeout = setTimeout(detectExternalWallet, 500);
-
-    // Listen for account changes
-    const handleAccountsChanged = (accounts) => {
-      if (accounts && accounts.length > 0) {
-        setExternalWallet({ address: accounts[0] });
-      } else {
-        setExternalWallet(null);
-      }
-    };
-
-    if (window.ethereum) {
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
+    if (authenticated && ready) {
+      getWalletAddress();
     }
-
-    return () => {
-      clearTimeout(timeout);
-      if (window.ethereum) {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-      }
-    };
-  }, [ready]);
-
-  // Get the active wallet address
-  const getWalletAddress = () => {
-    if (wallets && wallets.length > 0) {
-      return wallets[0].address;
-    }
-    if (externalWallet) {
-      return externalWallet.address;
-    }
-    return null;
-  };
-
-  const walletAddress = getWalletAddress();
+  }, [authenticated, ready, wallets]);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -145,7 +107,7 @@ export default function AgentsPage() {
   const handleCreateAgent = async (e) => {
     e.preventDefault();
     if (!walletAddress) {
-      alert('No wallet detected. Please make sure your wallet (Rabby/MetaMask) is unlocked and connected to this site.');
+      alert('Wallet not ready. Please wait a moment and try again.');
       return;
     }
     setLoading(true);
@@ -188,7 +150,7 @@ export default function AgentsPage() {
   const handleCreateScheduledPayment = async (e) => {
     e.preventDefault();
     if (!walletAddress) {
-      alert('No wallet connected');
+      alert('Wallet not ready. Please wait a moment and try again.');
       return;
     }
     setLoading(true);
@@ -334,7 +296,7 @@ export default function AgentsPage() {
   }
 
   // Not authenticated state
-  if (!authenticated && !walletAddress) {
+  if (!authenticated) {
     return (
       <div className="min-h-screen bg-[#fafbfc]">
         <Navigation />
@@ -385,47 +347,13 @@ export default function AgentsPage() {
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
-        <div className="mb-8 flex justify-between items-start">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
-              AI Agents
-            </h1>
-            <p className="text-gray-600 mt-1">
-              Natural language payments powered by AI
-            </p>
-          </div>
-          {/* Wallet Status */}
-          <div className="text-right">
-            {walletAddress ? (
-              <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-xl px-4 py-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-sm text-green-700 font-medium">
-                  {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
-                </span>
-              </div>
-            ) : (
-              <button
-                onClick={async () => {
-                  if (window.ethereum) {
-                    try {
-                      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-                      if (accounts.length > 0) {
-                        setExternalWallet({ address: accounts[0] });
-                      }
-                    } catch (error) {
-                      console.error('Failed to connect wallet:', error);
-                    }
-                  } else {
-                    alert('No wallet extension found. Please install Rabby or MetaMask.');
-                  }
-                }}
-                className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2 hover:bg-yellow-100 transition-colors"
-              >
-                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                <span className="text-sm text-yellow-700 font-medium">Connect Wallet</span>
-              </button>
-            )}
-          </div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900" style={{ fontFamily: "'Clash Display', sans-serif" }}>
+            AI Agents
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Natural language payments powered by AI
+          </p>
         </div>
 
         {/* Tab Navigation */}
@@ -1052,11 +980,13 @@ export default function AgentsPage() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Frequency (hours)</label>
                   <input
                     type="number"
+                    min="1"
                     value={scheduleForm.frequency}
                     onChange={(e) => setScheduleForm({ ...scheduleForm, frequency: e.target.value })}
                     placeholder="24"
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-[#1de4c6] focus:ring-2 focus:ring-[#1de4c6]/20 outline-none"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Minimum 1 hour between payments</p>
                 </div>
               )}
 
