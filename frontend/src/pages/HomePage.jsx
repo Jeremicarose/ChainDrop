@@ -32,7 +32,7 @@ export default function HomePage() {
             {/* The breakthrough badge */}
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#1de4c6]/20 to-[#3b82f6]/20 border border-[#1de4c6]/30 animate-slide-up">
               <span className="w-2 h-2 bg-[#1de4c6] rounded-full animate-pulse" />
-              <span className="text-[#1de4c6] text-sm font-medium">The recipient doesn't need a wallet yet</span>
+              <span className="text-[#1de4c6] text-sm font-medium">Built for Cronos x402 • Agentic Finance</span>
             </div>
 
             {/* THE HEADLINE - Punchy, memorable */}
@@ -389,10 +389,10 @@ export default function HomePage() {
               <span className="text-[#1de4c6] text-xs font-semibold uppercase tracking-wider">Automation</span>
             </div>
             <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              AI Agents for Bulk Payments
+              Programmable AI Agents
             </h2>
             <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              Create an agent with spending policies. It pays people automatically via API—perfect for payroll, rewards, or refunds.
+              Create autonomous agents with spending limits and recipient whitelists. Schedule recurring payments—payroll, subscriptions, rewards—all hands-off.
             </p>
           </div>
 
@@ -420,26 +420,32 @@ export default function HomePage() {
             <div className="bg-gradient-to-br from-white/5 to-white/[0.02] border border-white/10 rounded-2xl p-6 hover:border-[#1de4c6]/30 transition-colors">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#a855f7]/20 to-[#a855f7]/10 flex items-center justify-center mb-4">
                 <svg className="w-6 h-6 text-[#a855f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">API Keys</h3>
-              <p className="text-gray-400 text-sm">Secure keys for your scripts. Revoke anytime. Full audit trail.</p>
+              <h3 className="text-xl font-bold text-white mb-2">Scheduled Payments</h3>
+              <p className="text-gray-400 text-sm">Set recurring payments—daily, weekly, monthly. Runs automatically, hands-off.</p>
             </div>
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center mt-12 flex flex-wrap justify-center gap-4">
+            <button
+              onClick={() => authenticated ? navigate('/agents') : login()}
+              className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-[#1de4c6] to-[#00a28e] hover:opacity-90 rounded-xl text-white font-semibold transition-all"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <span>Try AI Chat</span>
+            </button>
             <button
               onClick={() => authenticated ? navigate('/agents') : login()}
               className="inline-flex items-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-[#1de4c6]/30 rounded-xl text-white font-semibold transition-all"
             >
-              <svg className="w-5 h-5 text-[#1de4c6]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              <svg className="w-5 h-5 text-[#a855f7]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span>{authenticated ? 'Create an AI Agent' : 'Get Started'}</span>
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
+              <span>Schedule Payments</span>
             </button>
           </div>
         </div>
@@ -535,12 +541,13 @@ export default function HomePage() {
               </div>
               <span className="font-semibold text-white">ChainDrop</span>
               <span className="text-gray-600">|</span>
-              <span>Value first, wallet later</span>
+              <span>Pay first. Onboard later.</span>
             </div>
-            <div className="flex items-center gap-6">
-              <a href="#" className="hover:text-white transition-colors">GitHub</a>
-              <a href="#" className="hover:text-white transition-colors">Docs</a>
-              <a href="#" className="hover:text-white transition-colors">Support</a>
+            <div className="flex items-center gap-4">
+              <span className="px-3 py-1 rounded-full bg-[#1de4c6]/10 border border-[#1de4c6]/20 text-[#1de4c6] text-xs font-medium">
+                Cronos x402 Hackathon
+              </span>
+              <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">GitHub</a>
             </div>
           </div>
         </div>
