@@ -1,3 +1,7 @@
+import { Buffer } from 'buffer';
+// Polyfill Buffer for browser (needed for ethers.js + Privy)
+window.Buffer = window.Buffer || Buffer;
+
 import { createRoot } from 'react-dom/client';
 import { PrivyProvider } from '@privy-io/react-auth';
 import { getDefaultChain, getSupportedChains } from './chains';

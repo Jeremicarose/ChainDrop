@@ -84,9 +84,9 @@ export default function SendPage() {
     setResult(null);
 
     try {
-      // Check if wallet is available
-      if (!window.ethereum) {
-        throw new Error('No wallet found. Please install Rabby or MetaMask.');
+      // Check if wallet is available (Privy OR external)
+      if (!wallets?.length && !window.ethereum) {
+        throw new Error('No wallet connected. Please connect your wallet first.');
       }
 
       // Step 1: Prepare - get recipient address and claim token from backend
