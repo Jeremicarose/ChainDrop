@@ -14,6 +14,7 @@ router.get('/transfer/recipient/:identifier', transferController.getByRecipient)
 router.get('/transfer/:claimToken', transferController.getByClaimToken);
 router.get('/transfer/sender/:address', transferController.getBySender);
 router.get('/transfer/stats', transferController.getStats);
+router.get('/transfer/recent', transferController.getRecent);
 
 // AI Agent routes
 router.post('/agent/create', agentController.create);

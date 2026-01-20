@@ -333,6 +333,17 @@ class TransferService {
   }
 
   /**
+   * Get recent transfers for activity feed
+   */
+  async getRecent(limit = 10) {
+    const transfers = await db.all(
+      `SELECT * FROM transfers ORDER BY created_at DESC LIMIT ?`,
+      [limit]
+    );
+    return transfers;
+  }
+
+  /**
    * Generate secure claim token
    */
   generateClaimToken() {

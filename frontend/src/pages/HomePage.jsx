@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { usePrivy } from '@privy-io/react-auth';
 import Navigation from '../components/Navigation';
+import ActivityFeed from '../components/ActivityFeed';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -473,6 +474,26 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ===== LIVE ACTIVITY FEED ===== */}
+      <section className="py-24 bg-gradient-to-b from-[#0a0a0f] to-[#111119] border-t border-white/5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 mb-4">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-green-400 text-xs font-semibold uppercase tracking-wider">Live</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              Recent Activity
+            </h2>
+            <p className="text-xl text-gray-400">
+              Real payments happening on ChainDrop right now
+            </p>
+          </div>
+
+          <ActivityFeed />
         </div>
       </section>
 

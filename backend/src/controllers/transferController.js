@@ -227,6 +227,43 @@ const transferController = {
   },
 
   /**
+   * GET /api/transfer/recent
+   * Get recent transfers for activity feed (anonymized)
+   */
+  async getRecent(req, res) {
+    try {
+      const limit = parseInt(req.query.limit) || 10;
+      const transfers = await transferService.getRecent(limit);
+
+      // Anonymize for public display
+      const anonymized = transfers.map(t => ({
+        id: t.id,
+        amount: t.amount,
+        status: t.status,
+        createdAt: t.created_at,
+        // Anonymize sender - show only first 6 and last 4 chars
+        senderShort: t.sender_address ?
+          `${t.sender_address.substring(0, 6)}...${t.sender_address.slice(-4)}` : 'Anonymous',
+        // Anonymize recipient - show type only
+        recipientType: t.identifier_type || 'email',
+        // Show if claimed
+        claimed: t.status === 'claimed'
+      }));
+
+      res.json({
+        success: true,
+        data: anonymized
+      });
+    } catch (error) {
+      console.error('Get recent transfers error:', error);
+      res.status(500).json({
+        error: 'Failed to get recent transfers',
+        message: error.message
+      });
+    }
+  },
+
+  /**
    * POST /api/transfer/estimate
    * Estimate counterfactual address and gas costs
    */
