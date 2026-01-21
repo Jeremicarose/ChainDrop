@@ -31,8 +31,20 @@ export default function SendPage() {
   // Auto-fill sender address from Privy wallet or external wallet
   useEffect(() => {
     const getWalletAddress = async () => {
-      // First try Privy wallets
+      // First try Privy EMBEDDED wallet specifically
+      const privyEmbeddedWallet = wallets?.find(w => w.walletClientType === 'privy');
+      if (privyEmbeddedWallet) {
+        console.log('Using Privy embedded wallet:', privyEmbeddedWallet.address);
+        setFormData((prev) => ({
+          ...prev,
+          senderAddress: privyEmbeddedWallet.address,
+        }));
+        return;
+      }
+
+      // Then try any other connected wallet
       if (wallets?.length > 0) {
+        console.log('Using connected wallet:', wallets[0].walletClientType, wallets[0].address);
         setFormData((prev) => ({
           ...prev,
           senderAddress: wallets[0].address,
@@ -40,11 +52,12 @@ export default function SendPage() {
         return;
       }
 
-      // Fallback: try external wallet (Rabby, MetaMask, etc.)
+      // Fallback: try external wallet directly (Rabby, MetaMask, etc.)
       if (window.ethereum && authenticated && ready) {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           if (accounts && accounts.length > 0) {
+            console.log('Using external wallet directly:', accounts[0]);
             setFormData((prev) => ({
               ...prev,
               senderAddress: accounts[0],
@@ -165,26 +178,42 @@ export default function SendPage() {
       // Use ethers.js with Privy wallet OR external wallet (Rabby/MetaMask)
       const { ethers } = await import('ethers');
       let provider;
+      let walletUsed = 'unknown';
 
-      // Try Privy embedded wallet first
-      if (wallets?.length > 0) {
-        console.log(`Using Privy wallet: ${wallets[0].walletClientType}`);
-        const privyProvider = await wallets[0].getEthereumProvider();
+      // Find Privy embedded wallet specifically (not external wallets like Rabby)
+      const privyEmbeddedWallet = wallets?.find(w => w.walletClientType === 'privy');
+
+      if (privyEmbeddedWallet) {
+        // Use Privy's embedded wallet
+        console.log(`Using Privy embedded wallet: ${privyEmbeddedWallet.address}`);
+        const privyProvider = await privyEmbeddedWallet.getEthereumProvider();
         provider = new ethers.BrowserProvider(privyProvider);
+        walletUsed = 'privy';
+      } else if (wallets?.length > 0) {
+        // Use any connected wallet (could be external like Rabby connected via Privy)
+        console.log(`Using connected wallet: ${wallets[0].walletClientType} - ${wallets[0].address}`);
+        const walletProvider = await wallets[0].getEthereumProvider();
+        provider = new ethers.BrowserProvider(walletProvider);
+        walletUsed = wallets[0].walletClientType;
       } else if (window.ethereum) {
-        // Fallback to external wallet (Rabby/MetaMask)
-        console.log('Using external wallet (Rabby/MetaMask)');
+        // Fallback to external wallet directly (Rabby/MetaMask)
+        console.log('Using external wallet directly (Rabby/MetaMask)');
         provider = new ethers.BrowserProvider(window.ethereum);
+        walletUsed = 'external';
       } else {
         throw new Error('No wallet available. Please connect a wallet.');
       }
 
+      console.log(`📱 Wallet type: ${walletUsed}`);
+
       const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      console.log(`🔑 Signer address: ${signerAddress}`);
 
       // Convert amount to wei
       const amountWei = ethers.parseEther(formData.amount);
 
-      console.log(`💸 Sending ${formData.amount} CRO to ${recipientAddress}...`);
+      console.log(`💸 Sending ${formData.amount} CRO from ${signerAddress} to ${recipientAddress}...`);
 
       const tx = await signer.sendTransaction({
         to: recipientAddress,
