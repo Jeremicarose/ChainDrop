@@ -74,40 +74,40 @@ export default function WalletPage() {
     }
   }, [authenticated, user]);
 
-  // Fetch recent transaction history from ChainDrop API + blockchain
+  // Fetch recent transaction history from ChainDrop API
   useEffect(() => {
     const fetchTransactionHistory = async () => {
-      if (!wallets || wallets.length === 0) return;
-
-      const address = wallets[0].address;
       const allTxs = [];
+      const identity = user?.email?.address || user?.phone?.number || user?.twitter?.username;
+      const address = wallets?.[0]?.address;
 
-      // 1. Fetch transfers sent BY this wallet from ChainDrop API
-      try {
-        const sentResponse = await fetch(`${API_URL}/transfer/sender/${address}`);
-        if (sentResponse.ok) {
-          const sentData = await sentResponse.json();
-          if (sentData.success && sentData.data) {
-            sentData.data.forEach(transfer => {
-              allTxs.push({
-                hash: transfer.tx_hash,
-                from: address,
-                to: transfer.recipient_address,
-                value: transfer.amount,
-                timestamp: Math.floor(transfer.created_at / 1000),
-                type: 'chaindrop_sent',
-                status: transfer.status,
-                recipient: transfer.recipient_identifier_original
+      // 1. Fetch transfers sent BY this wallet (if wallet exists)
+      if (address) {
+        try {
+          const sentResponse = await fetch(`${API_URL}/transfer/sender/${address}`);
+          if (sentResponse.ok) {
+            const sentData = await sentResponse.json();
+            if (sentData.success && sentData.data) {
+              sentData.data.forEach(transfer => {
+                allTxs.push({
+                  hash: transfer.tx_hash,
+                  from: address,
+                  to: transfer.recipient_address,
+                  value: transfer.amount,
+                  timestamp: Math.floor(transfer.created_at / 1000),
+                  type: 'chaindrop_sent',
+                  status: transfer.status,
+                  recipient: transfer.recipient_identifier_original
+                });
               });
-            });
+            }
           }
+        } catch (e) {
+          console.error('Error fetching sent transfers:', e);
         }
-      } catch (e) {
-        console.error('Error fetching sent transfers:', e);
       }
 
-      // 2. Fetch transfers sent TO this user's identity from ChainDrop API
-      const identity = user?.email?.address || user?.phone?.number || user?.twitter?.username;
+      // 2. Fetch ALL transfers sent TO this user's identity (including pending)
       if (identity) {
         try {
           const receivedResponse = await fetch(`${API_URL}/transfer/recipient/${encodeURIComponent(identity)}`);
@@ -115,16 +115,17 @@ export default function WalletPage() {
             const receivedData = await receivedResponse.json();
             if (receivedData.success && receivedData.data) {
               receivedData.data.forEach(transfer => {
-                // Only show claimed transfers as "received"
-                if (transfer.status === 'claimed') {
+                // Don't add duplicates (might overlap with sent)
+                if (!allTxs.find(t => t.hash === transfer.tx_hash)) {
                   allTxs.push({
                     hash: transfer.tx_hash,
                     from: transfer.sender_address,
-                    to: address,
+                    to: transfer.recipient_address,
                     value: transfer.amount,
                     timestamp: Math.floor((transfer.claimed_at || transfer.created_at) / 1000),
-                    type: 'chaindrop_received',
-                    status: transfer.status
+                    type: transfer.status === 'claimed' ? 'chaindrop_received' : 'chaindrop_pending',
+                    status: transfer.status,
+                    recipient: transfer.recipient_identifier_original
                   });
                 }
               });
@@ -179,7 +180,9 @@ export default function WalletPage() {
       setRecentTransactions(sortedTxs);
     };
 
-    if (authenticated && wallets.length > 0) {
+    // Fetch if authenticated AND (has wallet OR has identity)
+    const hasIdentity = user?.email?.address || user?.phone?.number || user?.twitter?.username;
+    if (authenticated && (wallets.length > 0 || hasIdentity)) {
       fetchTransactionHistory();
     }
   }, [authenticated, wallets, user]);
