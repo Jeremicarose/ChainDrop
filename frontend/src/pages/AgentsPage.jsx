@@ -16,34 +16,9 @@ export default function AgentsPage() {
   const [recentPayments, setRecentPayments] = useState([]);
   const [scheduledPayments, setScheduledPayments] = useState([]);
   const [selectedAgent, setSelectedAgent] = useState(null);
-  const [walletAddress, setWalletAddress] = useState(null);
-
-  // Get wallet address - same pattern as SendPage
-  useEffect(() => {
-    const getWalletAddress = async () => {
-      // First try Privy wallets
-      if (wallets?.length > 0) {
-        setWalletAddress(wallets[0].address);
-        return;
-      }
-
-      // Fallback: try external wallet (Rabby, MetaMask, etc.)
-      if (window.ethereum && authenticated && ready) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            setWalletAddress(accounts[0]);
-          }
-        } catch (err) {
-          console.error('Error getting external wallet:', err);
-        }
-      }
-    };
-
-    if (authenticated && ready) {
-      getWalletAddress();
-    }
-  }, [authenticated, ready, wallets]);
+  // ONLY use Privy embedded wallet - ignore external wallets like Rabby
+  const privyEmbeddedWallet = wallets?.find(w => w.walletClientType === 'privy');
+  const walletAddress = privyEmbeddedWallet?.address || null;
 
   const [formData, setFormData] = useState({
     name: '',

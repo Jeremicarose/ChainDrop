@@ -7,6 +7,10 @@ export default function AIChat({ onPaymentComplete }) {
   const { wallets } = useWallets();
   const { user } = usePrivy();
 
+  // ONLY use Privy embedded wallet - ignore external wallets like Rabby
+  const privyEmbeddedWallet = wallets?.find(w => w.walletClientType === 'privy');
+  const walletAddress = privyEmbeddedWallet?.address || null;
+
   // Get sender email from Privy user
   const senderEmail = user?.email?.address || user?.google?.email || user?.twitter?.username || null;
 
@@ -66,7 +70,7 @@ export default function AIChat({ onPaymentComplete }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [...messages, { role: 'user', content: userMessage }],
-          senderAddress: wallets[0]?.address
+          senderAddress: walletAddress
         })
       });
 
@@ -153,7 +157,7 @@ export default function AIChat({ onPaymentComplete }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message,
-          senderAddress: wallets[0]?.address,
+          senderAddress: walletAddress,
           senderEmail: senderEmail,
           autoExecute: true
         })

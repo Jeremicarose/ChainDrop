@@ -17,30 +17,10 @@ export default function WalletPage() {
   const [showReceiveModal, setShowReceiveModal] = useState(false);
   const [recentTransactions, setRecentTransactions] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [externalWallet, setExternalWallet] = useState(null);
 
-  // Try to get external wallet (Rabby, MetaMask, etc.)
-  useEffect(() => {
-    const getExternalWallet = async () => {
-      if (window.ethereum && authenticated && ready && (!privyWallets || privyWallets.length === 0)) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts && accounts.length > 0) {
-            setExternalWallet({ address: accounts[0], type: 'external' });
-          }
-        } catch (err) {
-          console.error('Error getting external wallet:', err);
-        }
-      }
-    };
-
-    if (authenticated && ready) {
-      getExternalWallet();
-    }
-  }, [authenticated, ready, privyWallets]);
-
-  // Combine Privy wallets with external wallet
-  const wallets = privyWallets?.length > 0 ? privyWallets : (externalWallet ? [externalWallet] : []);
+  // ONLY use Privy embedded wallet - ignore external wallets like Rabby
+  const privyEmbeddedWallet = privyWallets?.find(w => w.walletClientType === 'privy');
+  const wallets = privyEmbeddedWallet ? [privyEmbeddedWallet] : [];
 
   // Fetch balance
   useEffect(() => {
