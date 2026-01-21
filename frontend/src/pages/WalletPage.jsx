@@ -136,40 +136,42 @@ export default function WalletPage() {
         }
       }
 
-      // 3. Also try blockchain scan for direct transfers (limited to recent blocks)
-      try {
-        const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://evm-t3.cronos.org';
-        const provider = new ethers.JsonRpcProvider(rpcUrl);
-        const currentBlock = await provider.getBlockNumber();
+      // 3. Also try blockchain scan for direct transfers (only if wallet exists)
+      if (address) {
+        try {
+          const rpcUrl = import.meta.env.VITE_RPC_URL || 'https://evm-t3.cronos.org';
+          const provider = new ethers.JsonRpcProvider(rpcUrl);
+          const currentBlock = await provider.getBlockNumber();
 
-        // Only scan last 20 blocks to be fast
-        for (let i = currentBlock; i > Math.max(0, currentBlock - 20); i--) {
-          try {
-            const block = await provider.getBlock(i, true);
-            if (block && block.transactions) {
-              for (const tx of block.transactions) {
-                if (tx.to?.toLowerCase() === address.toLowerCase() ||
-                    tx.from?.toLowerCase() === address.toLowerCase()) {
-                  // Avoid duplicates with ChainDrop transfers
-                  if (!allTxs.find(t => t.hash === tx.hash)) {
-                    allTxs.push({
-                      hash: tx.hash,
-                      from: tx.from,
-                      to: tx.to,
-                      value: typeof tx.value === 'object' ? tx.value.toString() : String(tx.value),
-                      timestamp: block.timestamp,
-                      type: 'native'
-                    });
+          // Only scan last 20 blocks to be fast
+          for (let i = currentBlock; i > Math.max(0, currentBlock - 20); i--) {
+            try {
+              const block = await provider.getBlock(i, true);
+              if (block && block.transactions) {
+                for (const tx of block.transactions) {
+                  if (tx.to?.toLowerCase() === address.toLowerCase() ||
+                      tx.from?.toLowerCase() === address.toLowerCase()) {
+                    // Avoid duplicates with ChainDrop transfers
+                    if (!allTxs.find(t => t.hash === tx.hash)) {
+                      allTxs.push({
+                        hash: tx.hash,
+                        from: tx.from,
+                        to: tx.to,
+                        value: typeof tx.value === 'object' ? tx.value.toString() : String(tx.value),
+                        timestamp: block.timestamp,
+                        type: 'native'
+                      });
+                    }
                   }
                 }
               }
+            } catch (e) {
+              continue;
             }
-          } catch (e) {
-            continue;
           }
+        } catch (error) {
+          console.error('Error scanning blockchain:', error);
         }
-      } catch (error) {
-        console.error('Error scanning blockchain:', error);
       }
 
       // Sort by timestamp descending and take most recent 10
