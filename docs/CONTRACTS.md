@@ -1,8 +1,20 @@
 # ChainDrop Smart Contracts Documentation
 
-**Version:** 1.0
+**Version:** 2.0
 **Solidity:** 0.8.28
-**Network:** Base Sepolia (Testnet)
+**Network:** Cronos Testnet (Chain ID: 338)
+**Hackathon:** Cronos x402 - Agentic Finance
+
+## Deployed Contract Addresses (Cronos Testnet)
+
+| Contract | Address |
+|----------|---------|
+| EntryPoint | `0x216e29695D99cEfE8009B7486AD99aC0f5DA2ddd` |
+| AccountFactory | `0xD1F80bcFe28F36a66aFcc6eBd0BDD522cD25158C` |
+| ChainDropPaymaster | `0x4C6d079F051CfcFB48f32C858E937e51Bb17095c` |
+| ClaimVerifier | `0xC40A98006023B7A74e789e3EFc9E82f191eCB619` |
+
+**Explorer:** [https://explorer.cronos.org/testnet](https://explorer.cronos.org/testnet)
 
 ---
 
@@ -228,10 +240,10 @@ function claimFundsSimple(
 
 **Example:**
 ```solidity
-// Claim 50 USDC
+// Claim 50 CRO
 simpleAccount.claimFundsSimple(
-    USDC_ADDRESS,
-    50 * 10**6, // 50 USDC (6 decimals)
+    address(0) /* Native CRO */,
+    50 * 10**6, // 50 CRO (6 decimals)
     recipientWallet
 );
 ```
@@ -569,7 +581,7 @@ address ghostVault = accountFactory.getAddress(ZERO_ADDRESS, salt);
 // ========================================
 
 // Transfer USDC to Ghost Vault (address with no code)
-USDC.transfer(ghostVault, 50 * 10**6); // 50 USDC
+USDC.transfer(ghostVault, 50 * 10**6); // 50 CRO
 
 // ========================================
 // STEP 3: Recipient Claims (via UserOp)
@@ -617,7 +629,7 @@ entryPoint.handleOps([userOp], beneficiary);
 // RESULT
 // ========================================
 // 1. SimpleAccount deployed at ghostVault address
-// 2. 50 USDC claimed to recipientWallet
+// 2. 50 CRO claimed to recipientWallet
 // 3. Gas costs reimbursed from claim amount
 // 4. Platform fee (0.5%) collected by paymaster
 ```
@@ -713,12 +725,13 @@ function validatePaymasterUserOp(...)
 ### Prerequisites
 
 ```bash
+cd contracts
 npm install
 cp .env.example .env
 # Edit .env with:
-# - PRIVATE_KEY (deployer wallet)
-# - BASE_SEPOLIA_RPC_URL
-# - BASESCAN_API_KEY (for verification)
+# - PRIVATE_KEY (deployer wallet with testnet CRO)
+# - CRONOS_RPC_URL=https://evm-t3.cronos.org
+# - CHAIN_ID=338
 ```
 
 ### Compile Contracts
@@ -727,10 +740,16 @@ cp .env.example .env
 npx hardhat compile
 ```
 
-### Deploy to Base Sepolia
+### Deploy to Cronos Testnet
 
 ```bash
-npx hardhat run scripts/deploy.js --network baseSepolia
+npx hardhat run scripts/deploy.js --network cronosTestnet
+```
+
+### Verify on Cronos Explorer
+
+```bash
+npx hardhat verify --network cronosTestnet <CONTRACT_ADDRESS> <CONSTRUCTOR_ARGS>
 ```
 
 ### Deployment Script

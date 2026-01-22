@@ -1,8 +1,10 @@
 # ChainDrop API Documentation
 
-**Version:** 1.0
+**Version:** 2.0
 **Base URL:** `https://api.chaindrop.app` (Production - TBD)
 **Testnet URL:** `http://localhost:3000` (Local Development)
+**Network:** Cronos Testnet (Chain ID: 338)
+**Currency:** CRO (native token)
 
 ---
 
@@ -12,12 +14,11 @@
 - [Rate Limiting](#rate-limiting)
 - [Error Handling](#error-handling)
 - [Endpoints](#endpoints)
-  - [Create Transfer](#1-create-transfer)
-  - [Claim Transfer](#2-claim-transfer)
-  - [Estimate Transfer](#3-estimate-transfer)
-  - [Get Transfer Details](#4-get-transfer-details)
-  - [List Sender Transfers](#5-list-sender-transfers)
-  - [Get Platform Statistics](#6-get-platform-statistics)
+  - [Transfer Routes](#transfer-routes)
+  - [AI Routes](#ai-routes)
+  - [Agent Routes](#agent-routes)
+  - [Scheduled Payment Routes](#scheduled-payment-routes)
+  - [Price Routes](#price-routes)
 - [Webhooks](#webhooks)
 - [SDK Examples](#sdk-examples)
 - [Testing](#testing)
@@ -97,13 +98,78 @@ X-RateLimit-Reset: 1641916800
 
 ## Endpoints
 
-### 1. Create Transfer
+### Transfer Routes
 
-Send crypto to a recipient identifier (email, phone, social handle).
+All transfer endpoints are prefixed with `/api/transfer/`.
+
+#### Prepare Transfer
+
+Get the Ghost Vault address before sending funds. This is the recommended flow for user-signed transactions.
+
+**Endpoint:** `POST /api/transfer/prepare`
+
+```http
+POST /api/transfer/prepare
+Content-Type: application/json
+
+{
+  "senderAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "recipientIdentifier": "alice@example.com",
+  "amount": "10"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "ghostVaultAddress": "0x9f8b7c6d5e4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c",
+    "recipientIdentifier": "alice@example.com",
+    "amount": "10",
+    "amountWei": "10000000000000000000"
+  }
+}
+```
+
+#### Record Transfer
+
+After the user sends CRO to the Ghost Vault, call this to record the transfer and send the claim email.
+
+**Endpoint:** `POST /api/transfer/record`
+
+```http
+POST /api/transfer/record
+Content-Type: application/json
+
+{
+  "senderAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "recipientIdentifier": "alice@example.com",
+  "amount": "10",
+  "transactionHash": "0xabc123..."
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "claimToken": "abc123...",
+    "claimLink": "http://localhost:5173/claim/abc123...",
+    "ghostVaultAddress": "0x9f8b7c6d...",
+    "amount": "10",
+    "currency": "CRO"
+  }
+}
+```
+
+#### Legacy Send (Backend-Signed)
+
+For backwards compatibility. Backend signs the transaction (uses deployer wallet).
 
 **Endpoint:** `POST /api/transfer/send`
-
-#### Request
 
 ```http
 POST /api/transfer/send
@@ -112,154 +178,263 @@ Content-Type: application/json
 {
   "senderAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
   "recipientIdentifier": "alice@example.com",
-  "amount": "50",
-  "token": "USDC",
-  "message": "Happy Birthday! 🎉",
-  "expiryHours": 24
+  "amount": "10",
+  "message": "Happy Birthday!"
 }
 ```
 
-#### Parameters
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `senderAddress` | string | Yes | Sender's Ethereum address |
-| `recipientIdentifier` | string | Yes | Email, phone (+1234567890), or @handle |
-| `amount` | string | Yes | Amount to send (in token units) |
-| `token` | string | Yes | Token symbol (ETH, USDC, USDT, DAI) |
-| `message` | string | No | Optional message to recipient (max 280 chars) |
-| `expiryHours` | number | No | Hours until expiry (default: 24, max: 168) |
-
-#### Response
-
-```json
-{
-  "success": true,
-  "data": {
-    "transferId": "xfr_1a2b3c4d5e6f",
-    "claimToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "claimLink": "https://chaindrop.app/claim/eyJhbGc...",
-    "ghostVaultAddress": "0x9f8b7c6d5e4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c",
-    "amount": "50",
-    "token": "USDC",
-    "estimatedGas": "0.15",
-    "platformFee": "0.50",
-    "netToRecipient": "49.35",
-    "expiresAt": "2026-01-07T08:00:00Z",
-    "createdAt": "2026-01-06T08:00:00Z"
-  }
-}
-```
-
-#### cURL Example
-
-```bash
-curl -X POST https://api.chaindrop.app/api/transfer/send \
-  -H "Content-Type: application/json" \
-  -d '{
-    "senderAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-    "recipientIdentifier": "alice@example.com",
-    "amount": "50",
-    "token": "USDC"
-  }'
-```
-
----
-
-### 2. Claim Transfer
+#### Claim Transfer
 
 Claim funds from a Ghost Vault to a wallet address.
 
 **Endpoint:** `POST /api/transfer/claim`
-
-#### Request
 
 ```http
 POST /api/transfer/claim
 Content-Type: application/json
 
 {
-  "claimToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "recipientWalletAddress": "0x1234567890abcdef1234567890abcdef12345678",
-  "claimProof": "0xabcdef1234567890..."
+  "claimToken": "abc123...",
+  "recipientWalletAddress": "0x1234567890abcdef1234567890abcdef12345678"
 }
 ```
 
-#### Parameters
-
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `claimToken` | string | Yes | JWT token from claim link |
-| `recipientWalletAddress` | string | Yes | Destination wallet address |
-| `claimProof` | string | No | Verification signature (auto-generated if using OAuth) |
-
-#### Response
-
+**Response:**
 ```json
 {
   "success": true,
   "data": {
-    "transferId": "xfr_1a2b3c4d5e6f",
     "transactionHash": "0xabc123def456...",
-    "deployedAccountAddress": "0x9f8b7c6d5e4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c",
-    "claimedAmount": "49.35",
-    "token": "USDC",
-    "gasCostDeducted": "0.15",
-    "platformFee": "0.50",
-    "claimedAt": "2026-01-06T09:30:00Z",
-    "blockNumber": 12345678
+    "claimedAmount": "10",
+    "currency": "CRO",
+    "claimedAt": "2026-01-06T09:30:00Z"
   }
 }
 ```
 
-#### cURL Example
+#### Get Transfer by Claim Token
 
-```bash
-curl -X POST https://api.chaindrop.app/api/transfer/claim \
-  -H "Content-Type: application/json" \
-  -d '{
-    "claimToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "recipientWalletAddress": "0x1234567890abcdef1234567890abcdef12345678"
-  }'
-```
+**Endpoint:** `GET /api/transfer/:claimToken`
+
+#### Get Recent Transfers
+
+**Endpoint:** `GET /api/transfer/recent?limit=5`
+
+#### Get Platform Stats
+
+**Endpoint:** `GET /api/transfer/stats`
 
 ---
 
-### 3. Estimate Transfer
+### AI Routes
 
-Get Ghost Vault address and gas estimate before sending funds.
+Natural language payment parsing powered by Claude.
 
-**Endpoint:** `POST /api/transfer/estimate`
+#### Parse Payment Intent
 
-#### Request
+Parse a natural language message into structured payment data.
+
+**Endpoint:** `POST /api/ai/parse`
 
 ```http
-POST /api/transfer/estimate
+POST /api/ai/parse
+Content-Type: application/json
+
+{
+  "message": "Send $5 to alice@company.com for lunch"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "amount": "71.43",
+    "amountUsd": 5.0,
+    "recipientIdentifier": "alice@company.com",
+    "recipientType": "email",
+    "reason": "lunch"
+  }
+}
+```
+
+#### Execute AI Payment
+
+Parse and execute a payment in one call.
+
+**Endpoint:** `POST /api/ai/execute`
+
+```http
+POST /api/ai/execute
+Content-Type: application/json
+
+{
+  "message": "Send $5 to alice@company.com",
+  "walletAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "autoExecute": true
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "executed": true,
+  "payment": {
+    "amount": "71.43",
+    "recipientIdentifier": "alice@company.com",
+    "claimLink": "http://localhost:5173/claim/abc123..."
+  }
+}
+```
+
+#### AI Chat
+
+Interactive chat endpoint for conversational payments.
+
+**Endpoint:** `POST /api/ai/chat`
+
+---
+
+### Agent Routes
+
+API agents for programmatic payments.
+
+#### Create Agent
+
+**Endpoint:** `POST /api/agent/create`
+
+```http
+POST /api/agent/create
+Content-Type: application/json
+
+{
+  "ownerAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "name": "Payroll Bot",
+  "policies": {
+    "dailyLimit": "1000",
+    "allowedRecipients": "*@company.com"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "api_key": "cd_agent_abc123...",
+    "name": "Payroll Bot",
+    "status": "active"
+  }
+}
+```
+
+#### Execute Agent Payment
+
+**Endpoint:** `POST /api/agent/pay`
+
+```http
+POST /api/agent/pay
+X-API-Key: cd_agent_abc123...
 Content-Type: application/json
 
 {
   "recipientIdentifier": "alice@example.com",
-  "amount": "50",
-  "token": "USDC"
+  "identifierType": "email",
+  "amount": "10"
 }
 ```
 
-#### Response
+#### List Agents
 
+**Endpoint:** `GET /api/agent/list?ownerAddress=0x...`
+
+---
+
+### Scheduled Payment Routes
+
+Programmable recurring payments.
+
+#### Create Scheduled Payment
+
+**Endpoint:** `POST /api/agent/schedule/create`
+
+```http
+POST /api/agent/schedule/create
+Content-Type: application/json
+
+{
+  "agentKeyId": 1,
+  "ownerAddress": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "name": "Weekly Allowance",
+  "recipientIdentifier": "kid@family.com",
+  "recipientType": "email",
+  "amount": "10",
+  "scheduleType": "weekly"
+}
+```
+
+**Schedule Types:**
+- `once` - One-time future payment
+- `daily` - Every day
+- `weekly` - Every 7 days
+- `biweekly` - Every 14 days
+- `monthly` - Every 30 days
+- `custom` - Specify `frequency` in hours
+
+#### List Scheduled Payments
+
+**Endpoint:** `GET /api/agent/schedule/list?ownerAddress=0x...`
+
+#### Pause/Resume/Cancel
+
+- `POST /api/agent/schedule/:id/pause`
+- `POST /api/agent/schedule/:id/resume`
+- `POST /api/agent/schedule/:id/cancel`
+
+---
+
+### Price Routes
+
+CRO price and USD conversion.
+
+#### Get CRO Price
+
+**Endpoint:** `GET /api/price/cro`
+
+**Response:**
 ```json
 {
   "success": true,
-  "data": {
-    "ghostVaultAddress": "0x9f8b7c6d5e4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c",
-    "amount": "50",
-    "token": "USDC",
-    "estimatedGas": "0.15",
-    "platformFee": "0.50",
-    "netToRecipient": "49.35",
-    "feePercentage": 1.0,
-    "currentGasPrice": "15 gwei",
-    "estimatedClaimTime": "30 seconds"
-  }
+  "price": 0.07,
+  "currency": "USD"
+}
+```
+
+#### Convert Amount
+
+**Endpoint:** `POST /api/price/convert`
+
+```http
+POST /api/price/convert
+Content-Type: application/json
+
+{
+  "amount": 5,
+  "from": "USD"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "amountCro": "71.43",
+  "amountUsd": 5.0,
+  "price": 0.07
 }
 ```
 

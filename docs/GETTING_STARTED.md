@@ -114,7 +114,18 @@ cd ../contracts && npm install
 
 ## Local Development Setup
 
-### 1. Smart Contracts Setup
+### 1. Smart Contracts (Already Deployed)
+
+Contracts are already deployed on Cronos Testnet:
+
+| Contract | Address |
+|----------|---------|
+| EntryPoint | `0x216e29695D99cEfE8009B7486AD99aC0f5DA2ddd` |
+| AccountFactory | `0xD1F80bcFe28F36a66aFcc6eBd0BDD522cD25158C` |
+| ChainDropPaymaster | `0x4C6d079F051CfcFB48f32C858E937e51Bb17095c` |
+| ClaimVerifier | `0xC40A98006023B7A74e789e3EFc9E82f191eCB619` |
+
+**If you need to redeploy:**
 
 ```bash
 cd contracts
@@ -124,16 +135,15 @@ cp .env.example .env
 
 # Edit .env with your values
 # Required:
-# - BASE_SEPOLIA_RPC_URL (get from Alchemy/Infura)
+# - CRONOS_RPC_URL (https://evm-t3.cronos.org)
 # - PRIVATE_KEY (deployer wallet private key)
-# - BASESCAN_API_KEY (for contract verification)
 ```
 
 **.env example:**
 ```bash
-BASE_SEPOLIA_RPC_URL=https://base-sepolia.g.alchemy.com/v2/YOUR_KEY
+CRONOS_RPC_URL=https://evm-t3.cronos.org
+CHAIN_ID=338
 PRIVATE_KEY=0xYourPrivateKey
-BASESCAN_API_KEY=YourBasescanApiKey
 ```
 
 **Compile contracts:**
@@ -141,25 +151,9 @@ BASESCAN_API_KEY=YourBasescanApiKey
 npx hardhat compile
 ```
 
-**Run tests:**
+**Deploy to Cronos Testnet:**
 ```bash
-npx hardhat test
-```
-
-**Deploy to Base Sepolia:**
-```bash
-npx hardhat run scripts/deploy.js --network baseSepolia
-```
-
-**Expected output:**
-```
-Deploying contracts...
-EntryPoint deployed to: 0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789
-AccountFactory deployed to: 0x1234...
-ChainDropPaymaster deployed to: 0x5678...
-ClaimVerifier deployed to: 0x9abc...
-
-Deployment complete!
+npx hardhat run scripts/deploy.js --network cronosTestnet
 ```
 
 ### 2. Backend Setup
@@ -170,7 +164,7 @@ cd backend
 # Copy environment template
 cp .env.example .env
 
-# Edit .env with deployed contract addresses
+# Edit .env with your configuration
 ```
 
 **.env example:**
@@ -179,51 +173,78 @@ cp .env.example .env
 PORT=3000
 NODE_ENV=development
 
-# Blockchain
-RPC_URL=https://base-sepolia.g.alchemy.com/v2/YOUR_KEY
-CHAIN_ID=84532
+# Blockchain - Cronos Testnet
+RPC_URL=https://evm-t3.cronos.org
+CHAIN_ID=338
 
-# Deployed Contracts (from previous step)
-ACCOUNT_FACTORY_ADDRESS=0x1234...
-PAYMASTER_ADDRESS=0x5678...
-CLAIM_VERIFIER_ADDRESS=0x9abc...
-ENTRY_POINT_ADDRESS=0x5FF137D4b0FDCD49DcA30c7CF57E578a026d2789
+# Deployed Contracts (already on Cronos Testnet)
+ACCOUNT_FACTORY_ADDRESS=0xD1F80bcFe28F36a66aFcc6eBd0BDD522cD25158C
+PAYMASTER_ADDRESS=0x4C6d079F051CfcFB48f32C858E937e51Bb17095c
+CLAIM_VERIFIER_ADDRESS=0xC40A98006023B7A74e789e3EFc9E82f191eCB619
+ENTRY_POINT_ADDRESS=0x216e29695D99cEfE8009B7486AD99aC0f5DA2ddd
 
 # Admin Wallet (for sending transactions)
 ADMIN_PRIVATE_KEY=0xYourPrivateKey
 
-# Database
-DATABASE_URL=./data/chaindrop.db
+# Claim Link Base URL
+CLAIM_LINK_BASE_URL=http://localhost:5173/claim
 
-# JWT Secret (generate with: openssl rand -base64 32)
-JWT_SECRET=your-secure-jwt-secret-here
+# Email Configuration (Resend)
+RESEND_API_KEY=your-resend-api-key
+EMAIL_FROM=ChainDrop <onboarding@chaindrop.app>
 
-# Optional: External Services
-SENDGRID_API_KEY=your-sendgrid-key
-PRIVY_API_KEY=your-privy-key
-```
+# Explorer URL
+EXPLORER_URL=https://explorer.cronos.org/testnet
 
-**Initialize database:**
-```bash
-npm run db:push
+# AI Configuration
+ANTHROPIC_API_KEY=your-anthropic-api-key
+
+# JWT Secret
+JWT_SECRET=your-secure-jwt-secret
 ```
 
 **Start development server:**
 ```bash
 npm run dev
+# or
+node src/index.js
 ```
 
 **Expected output:**
 ```
 ChainDrop API Server
-✓ Database connected
-✓ Blockchain connected (Base Sepolia)
+✓ Blockchain connected (Cronos Testnet - 338)
 ✓ Contracts initialized
-  - AccountFactory: 0x1234...
-  - Paymaster: 0x5678...
-  - ClaimVerifier: 0x9abc...
+  - AccountFactory: 0xD1F80bc...
+  - Paymaster: 0x4C6d079...
+  - ClaimVerifier: 0xC40A980...
 
 🚀 Server running on http://localhost:3000
+```
+
+### 3. Frontend Setup
+
+```bash
+cd frontend
+
+# Install dependencies
+npm install
+
+# Create .env file
+echo "VITE_API_URL=http://localhost:3000/api" > .env
+echo "VITE_PRIVY_APP_ID=your-privy-app-id" >> .env
+echo "VITE_CHAIN=cronos-testnet" >> .env
+
+# Start development server
+npm run dev
+```
+
+**Expected output:**
+```
+  VITE v5.x.x  ready in xxx ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: use --host to expose
 ```
 
 ### 3. Test API
@@ -246,21 +267,29 @@ curl http://localhost:3000/health
 
 ## Your First Transfer
 
-### Using cURL
+### Using the Web App (Recommended)
 
-**Step 1: Get testnet tokens**
-- Base Sepolia ETH: [Base Faucet](https://www.coinbase.com/faucets/base-ethereum-goerli-faucet)
-- Test USDC: Use contract `0x036CbD53842c5426634e7929541eC2318f3dCF7e`
+1. Visit `http://localhost:5173`
+2. Sign in with your email (Privy creates a wallet automatically)
+3. Fund your wallet with testnet CRO from [Cronos Faucet](https://cronos.org/faucet)
+4. Go to `/send` and enter:
+   - Amount: `$5` (auto-converts to CRO)
+   - Recipient: `test@example.com`
+5. Click Send - recipient receives email with claim link
 
-**Step 2: Create transfer**
+### Using cURL (API)
+
+**Step 1: Get testnet CRO**
+- Cronos Faucet: [https://cronos.org/faucet](https://cronos.org/faucet)
+
+**Step 2: Prepare transfer**
 ```bash
-curl -X POST http://localhost:3000/api/transfer/send \
+curl -X POST http://localhost:3000/api/transfer/prepare \
   -H "Content-Type: application/json" \
   -d '{
     "senderAddress": "0xYourWalletAddress",
     "recipientIdentifier": "test@example.com",
-    "amount": "10",
-    "token": "USDC"
+    "amount": "10"
   }'
 ```
 
@@ -269,37 +298,44 @@ curl -X POST http://localhost:3000/api/transfer/send \
 {
   "success": true,
   "data": {
-    "transferId": "xfr_abc123",
-    "claimToken": "eyJhbGc...",
-    "claimLink": "http://localhost:3000/claim/eyJhbGc...",
     "ghostVaultAddress": "0x9f8b7c6d...",
+    "recipientIdentifier": "test@example.com",
     "amount": "10",
-    "token": "USDC",
-    "estimatedGas": "0.05",
-    "platformFee": "0.10",
-    "netToRecipient": "9.85",
-    "expiresAt": "2026-01-07T08:00:00Z"
+    "amountWei": "10000000000000000000"
   }
 }
 ```
 
-**Step 3: Send funds to Ghost Vault**
+**Step 3: Send CRO to Ghost Vault**
 
-Using MetaMask or your wallet:
+Using ethers.js or your wallet:
 ```javascript
-// Transfer USDC to Ghost Vault address
-await usdcContract.transfer(
-  "0x9f8b7c6d...", // ghostVaultAddress from response
-  10 * 10**6      // 10 USDC (6 decimals)
-);
+// Transfer CRO to Ghost Vault address
+const tx = await signer.sendTransaction({
+  to: "0x9f8b7c6d...", // ghostVaultAddress from response
+  value: ethers.parseEther("10") // 10 CRO
+});
+await tx.wait();
 ```
 
-**Step 4: Claim transfer**
+**Step 4: Record the transfer**
+```bash
+curl -X POST http://localhost:3000/api/transfer/record \
+  -H "Content-Type: application/json" \
+  -d '{
+    "senderAddress": "0xYourAddress",
+    "recipientIdentifier": "test@example.com",
+    "amount": "10",
+    "transactionHash": "0xYourTxHash"
+  }'
+```
+
+**Step 5: Claim transfer (recipient)**
 ```bash
 curl -X POST http://localhost:3000/api/transfer/claim \
   -H "Content-Type: application/json" \
   -d '{
-    "claimToken": "eyJhbGc...",
+    "claimToken": "abc123...",
     "recipientWalletAddress": "0xRecipientAddress"
   }'
 ```
@@ -309,13 +345,9 @@ curl -X POST http://localhost:3000/api/transfer/claim \
 {
   "success": true,
   "data": {
-    "transferId": "xfr_abc123",
     "transactionHash": "0xdef456...",
-    "deployedAccountAddress": "0x9f8b7c6d...",
-    "claimedAmount": "9.85",
-    "token": "USDC",
-    "gasCostDeducted": "0.05",
-    "platformFee": "0.10"
+    "claimedAmount": "10",
+    "currency": "CRO"
   }
 }
 ```
@@ -350,137 +382,177 @@ chaindrop.on('transfer.claimed', (event) => {
 
 ## Common Use Cases
 
-### 1. Remittance Service
+### 1. AI-Powered Payments
+
+Use natural language to send payments via the AI Chat:
+
+```
+"Send $25 to alice@company.com for the design work"
+"Pay @bob 50 CRO for coffee"
+"Transfer 100 CRO to john@gmail.com"
+```
+
+The AI extracts:
+- Amount (converts USD to CRO automatically)
+- Recipient identifier (email, phone, @handle)
+- Optional memo/reason
+
+### 2. Scheduled/Recurring Payments
+
+Set up programmable payments via API agents:
 
 ```javascript
-// Send money internationally
-const transfer = await fetch('http://localhost:3000/api/transfer/send', {
+// Create an API agent
+const agent = await fetch('http://localhost:3000/api/agent/create', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    senderAddress: '0xYourAddress',
-    recipientIdentifier: '+1234567890', // Phone number
-    amount: '100',
-    token: 'USDC',
-    message: 'Rent payment for January'
+    ownerAddress: '0xYourAddress',
+    name: 'Payroll Bot',
+    policies: {
+      dailyLimit: '1000',
+      allowedRecipients: '*@company.com'
+    }
   })
 });
 
-// Email the claim link to recipient
-await sendEmail({
-  to: 'recipient@email.com',
-  subject: 'You\'ve received $100 USDC',
-  body: `Click to claim: ${transfer.claimLink}`
+// Schedule weekly payment
+await fetch('http://localhost:3000/api/agent/schedule/create', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    agentKeyId: agent.data.id,
+    ownerAddress: '0xYourAddress',
+    name: 'Weekly Allowance',
+    recipientIdentifier: 'kid@family.com',
+    amount: '10',
+    scheduleType: 'weekly'
+  })
 });
 ```
 
-### 2. Payroll for DAO
+### 3. Payroll for DAO/Team
 
 ```javascript
-// Pay 10 contributors
+// Pay multiple contributors
 const contributors = [
-  { identifier: 'alice@example.com', amount: '1000' },
-  { identifier: 'bob@example.com', amount: '1500' },
-  // ... more contributors
+  { identifier: 'alice@example.com', amount: '100' },
+  { identifier: 'bob@example.com', amount: '150' },
 ];
 
 for (const contributor of contributors) {
-  const transfer = await fetch('http://localhost:3000/api/transfer/send', {
+  // Use AI parsing for natural language
+  await fetch('http://localhost:3000/api/ai/execute', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      senderAddress: daoTreasuryAddress,
-      recipientIdentifier: contributor.identifier,
-      amount: contributor.amount,
-      token: 'USDC'
+      message: `Send ${contributor.amount} CRO to ${contributor.identifier}`,
+      walletAddress: daoTreasuryAddress,
+      autoExecute: true
     })
   });
 
-  console.log(`Sent ${contributor.amount} USDC to ${contributor.identifier}`);
+  console.log(`Sent ${contributor.amount} CRO to ${contributor.identifier}`);
 }
 ```
 
-### 3. Airdrop Campaign
+### 4. Onboarding New Users
+
+Send crypto to anyone by email - they don't need a wallet:
 
 ```javascript
-// Airdrop to Twitter followers
-const followers = ['@alice', '@bob', '@charlie'];
+// Onboard new users with a small amount of CRO
+const newUsers = ['newuser1@gmail.com', 'newuser2@gmail.com'];
 
-for (const handle of followers) {
-  await fetch('http://localhost:3000/api/transfer/send', {
+for (const email of newUsers) {
+  await fetch('http://localhost:3000/api/transfer/prepare', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       senderAddress: '0xYourAddress',
-      recipientIdentifier: handle,
-      amount: '10',
-      token: 'USDC',
-      message: 'Thanks for following! 🎉'
+      recipientIdentifier: email,
+      amount: '5' // 5 CRO welcome bonus
     })
   });
 }
+// Recipients receive email, sign in with Privy, and claim with 1 click
 ```
 
 ---
 
 ## Troubleshooting
 
-### Contract Deployment Issues
+### Wallet Issues
 
-**Error: Insufficient funds**
+**Error: "No wallet found"**
 ```bash
-# Solution: Get testnet ETH
-Visit: https://www.coinbase.com/faucets/base-ethereum-goerli-faucet
+# Solution: Make sure you're signed in with Privy
+# The app uses Privy embedded wallets, not external wallets like MetaMask
+1. Click "Sign In" in the navigation
+2. Enter your email address
+3. Privy automatically creates a wallet for you
 ```
 
-**Error: Invalid RPC URL**
+**Error: External wallet showing instead of Privy wallet**
 ```bash
-# Solution: Get free RPC from Alchemy
-1. Sign up at https://www.alchemy.com/
-2. Create new app (Base Sepolia)
-3. Copy HTTP URL to .env
+# Solution: ChainDrop is designed to use Privy embedded wallets only
+# If you have Rabby or MetaMask, their addresses may appear in some contexts
+# but transactions are sent from your Privy wallet
 ```
 
 ### Backend Issues
 
-**Error: Cannot connect to database**
+**Error: Endpoint not found**
 ```bash
-# Solution: Initialize database
-npm run db:push
+# Solution: Make sure backend is running from correct directory
+cd /Users/yourpath/chaindrop-mvp/backend
+node src/index.js
 ```
 
 **Error: Contract not found at address**
 ```bash
-# Solution: Redeploy contracts or update .env
-cd contracts
-npx hardhat run scripts/deploy.js --network baseSepolia
-
-# Copy new addresses to backend/.env
+# Solution: Verify contract addresses in .env match deployed contracts
+ACCOUNT_FACTORY_ADDRESS=0xD1F80bcFe28F36a66aFcc6eBd0BDD522cD25158C
+PAYMASTER_ADDRESS=0x4C6d079F051CfcFB48f32C858E937e51Bb17095c
+CLAIM_VERIFIER_ADDRESS=0xC40A98006023B7A74e789e3EFc9E82f191eCB619
+ENTRY_POINT_ADDRESS=0x216e29695D99cEfE8009B7486AD99aC0f5DA2ddd
 ```
 
 **Error: Transaction underpriced**
 ```bash
-# Solution: Increase gas price in blockchain service
-# Edit backend/src/services/blockchainService.js:
-maxFeePerGas: ethers.parseUnits('20', 'gwei'), // Increase from 2
+# Solution: Cronos testnet sometimes needs higher gas
+# Check backend/src/services/blockchainService.js for gas settings
 ```
 
-### API Issues
+### Frontend Issues
 
 **Error: CORS blocked**
 ```bash
-# Solution: Add your frontend URL to CORS whitelist
-# Edit backend/src/index.js:
-app.use(cors({
-  origin: ['http://localhost:3001', 'https://yourapp.com']
-}));
+# Solution: Ensure backend CORS allows frontend URL
+# In backend/.env:
+ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000
 ```
 
-**Error: Invalid claim token**
+**Error: "Buffer is not defined"**
 ```bash
-# Solution: Check JWT_SECRET matches in .env
-# Regenerate claim token:
-curl -X GET http://localhost:3000/api/transfer/:oldClaimToken
+# Solution: Buffer polyfill should be in frontend/src/main.jsx
+# Make sure this is at the top:
+import { Buffer } from 'buffer';
+window.Buffer = window.Buffer || Buffer;
+```
+
+### AI Chat Issues
+
+**Error: AI not parsing messages**
+```bash
+# Solution: Verify ANTHROPIC_API_KEY is set in backend/.env
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+**Error: Claim link not working**
+```bash
+# Solution: Check CLAIM_LINK_BASE_URL in backend/.env
+CLAIM_LINK_BASE_URL=http://localhost:5173/claim
 ```
 
 ---
