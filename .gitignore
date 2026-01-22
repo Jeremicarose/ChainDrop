@@ -50,4 +50,9 @@ coverage/
 .cache/
 tmp/
 temp/
-# Auto-commit test
+
+# Agent skills (local configurations)
+.agents/
+.claude/
+.cursor/
+.windsurf/

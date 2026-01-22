@@ -7,7 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "remotion:studio": "remotion studio src/remotion/index.jsx",
+    "remotion:render": "remotion render src/remotion/index.jsx TransactionFlow out/transaction-flow.mp4",
+    "remotion:render:payment": "remotion render src/remotion/index.jsx PaymentSent out/payment-sent.mp4",
+    "remotion:render:claim": "remotion render src/remotion/index.jsx ClaimAnimation out/claim-animation.mp4",
+    "remotion:render:activity": "remotion render src/remotion/index.jsx ActivityFeed out/activity-feed.mp4",
+    "remotion:render:all": "npm run remotion:render && npm run remotion:render:payment && npm run remotion:render:claim && npm run remotion:render:activity"
   },
   "dependencies": {
     "@privy-io/react-auth": "^3.10.1",
