@@ -2,6 +2,9 @@
 
 Welcome to ChainDrop! This guide will help you get up and running quickly, whether you're a developer integrating ChainDrop or a user sending your first transfer.
 
+**Network:** Cronos Testnet (Chain ID: 338)
+**Hackathon:** Cronos x402 - Agentic Finance
+
 ---
 
 ## Table of Contents
@@ -19,57 +22,64 @@ Welcome to ChainDrop! This guide will help you get up and running quickly, wheth
 
 ### What You Need
 
-- A crypto wallet (MetaMask, Rainbow, Coinbase Wallet, etc.)
-- Some crypto to send (ETH, USDC, USDT on Base network)
-- Recipient's email, phone number, or social handle
+- **An email address** - That's it! ChainDrop creates a Privy embedded wallet for you automatically
+- Some CRO to send (on Cronos Testnet)
+- Recipient's email address, phone number, or social handle
 
 ### Sending Your First Transfer
 
-**Step 1: Visit ChainDrop**
-```
-https://chaindrop.app (coming soon - currently testnet only)
-```
+**Step 1: Sign In**
+- Visit ChainDrop and click "Sign In"
+- Enter your email address
+- A Privy embedded wallet is automatically created for you
 
-**Step 2: Enter Recipient Info**
-- Email: `alice@example.com`
-- Phone: `+1234567890`
-- Twitter: `@alice`
+**Step 2: Fund Your Wallet**
+- Go to the Wallet page to see your address
+- Get testnet CRO from the [Cronos Faucet](https://cronos.org/faucet)
+- Or transfer CRO from another wallet
 
-**Step 3: Choose Amount and Token**
-- Amount: `50`
-- Token: `USDC`
+**Step 3: Go to Send Page**
+- Click "Send" in the navigation
+- You'll see a USD-first amount input
 
-**Step 4: Confirm in Your Wallet**
-- Approve the transaction
-- Wait for confirmation (< 30 seconds)
+**Step 4: Enter Payment Details**
+- Enter amount in USD (e.g., `$5`)
+- CRO amount is automatically calculated
+- Enter recipient's email: `alice@example.com`
 
-**Step 5: Share Claim Link**
-- Copy the generated link
-- Send via email, SMS, WhatsApp, etc.
+**Step 5: Confirm Transaction**
+- Review the payment details
+- Click "Send" to confirm
+- Your Privy wallet signs the transaction
 
-**Done!** Recipient can claim anytime in the next 24 hours.
+**Done!** Recipient receives an email with a claim link.
+
+### Using AI Chat (Recommended)
+
+The easiest way to send payments is with natural language:
+
+1. Go to **Agents** page
+2. Click the **AI Chat** tab
+3. Type: `"Send $5 to alice@company.com for lunch"`
+4. AI extracts: recipient, amount, and converts to CRO
+5. Confirm with "yes" to send
 
 ### Claiming Funds
 
 **Step 1: Click Claim Link**
-```
-https://chaindrop.app/claim/eyJhbGc...
-```
+- Recipient gets an email with a claim link
+- Link format: `https://chaindrop.app/claim/abc123...`
 
-**Step 2: Verify Your Identity**
-- Email: Enter verification code sent to your email
-- Phone: Enter SMS code
-- Social: Authorize with your social account
+**Step 2: Sign In**
+- Sign in with email (same as sender experience)
+- Privy creates an embedded wallet automatically
 
-**Step 3: Enter Wallet Address**
-- If you have a wallet: Paste your address
-- If you don't: We'll create one for you
-
-**Step 4: Claim**
+**Step 3: Claim**
 - Click "Claim Funds"
-- Wait for confirmation (< 60 seconds)
+- Funds are transferred to your Privy wallet
+- No gas fees required!
 
-**Done!** Funds are in your wallet, no gas fees paid!
+**Done!** Funds are in your wallet, visible on the Wallet page.
 
 ---
 
@@ -80,21 +90,24 @@ https://chaindrop.app/claim/eyJhbGc...
 - **Node.js:** v18 or higher
 - **npm or yarn:** Latest version
 - **Git:** For cloning the repository
-- **Wallet:** With Base Sepolia testnet ETH
+- **CRO:** Cronos Testnet CRO for gas fees
 
 ### Quick Install
 
 ```bash
 # Clone the repository
-git clone https://github.com/Jeremicarose/ChainDrop.git
-cd ChainDrop
+git clone https://github.com/Jeremicarose/chaindrop-mvp.git
+cd chaindrop-mvp
 
 # Install all dependencies
-npm run install:all
+# Frontend
+cd frontend && npm install
 
-# Or install individually
-cd contracts && npm install
+# Backend
 cd ../backend && npm install
+
+# Contracts (optional - already deployed)
+cd ../contracts && npm install
 ```
 
 ---

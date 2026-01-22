@@ -1,7 +1,9 @@
 # ChainDrop System Architecture
 
-**Version:** 1.0
+**Version:** 2.0
 **Last Updated:** January 2026
+**Network:** Cronos Testnet (Chain ID: 338)
+**Hackathon:** Cronos x402 - Agentic Finance
 
 ---
 
@@ -20,12 +22,19 @@
 
 ## Overview
 
-ChainDrop is a three-tier system consisting of:
-1. **Smart Contract Layer** (on-chain)
+ChainDrop is a three-tier system built for the **Cronos x402 Hackathon** consisting of:
+1. **Smart Contract Layer** (on-chain on Cronos EVM)
 2. **Backend API Layer** (off-chain)
-3. **Frontend Application Layer** (user-facing)
+3. **Frontend Application Layer** (user-facing React app)
 
-The architecture enables gasless, counterfactual value delivery through deterministic address generation, account abstraction, and atomic reimbursement mechanisms.
+The architecture enables gasless, counterfactual value delivery through deterministic address generation (Ghost Vaults), ERC-4337 account abstraction, and AI-powered natural language payments.
+
+### Key Features
+- **Ghost Vaults:** Deterministic addresses that receive CRO before wallet deployment
+- **Privy Embedded Wallets:** Non-custodial wallets created via email login
+- **AI Payment Assistant:** Natural language payment parsing with Claude
+- **Programmable Payments:** Scheduled recurring payments via API agents
+- **USD-First UX:** Enter amounts in USD, automatically converted to CRO
 
 ---
 
@@ -35,7 +44,7 @@ The architecture enables gasless, counterfactual value delivery through determin
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          USER INTERFACES                                  │
 ├─────────────────────────────────────────────────────────────────────────┤
-│  Web App (React)  │  Mobile App (React Native)  │  API Integrations    │
+│  Web App (React + Vite)  │  AI Chat Interface  │  API Integrations      │
 └──────────┬──────────────────────┬─────────────────────────┬─────────────┘
            │                      │                         │
            └──────────────────────┼─────────────────────────┘
@@ -47,26 +56,28 @@ The architecture enables gasless, counterfactual value delivery through determin
 │  ┌──────────────┐    ┌──────────┴─────────┐    ┌──────────────────┐   │
 │  │   Express.js │    │  Service Layer     │    │  External APIs   │   │
 │  │   REST API   │◄──►│  - Transfer        │◄──►│  - Privy (Auth)  │   │
-│  │              │    │  - Blockchain      │    │  - SendGrid      │   │
-│  └──────┬───────┘    │  - Identity        │    │  - Alchemy RPC   │   │
+│  │              │    │  - Blockchain      │    │  - Resend (Email)│   │
+│  └──────┬───────┘    │  - AI (Claude)     │    │  - Cronos RPC    │   │
+│         │            │  - Agent/Scheduler │    │  - Price Feed    │   │
 │         │            └────────────────────┘    └──────────────────┘   │
 │         │                                                              │
 │  ┌──────┴────────────────────────────┐                                │
 │  │      Database (SQLite/Postgres)    │                                │
 │  │  - Transfers    - Wallets          │                                │
-│  │  - Claims       - Identifiers      │                                │
+│  │  - Claims       - Agents           │                                │
+│  │  - Scheduled    - Identifiers      │                                │
 │  └────────────────────────────────────┘                                │
 └─────────────────────────────────┬─────────────────────────────────────┘
                                   │
-                                  │ ethers.js
+                                  │ ethers.js v6
                                   │
 ┌─────────────────────────────────┼─────────────────────────────────────┐
-│                        BLOCKCHAIN LAYER (Base)                           │
+│                   BLOCKCHAIN LAYER (Cronos Testnet - 338)                │
 ├─────────────────────────────────┼─────────────────────────────────────┤
 │                                  │                                       │
 │  ┌────────────────┐    ┌────────┴──────────┐    ┌─────────────────┐   │
-│  │ AccountFactory │◄──►│  SimpleAccount    │◄──►│  ERC-20 Tokens  │   │
-│  │  (CREATE2)     │    │  (Ghost Vaults)   │    │  (USDC, USDT)   │   │
+│  │ AccountFactory │◄──►│  SimpleAccount    │◄──►│  Native CRO     │   │
+│  │  (CREATE2)     │    │  (Ghost Vaults)   │    │  (18 decimals)  │   │
 │  └────────────────┘    └───────────────────┘    └─────────────────┘   │
 │                                  │                                       │
 │  ┌────────────────┐    ┌────────┴──────────┐    ┌─────────────────┐   │
@@ -265,26 +276,45 @@ class TransferController {
 }
 ```
 
-### 3. Frontend Layer (Planned)
+### 3. Frontend Layer (React + Vite)
+
+**Technology Stack:**
+- React 19 with Vite build tool
+- Privy for authentication and embedded wallets
+- ethers.js v6 for blockchain interactions
+- TailwindCSS for styling
+
+**Routes:**
+| Route | Component | Description |
+|-------|-----------|-------------|
+| `/` | HomePage | Landing page with features overview |
+| `/send` | SendPage | USD-first payment form |
+| `/wallet` | WalletPage | Wallet balance and transaction history |
+| `/agents` | AgentsPage | AI Chat, API Agents, Scheduled Payments |
+| `/claim/:token` | ClaimPage | Claim flow for recipients |
 
 ```
-src/
+frontend/src/
+├── pages/
+│   ├── HomePage.jsx          # Landing page
+│   ├── SendPage.jsx          # USD-first send form with CRO conversion
+│   ├── ClaimPage.jsx         # Recipient claim flow
+│   ├── WalletPage.jsx        # Balance + transaction history
+│   └── AgentsPage.jsx        # AI Chat, API agents, scheduled payments
 ├── components/
-│   ├── SendForm.tsx          # Transfer creation UI
-│   ├── ClaimPage.tsx         # Claim flow
-│   ├── WalletConnect.tsx     # Web3 wallet integration
-│   └── TransferList.tsx      # Transfer history
-├── hooks/
-│   ├── useTransfer.ts        # Transfer operations
-│   ├── useWallet.ts          # Wallet connection
-│   └── useClaim.ts           # Claim flow
-├── services/
-│   ├── api.ts                # Backend API client
-│   └── blockchain.ts         # Direct contract calls
-└── utils/
-    ├── validation.ts         # Input validation
-    └── formatting.ts         # Amount/address formatting
+│   ├── Navigation.jsx        # Top navigation with Privy auth
+│   ├── AIChat.jsx            # Natural language payment interface
+│   └── ActivityFeed.jsx      # Recent transfers display
+├── chains.js                 # Cronos chain configuration
+├── sentry.js                 # Error tracking setup
+└── main.jsx                  # App entry with Privy provider
 ```
+
+**Key UX Features:**
+- **Privy Embedded Wallets:** Users sign in with email → wallet auto-created
+- **USD-First Amounts:** Users enter `$5` → automatically converted to CRO
+- **Live CRO Price:** Real-time price feed for accurate conversions
+- **AI Chat:** Natural language commands like "Send $5 to alice@email.com"
 
 ---
 
@@ -346,9 +376,9 @@ src/
           │ 11. Transaction broadcast
           ↓
 ┌───────────────────────────────────────┐
-│  Blockchain (Base)                     │
+│  Blockchain (Cronos)                     │
 │                                        │
-│  12. USDC transferred to 0x9f8b7c6d...│
+│  12. CRO transferred to 0x9f8b7c6d...  │
 │      (No code deployed at address yet!)│
 └───────────────────────────────────────┘
 ```
@@ -416,7 +446,7 @@ src/
          │ 18. Transaction broadcast
          ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  Blockchain (Base) - ATOMIC EXECUTION                        │
+│  Blockchain (Cronos Testnet) - ATOMIC EXECUTION               │
 │                                                              │
 │  EntryPoint Contract:                                        │
 │  ┌────────────────────────────────────────────────────────┐ │
@@ -424,16 +454,16 @@ src/
 │  │ 20. Execute initCode → Deploy SimpleAccount            │ │
 │  │     at ghostVaultAddress (0x9f8b7c6d...)               │ │
 │  │ 21. Execute callData → simpleAccount.claimFundsSimple()│ │
-│  │     → Transfer 50 USDC to recipient                    │ │
+│  │     → Transfer 50 CRO to recipient                     │ │
 │  │ 22. Call Paymaster.postOp()                            │ │
-│  │     → Deduct 0.50 USDC fee                             │ │
+│  │     → Deduct 0.50 CRO fee                              │ │
 │  │     → Reimburse bundler for gas                        │ │
 │  └────────────────────────────────────────────────────────┘ │
 │                                                              │
 │  Result:                                                     │
 │  ✓ SimpleAccount deployed at 0x9f8b7c6d...                  │
-│  ✓ 49.50 USDC in recipient's wallet                         │
-│  ✓ 0.50 USDC fee collected                                  │
+│  ✓ 49.50 CRO in recipient's wallet                          │
+│  ✓ 0.50 CRO fee collected                                   │
 │  ✓ Gas reimbursed to bundler                                │
 └──────────────────────────────────────────────────────────────┘
          │ 23. Transaction confirmed
