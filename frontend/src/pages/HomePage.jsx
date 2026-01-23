@@ -1,11 +1,89 @@
 import { useNavigate } from 'react-router-dom';
 import { usePrivy } from '@privy-io/react-auth';
+import { useState, useEffect, lazy, Suspense, memo, useCallback } from 'react';
+import { Player } from '@remotion/player';
 import Navigation from '../components/Navigation';
 import ActivityFeed from '../components/ActivityFeed';
+
+// Lazy load Remotion components for better bundle splitting
+const TransactionFlow = lazy(() => import('../remotion/TransactionFlow').then(m => ({ default: m.TransactionFlow })));
+const PaymentSent = lazy(() => import('../remotion/components/PaymentSent').then(m => ({ default: m.PaymentSent })));
+
+// Check for reduced motion preference
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' &&
+  window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+// Memoized animation player component
+const AnimationPlayer = memo(function AnimationPlayer({
+  component: Component,
+  width,
+  height,
+  durationInFrames,
+  inputProps,
+  className = ''
+}) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const reducedMotion = prefersReducedMotion();
+
+  return (
+    <div
+      className={`relative overflow-hidden rounded-2xl ${className}`}
+      onMouseEnter={() => !reducedMotion && setIsPlaying(true)}
+      onMouseLeave={() => setIsPlaying(false)}
+      onFocus={() => !reducedMotion && setIsPlaying(true)}
+      onBlur={() => setIsPlaying(false)}
+    >
+      <Suspense fallback={
+        <div className="w-full aspect-video bg-gray-900 animate-pulse flex items-center justify-center">
+          <span className="text-gray-500">Loading animation…</span>
+        </div>
+      }>
+        <Player
+          component={Component}
+          inputProps={inputProps}
+          durationInFrames={durationInFrames}
+          fps={30}
+          compositionWidth={width}
+          compositionHeight={height}
+          style={{ width: '100%', height: '100%' }}
+          autoPlay={isPlaying}
+          loop
+          controls={false}
+        />
+      </Suspense>
+      {/* Play indicator */}
+      <div className={`absolute inset-0 flex items-center justify-center bg-black/30 transition-opacity duration-300 ${isPlaying ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <div className="w-16 h-16 rounded-full bg-white/20 backdrop-blur flex items-center justify-center">
+          <svg className="w-8 h-8 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function HomePage() {
   const navigate = useNavigate();
   const { authenticated, login } = usePrivy();
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    setReducedMotion(prefersReducedMotion());
+    const mediaQuery = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const handler = (e) => setReducedMotion(e.matches);
+    mediaQuery?.addEventListener?.('change', handler);
+    return () => mediaQuery?.removeEventListener?.('change', handler);
+  }, []);
+
+  const handleCTA = useCallback(() => {
+    if (authenticated) {
+      navigate('/send');
+    } else {
+      login();
+    }
+  }, [authenticated, navigate, login]);
 
   return (
     <div className="min-h-screen bg-[#0a0a0f]">
@@ -52,17 +130,18 @@ export default function HomePage() {
             </p>
 
             {/* THE ONE CTA */}
-            <div className="pt-4 animate-slide-up" style={{ animationDelay: '300ms' }}>
+            <div className={`pt-4 ${reducedMotion ? '' : 'animate-slide-up'}`} style={{ animationDelay: reducedMotion ? '0ms' : '300ms' }}>
               <button
-                onClick={() => authenticated ? navigate('/send') : login()}
-                className="group relative inline-flex items-center gap-3 px-10 py-5 text-xl font-bold text-white rounded-2xl overflow-hidden transition-all hover:scale-105"
+                onClick={handleCTA}
+                aria-label={authenticated ? 'Send a payment' : 'Get started for free'}
+                className="group relative inline-flex items-center gap-3 px-10 py-5 text-xl font-bold text-white rounded-2xl overflow-hidden transition-transform duration-200 hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1de4c6] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0a0a0f]"
                 style={{
                   background: 'linear-gradient(135deg, #1de4c6 0%, #00a28e 50%, #028273 100%)',
                   boxShadow: '0 0 60px -15px rgba(29, 228, 198, 0.5)'
                 }}
               >
                 <span>{authenticated ? 'Send a Payment' : 'Try It Free'}</span>
-                <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </button>
@@ -238,6 +317,110 @@ export default function HomePage() {
               </div>
               {/* Glow effect */}
               <div className="absolute -inset-4 bg-gradient-to-r from-[#1de4c6]/10 to-[#3b82f6]/10 rounded-3xl blur-2xl -z-10" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== TRANSACTION ANIMATIONS SHOWCASE ===== */}
+      <section className="py-24 bg-gradient-to-b from-[#111119] to-[#0a0a0f] border-t border-white/5 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-[#1de4c6]/10 to-[#3b82f6]/10 border border-[#1de4c6]/20 mb-4">
+              <svg className="w-4 h-4 text-[#1de4c6]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+              </svg>
+              <span className="text-[#1de4c6] text-xs font-semibold uppercase tracking-wider">Live Preview</span>
+            </div>
+            <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+              See it in action
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Watch the complete payment flow—from send to claim—powered by Remotion animations
+            </p>
+          </div>
+
+          {/* Main Animation - Transaction Flow */}
+          <div className="mb-12">
+            <div className="relative max-w-4xl mx-auto">
+              <AnimationPlayer
+                component={TransactionFlow}
+                width={1920}
+                height={1080}
+                durationInFrames={300}
+                inputProps={{
+                  sender: '0x1da9...c436',
+                  recipient: 'alice@company.com',
+                  amount: '5.00',
+                  amountCro: '71.43',
+                }}
+                className="aspect-video shadow-2xl shadow-[#1de4c6]/10 border border-white/10"
+              />
+              {/* Glow effect */}
+              <div className="absolute -inset-4 bg-gradient-to-r from-[#1de4c6]/5 to-[#3b82f6]/5 rounded-3xl blur-3xl -z-10" />
+            </div>
+            <p className="text-center text-gray-500 text-sm mt-4">
+              Hover to play • Full transaction flow animation
+            </p>
+          </div>
+
+          {/* Secondary Animations Grid */}
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <div className="space-y-4">
+              <AnimationPlayer
+                component={PaymentSent}
+                width={1080}
+                height={1080}
+                durationInFrames={90}
+                inputProps={{
+                  amount: '5.00',
+                  amountCro: '71.43',
+                  recipient: 'alice@company.com',
+                }}
+                className="aspect-square shadow-xl shadow-[#1de4c6]/10 border border-white/10"
+              />
+              <div className="text-center">
+                <h3 className="text-white font-semibold">Payment Sent</h3>
+                <p className="text-gray-500 text-sm">Success confirmation animation</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="aspect-square rounded-2xl bg-gradient-to-br from-[#1f2937] to-[#111827] border border-white/10 flex items-center justify-center shadow-xl">
+                <div className="text-center p-8">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-600/20 flex items-center justify-center">
+                    <svg className="w-10 h-10 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <h4 className="text-white font-semibold mb-2">Claim Animation</h4>
+                  <p className="text-gray-500 text-sm mb-4">Envelope opening with coins</p>
+                  <button
+                    onClick={() => navigate('/agents')}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-white text-sm transition-colors"
+                    aria-label="View claim animation in agents page"
+                  >
+                    <span>Try it live</span>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="text-center">
+                <h3 className="text-white font-semibold">Claim Funds</h3>
+                <p className="text-gray-500 text-sm">Recipient receives CRO</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Remotion Badge */}
+          <div className="mt-12 text-center">
+            <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/5 rounded-full border border-white/10">
+              <span className="text-gray-400 text-sm">Powered by</span>
+              <span className="text-white font-semibold">Remotion</span>
+              <span className="text-gray-600">•</span>
+              <span className="text-gray-400 text-sm">React-based video creation</span>
             </div>
           </div>
         </div>
