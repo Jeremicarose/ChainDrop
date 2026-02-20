@@ -1,14 +1,78 @@
-// Empty stub for Solana packages - Privy optionally imports these but we only use EVM chains
-export default {};
-// Export a Proxy that returns empty functions/objects for any property access
-const handler = {
-  get: () => new Proxy(() => {}, handler),
-  apply: () => new Proxy(() => {}, handler),
-};
-const stub = new Proxy(() => {}, handler);
-export { stub as getTransferSolInstruction };
-// Re-export everything as the stub
-const keys = ['getStructEncoder','getOptionEncoder','getAddressEncoder','getU32Encoder','getU64Encoder','getU8Encoder','getBooleanEncoder','getEnumEncoder','getArrayEncoder','getStructDecoder','getOptionDecoder','getAddressDecoder','getU32Decoder','getU64Decoder','getU8Decoder','getBooleanDecoder','getEnumDecoder','getArrayDecoder','getStructCodec','getOptionCodec','getAddressCodec','getU32Codec','getU64Codec','getU8Codec','getBooleanCodec','getEnumCodec','getArrayCodec','combineCodec','addCodecSentinel','addCodecSizePrefix','transformEncoder','addEncoderSizePrefix','addDecoderSizePrefix','fixEncoderSize','fixDecoderSize','fixCodecSize','getBase58Decoder','getBase58Encoder','getBase64Decoder','getBase64Encoder','getUtf8Decoder','getUtf8Encoder','address','getAddressFromPublicKey','createSolanaRpc','createSolanaRpcSubscriptions','pipe','createTransactionMessage','setTransactionMessageFeePayer','setTransactionMessageLifetimeUsingBlockhash','appendTransactionMessageInstruction','signTransaction','getSignatureFromTransaction','sendAndConfirmTransaction','lamports','TOKEN_PROGRAM_ADDRESS','findAssociatedTokenPda','getTransferInstruction','getCreateAssociatedTokenInstructionAsync','fetchMint','fetchToken','getTransferCheckedInstruction','getInitializeMintInstruction','getCreateAccountInstruction','getMintToInstruction','ASSOCIATED_TOKEN_PROGRAM_ADDRESS','getAssociatedTokenAddressSync','createAssociatedTokenAccountInstruction','createTransferInstruction'];
-for (const key of keys) {
-  Object.defineProperty(module.exports || exports, key, { get: () => stub, enumerable: true });
-}
+// Empty stub for Solana packages that Privy optionally imports (we only use EVM)
+const noop = () => ({});
+const stub = new Proxy(noop, {
+  get: () => new Proxy(noop, { get: () => noop, apply: () => ({}) }),
+  apply: () => ({}),
+});
+
+export default stub;
+export const getTransferSolInstruction = noop;
+export const getStructEncoder = noop;
+export const getOptionEncoder = noop;
+export const getAddressEncoder = noop;
+export const getU32Encoder = noop;
+export const getU64Encoder = noop;
+export const getU8Encoder = noop;
+export const getBooleanEncoder = noop;
+export const getEnumEncoder = noop;
+export const getArrayEncoder = noop;
+export const getStructDecoder = noop;
+export const getOptionDecoder = noop;
+export const getAddressDecoder = noop;
+export const getU32Decoder = noop;
+export const getU64Decoder = noop;
+export const getU8Decoder = noop;
+export const getBooleanDecoder = noop;
+export const getEnumDecoder = noop;
+export const getArrayDecoder = noop;
+export const getStructCodec = noop;
+export const getOptionCodec = noop;
+export const getAddressCodec = noop;
+export const getU32Codec = noop;
+export const getU64Codec = noop;
+export const getU8Codec = noop;
+export const getBooleanCodec = noop;
+export const getEnumCodec = noop;
+export const getArrayCodec = noop;
+export const combineCodec = noop;
+export const addCodecSentinel = noop;
+export const addCodecSizePrefix = noop;
+export const transformEncoder = noop;
+export const addEncoderSizePrefix = noop;
+export const addDecoderSizePrefix = noop;
+export const fixEncoderSize = noop;
+export const fixDecoderSize = noop;
+export const fixCodecSize = noop;
+export const getBase58Decoder = noop;
+export const getBase58Encoder = noop;
+export const getBase64Decoder = noop;
+export const getBase64Encoder = noop;
+export const getUtf8Decoder = noop;
+export const getUtf8Encoder = noop;
+export const address = noop;
+export const getAddressFromPublicKey = noop;
+export const createSolanaRpc = noop;
+export const createSolanaRpcSubscriptions = noop;
+export const pipe = noop;
+export const createTransactionMessage = noop;
+export const setTransactionMessageFeePayer = noop;
+export const setTransactionMessageLifetimeUsingBlockhash = noop;
+export const appendTransactionMessageInstruction = noop;
+export const signTransaction = noop;
+export const getSignatureFromTransaction = noop;
+export const sendAndConfirmTransaction = noop;
+export const lamports = noop;
+export const TOKEN_PROGRAM_ADDRESS = '';
+export const findAssociatedTokenPda = noop;
+export const getTransferInstruction = noop;
+export const getCreateAssociatedTokenInstructionAsync = noop;
+export const fetchMint = noop;
+export const fetchToken = noop;
+export const getTransferCheckedInstruction = noop;
+export const getInitializeMintInstruction = noop;
+export const getCreateAccountInstruction = noop;
+export const getMintToInstruction = noop;
+export const ASSOCIATED_TOKEN_PROGRAM_ADDRESS = '';
+export const getAssociatedTokenAddressSync = noop;
+export const createAssociatedTokenAccountInstruction = noop;
+export const createTransferInstruction = noop;
