@@ -45,11 +45,9 @@ export default function SendPage() {
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const res = await fetch(`${API_URL}/price/cro`);
-        const data = await res.json();
-        if (data.success && data.price) {
-          setCroPrice(data.price);
-        }
+        const { fetchCroPrice } = await import('../utils/priceService.js');
+        const price = await fetchCroPrice();
+        setCroPrice(price);
       } catch (err) {
         console.error('Failed to fetch CRO price:', err);
       }
