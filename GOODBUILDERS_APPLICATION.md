@@ -391,14 +391,14 @@ Our growth isn't just about ChainDrop's metrics — it's about building a new di
 
 | **Field** | **Value** |
 | --- | --- |
-| **Name** * | ← _Fill in your name_ |
+| **Name** * | ← Jeremic Arose |
 | **Role & Description** * | Founder & Full-Stack Developer — Built ChainDrop's smart contracts, frontend, backend, and AI integration. Experience in Solidity, React, Node.js, and ERC-4337 Account Abstraction. |
-| **Telegram** | ← _Fill in_ |
+| **Telegram** | ← @Jeremicarose |
 | **Github/LinkedIn Profile** | https://github.com/Jeremicarose |
 
 #### Additional Team Members _(Optional)_
 
-← _Add team members if applicable_
+← N/A
 
 ### 2.7 Additional
 
@@ -428,23 +428,23 @@ We're committed to open-sourcing our Celo deployment so other GoodDollar project
 
 #### Legal Name / Company Name *
 
-← _Fill in your legal name_
+← Jeremic Arose
 
 #### Country of Residence / Registration *
 
-← _Fill in your country_
+← Kenya
 
 #### Address *
 
-← _Fill in your address_
+← NgongRoad
 
 #### Contact Email *
 
-← _Fill in your email_
+← arosejeremic5@gmail.com
 
 #### Wallet to Receive Funding *
 
-← _Fill in your Celo wallet address: 0x..._
+← 0xe7d849782ad29611f614c59d8ed152154f169756
 
 #### Confirm Wallet Ownership *
 
