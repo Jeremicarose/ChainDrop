@@ -22,11 +22,9 @@ export default function ClaimPage() {
   useEffect(() => {
     const fetchPrice = async () => {
       try {
-        const response = await fetch(`${API_URL}/price/cro`);
-        const data = await response.json();
-        if (data.success && data.price) {
-          setCroPrice(data.price);
-        }
+        const { fetchCroPrice } = await import('../utils/priceService.js');
+        const price = await fetchCroPrice();
+        setCroPrice(price);
       } catch (err) {
         console.error('Error fetching CRO price:', err);
       }
