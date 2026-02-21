@@ -12,22 +12,26 @@ export default function ActivityFeed() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch recent activity, stats, and price in parallel
-        const [activityRes, statsRes, priceRes] = await Promise.all([
-          fetch(`${API_URL}/transfer/recent?limit=5`),
-          fetch(`${API_URL}/transfer/stats`),
-          fetch(`${API_URL}/price/cro`)
-        ]);
+        // Fetch price from CoinGecko fallback
+        const { fetchCroPrice } = await import('../utils/priceService.js');
+        const price = await fetchCroPrice();
+        setCroPrice(price);
 
-        const [activityData, statsData, priceData] = await Promise.all([
-          activityRes.json(),
-          statsRes.json(),
-          priceRes.json()
-        ]);
-
-        if (activityData.success) setActivity(activityData.data);
-        if (statsData.success) setStats(statsData.data);
-        if (priceData.success) setCroPrice(priceData.price);
+        // Try backend for activity and stats (gracefully handle if unavailable)
+        try {
+          const [activityRes, statsRes] = await Promise.all([
+            fetch(`${API_URL}/transfer/recent?limit=5`, { signal: AbortSignal.timeout(3000) }),
+            fetch(`${API_URL}/transfer/stats`, { signal: AbortSignal.timeout(3000) })
+          ]);
+          const [activityData, statsData] = await Promise.all([
+            activityRes.json(),
+            statsRes.json()
+          ]);
+          if (activityData.success) setActivity(activityData.data);
+          if (statsData.success) setStats(statsData.data);
+        } catch {
+          // Backend unavailable - show empty state
+        }
       } catch (error) {
         console.error('Error fetching activity:', error);
       } finally {
